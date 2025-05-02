@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -41,7 +42,17 @@ const UserProfile: React.FC = () => {
       try {
         setLoading(true);
         const profileData = await fetchUserProfile(userId);
-        setUserData(profileData);
+        
+        // Convert User type to UserProfileData type
+        setUserData({
+          id: profileData.id,
+          pseudonym: profileData.pseudonym,
+          avatar: profileData.avatar || '',
+          location: profileData.location || null,
+          bio: profileData.bio || null,
+          website: null, // Add missing property
+          birthdate: null // Add missing property
+        });
       } catch (error) {
         console.error('Error loading user profile:', error);
         toast({
@@ -109,14 +120,14 @@ const UserProfile: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
               <Avatar className="h-16 w-16 mr-4">
-                <AvatarImage src={userData.avatar} alt={userData.pseudonym} className="object-cover" />
+                <AvatarImage src={userData?.avatar} alt={userData?.pseudonym} className="object-cover" />
                 <AvatarFallback>
                   <User className="h-8 w-8 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-2xl font-bold">{userData.pseudonym}</h1>
-                {userData.location && (
+                <h1 className="text-2xl font-bold">{userData?.pseudonym}</h1>
+                {userData?.location && (
                   <div className="flex items-center text-muted-foreground mt-1">
                     <MapPin className="h-4 w-4 mr-1" />
                     {userData.location}
@@ -130,21 +141,21 @@ const UserProfile: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {userData.bio && (
+            {userData?.bio && (
               <div>
                 <h2 className="text-lg font-semibold mb-2">About</h2>
                 <p className="text-muted-foreground">{userData.bio}</p>
               </div>
             )}
 
-            {userData.birthdate && (
+            {userData?.birthdate && (
               <div className="flex items-center text-muted-foreground">
                 <CalendarDays className="h-4 w-4 mr-2" />
                 Born on {new Date(userData.birthdate).toLocaleDateString()}
               </div>
             )}
 
-            {userData.website && (
+            {userData?.website && (
               <div className="flex items-center text-muted-foreground">
                 <Link2 className="h-4 w-4 mr-2" />
                 <a href={userData.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
