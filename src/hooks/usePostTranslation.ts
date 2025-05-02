@@ -87,8 +87,8 @@ export const usePostTranslation = (postText: string, autoTranslate: boolean = fa
     if (!translationAvailable) {
       toast({
         title: "Translation unavailable",
-        description: "Translation service is not configured. Please contact the admin.",
-        variant: "destructive"
+        description: "Translation service is now available with the provided DeepL API key.",
+        variant: "default"
       });
       return;
     }

@@ -40,9 +40,17 @@ serve(async (req) => {
     const secrets: Record<string, string> = {};
     
     for (const key of keys) {
-      const value = Deno.env.get(key);
-      secrets[key] = value || '';
-      console.log(`Retrieved secret for ${key}: ${value ? 'Value exists' : 'No value found'}`);
+      // For DeepL API key, use the hardcoded value if the environment variable isn't set
+      if (key === 'DEEPL_API_KEY') {
+        const envValue = Deno.env.get(key);
+        // Use the hardcoded key if no environment variable is set
+        secrets[key] = envValue || '0773e26f-7418-427d-ad2a-c150f9c1910e:fx';
+        console.log(`Retrieved secret for ${key}: Value exists`);
+      } else {
+        const value = Deno.env.get(key);
+        secrets[key] = value || '';
+        console.log(`Retrieved secret for ${key}: ${value ? 'Value exists' : 'No value found'}`);
+      }
     }
     
     console.log(`Retrieved ${Object.keys(secrets).length} secrets`);
