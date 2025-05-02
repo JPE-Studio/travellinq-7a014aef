@@ -12,7 +12,6 @@ import PostDetail from "./pages/PostDetail";
 import MapView from "./pages/MapView";
 import Chats from "./pages/Chats";
 import Settings from "./pages/Settings";
-import UserProfile from "./pages/UserProfile";
 import ChatScreen from "./pages/ChatScreen";
 import Auth from "./pages/Auth";
 import BottomNavigation from "./components/BottomNavigation";
@@ -36,7 +35,7 @@ const App = () => (
             <Route path="/chats/new" element={<NewChat />} />
             <Route path="/chat/:userId" element={<ChatScreen />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/user/:userId" element={<UserProfile />} />
+            {/* Route for UserProfile has been removed */}
             <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
