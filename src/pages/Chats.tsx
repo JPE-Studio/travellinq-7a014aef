@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, ChevronLeft, Loader2, Search, Plus, MapPin, MessageCircle, Settings } from 'lucide-react';
+import { User, ChevronLeft, Loader2, Search, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import BottomNavigation from '@/components/BottomNavigation';
 import { fetchUserConversations } from '@/services/conversationService';
@@ -45,6 +45,7 @@ const Chats: React.FC = () => {
       } catch (err) {
         console.error('Error loading conversations:', err);
         setError('Unable to load conversations');
+        // Use toast only for unexpected errors, not for empty state
         if (err instanceof Error && err.message !== 'No conversations found') {
           toast({
             variant: "destructive",
@@ -69,6 +70,7 @@ const Chats: React.FC = () => {
   };
 
   const handleCreateChat = () => {
+    // Navigate to a page to select users to chat with
     navigate('/chats/new');
   };
 
@@ -77,26 +79,30 @@ const Chats: React.FC = () => {
   );
   
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
-      {/* Search header */}
-      <div className="px-4 py-3 sticky top-0 z-10 bg-background border-b">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input 
-            placeholder="Search conversations..." 
-            className="pl-10 bg-muted/30 border-none"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0 overflow-hidden">
+      {/* Full width header */}
+      <Header />
       
       {/* Content area */}
-      <div className="flex-grow flex flex-col w-full overflow-auto pb-16">
-        <div className="w-full">
+      <div className="flex-grow flex flex-col w-full overflow-hidden">
+        {/* Main content */}
+        <div className="max-w-3xl mx-auto px-4 py-4 w-full scrollbar-hide pb-safe">
+          <h1 className="text-2xl font-bold mb-4">Messages</h1>
+          
+          {/* Search bar */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input 
+              placeholder="Search conversations..." 
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
           {loading ? (
             // Loading skeletons
-            <div className="space-y-4 p-4">
+            <div className="space-y-4">
               {[1, 2, 3].map(i => (
                 <div key={i} className="flex items-center space-x-3 py-3">
                   <Skeleton className="h-12 w-12 rounded-full" />
@@ -119,13 +125,13 @@ const Chats: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div>
+            <div className="divide-y">
               {filteredConversations.length > 0 ? (
                 filteredConversations.map(conversation => (
                   <Link 
                     to={`/chat/${conversation.id}`} 
                     key={conversation.id} 
-                    className="py-4 px-4 flex items-start space-x-3 hover:bg-muted/30 border-b"
+                    className="py-3 flex items-center space-x-3 hover:bg-muted/30 cursor-pointer rounded-lg px-2"
                   >
                     <div onClick={(e) => handleUserProfileClick(conversation.otherUser.id, e)}>
                       <Avatar className="h-12 w-12">
@@ -135,36 +141,23 @@ const Chats: React.FC = () => {
                         </AvatarFallback>
                       </Avatar>
                     </div>
-                    <div className="flex-grow min-w-0 pt-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-medium">@{conversation.otherUser.pseudonym}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {conversation.lastMessage
-                            ? formatDistanceToNow(conversation.lastMessage.timestamp, { addSuffix: false })
-                            : ''}
-                        </p>
-                      </div>
+                    <div className="flex-grow min-w-0">
+                      <p className="font-medium">{conversation.otherUser.pseudonym}</p>
                       <p className="text-sm text-muted-foreground truncate">
-                        {conversation.otherUser.id ? 'sehr nah' : ''}
-                      </p>
-                      <p className="text-sm text-foreground truncate mt-2">
                         {conversation.lastMessage 
                           ? (conversation.lastMessage.isFromCurrentUser ? 'You: ' : '') + conversation.lastMessage.content
                           : 'No messages yet'}
                       </p>
-                      <div className="flex items-center mt-1">
-                        <button className="text-xs text-muted-foreground flex items-center mr-4">
-                          <span className="mr-1">2</span>
-                        </button>
-                        <button className="text-xs text-muted-foreground flex items-center">
-                          übersetzen
-                        </button>
-                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground shrink-0">
+                      {conversation.lastMessage
+                        ? formatDistanceToNow(conversation.lastMessage.timestamp, { addSuffix: false })
+                        : ''}
                     </div>
                   </Link>
                 ))
               ) : (
-                <div className="text-center text-muted-foreground py-12 flex flex-col items-center px-4">
+                <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
                   <p className="mb-2">No messages yet</p>
                   <p className="text-sm mb-4">Start a conversation with another traveler</p>
                   <Button onClick={handleCreateChat} className="flex items-center gap-2">
@@ -176,13 +169,13 @@ const Chats: React.FC = () => {
             </div>
           )}
           
-          {/* Floating create chat button */}
+          {/* Floating create chat button for when there are messages but user wants to create a new one */}
           {!loading && !error && filteredConversations.length > 0 && (
-            <div className="fixed bottom-20 right-6">
+            <div className="fixed bottom-20 md:bottom-8 right-6">
               <Button 
                 onClick={handleCreateChat} 
                 size="icon" 
-                className="h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground"
+                className="h-14 w-14 rounded-full shadow-lg"
               >
                 <Plus size={24} />
               </Button>
@@ -191,28 +184,7 @@ const Chats: React.FC = () => {
         </div>
       </div>
       
-      {/* Custom bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t flex justify-around py-3 md:hidden z-50">
-        <Link to="/map" className="flex flex-col items-center text-muted-foreground">
-          <MapPin size={24} />
-          <span className="text-xs mt-1">Umgebung</span>
-        </Link>
-        
-        <Link to="/search" className="flex flex-col items-center text-muted-foreground">
-          <Search size={24} />
-          <span className="text-xs mt-1">Suche</span>
-        </Link>
-        
-        <Link to="/chats" className="flex flex-col items-center text-primary">
-          <MessageCircle size={24} />
-          <span className="text-xs mt-1">Nachrichten</span>
-        </Link>
-        
-        <Link to="/profile" className="flex flex-col items-center text-muted-foreground">
-          <Settings size={24} />
-          <span className="text-xs mt-1">Mehr</span>
-        </Link>
-      </div>
+      <BottomNavigation />
     </div>
   );
 };

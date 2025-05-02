@@ -26,18 +26,17 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
   return (
     <form 
       onSubmit={handleSubmit} 
-      className="bg-background border-t sticky bottom-0 left-0 right-0 p-3 flex items-center gap-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] mb-16 md:mb-0"
+      className="bg-background border-t sticky bottom-0 left-0 right-0 p-4 flex items-center gap-2 pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-4 mb-16 md:mb-0"
     >
       <Input
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Type a message..."
-        className="flex-grow rounded-full bg-muted/30"
+        className="flex-grow"
       />
       <Button 
         type="submit" 
         size="icon" 
-        className="rounded-full" 
         variant={message.trim() ? "default" : "ghost"} 
         disabled={!message.trim()}
       >

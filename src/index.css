@@ -20,7 +20,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
  
-    --primary: 203 89% 48%; /* New primary blue color */
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
  
     --secondary: 210 40% 96.1%;
@@ -53,7 +53,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
  
-    --primary: 203 89% 48%; /* New primary blue color */
+    --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
  
     --secondary: 217.2 32.6% 17.5%;
@@ -164,3 +164,4 @@
     bottom: 5rem !important; /* Position the create button above the tab bar */
   }
 }
+
