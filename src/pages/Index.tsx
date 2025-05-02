@@ -1,24 +1,39 @@
-
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import Map from '@/components/Map';
 import PostList from '@/components/PostList';
 import PostFilters from '@/components/PostFilters';
 import CreatePostButton from '@/components/CreatePostButton';
 import OnboardingModal from '@/components/OnboardingModal';
-import { mockPosts } from '@/data/mockData';
 import { toast } from '@/components/ui/use-toast';
 import { Post } from '@/types';
+import { fetchPosts } from '@/services/postService';
 
 const Index: React.FC = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [currentLocation, setCurrentLocation] = useState({ lat: 45.5152, lng: -122.6784 });
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>(mockPosts);
   const [filters, setFilters] = useState({
     radius: 50,
     autoRadius: true,
     categories: ['general', 'campsite', 'service', 'question'],
+  });
+
+  // Query for posts with filters
+  const { 
+    data: posts = [], 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
+    queryKey: ['posts', currentLocation, filters],
+    queryFn: () => fetchPosts(
+      currentLocation.lat,
+      currentLocation.lng,
+      filters.autoRadius ? undefined : filters.radius,
+      filters.categories
+    )
   });
 
   useEffect(() => {
@@ -26,6 +41,22 @@ const Index: React.FC = () => {
     const hasCompletedOnboarding = localStorage.getItem('travellinq-onboarding-completed');
     if (hasCompletedOnboarding === 'true') {
       setShowOnboarding(false);
+    }
+    
+    // Try to get user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (err) => {
+          console.error("Error getting location:", err);
+          // Keep default location
+        }
+      );
     }
     
     // Mock notification for nearby friend
@@ -42,25 +73,6 @@ const Index: React.FC = () => {
     
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    // Filter posts based on selected filters
-    const filtered = mockPosts.filter(post => {
-      // Filter by category
-      if (!filters.categories.includes(post.category)) {
-        return false;
-      }
-      
-      // Filter by radius (if not auto)
-      if (!filters.autoRadius && post.distance && post.distance > filters.radius) {
-        return false;
-      }
-      
-      return true;
-    });
-    
-    setFilteredPosts(filtered);
-  }, [filters]);
 
   const handleFilterChange = (newFilters: {
     radius: number;
@@ -102,7 +114,7 @@ const Index: React.FC = () => {
         {/* Main content */}
         <div className="flex-grow flex flex-col overflow-hidden pb-safe">
           <Map 
-            posts={filteredPosts}
+            posts={posts}
             currentLocation={currentLocation}
             expanded={mapExpanded}
             onToggleExpand={handleToggleMapExpand}
@@ -113,7 +125,23 @@ const Index: React.FC = () => {
             <PostFilters onFilterChange={handleFilterChange} />
           </div>
           
-          <PostList posts={filteredPosts} />
+          {isLoading ? (
+            <div className="flex justify-center items-center p-8">
+              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center p-8 text-destructive">
+              <p>Error loading posts. Please try again later.</p>
+              <button 
+                onClick={() => refetch()}
+                className="mt-2 text-primary hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <PostList posts={posts} />
+          )}
         </div>
         
         {/* Right sidebar space (for ads) */}

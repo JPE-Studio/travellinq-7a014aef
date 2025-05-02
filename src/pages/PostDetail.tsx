@@ -1,20 +1,78 @@
 
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
-import { mockPosts } from '@/data/mockData';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MapPin, User, ChevronLeft, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { fetchPostById } from '@/services/postService';
+import { fetchComments, addComment } from '@/services/commentService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [comment, setComment] = useState('');
-  const post = mockPosts.find(post => post.id === id);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   
+  // Query for post data
+  const { 
+    data: post, 
+    isLoading: isPostLoading, 
+    error: postError 
+  } = useQuery({
+    queryKey: ['post', id],
+    queryFn: () => fetchPostById(id as string),
+    enabled: !!id
+  });
+  
+  // Query for comments
+  const { 
+    data: comments = [], 
+    isLoading: areCommentsLoading, 
+    error: commentsError 
+  } = useQuery({
+    queryKey: ['comments', id],
+    queryFn: () => fetchComments(id as string),
+    enabled: !!id
+  });
+  
+  // Mutation for adding comments
+  const addCommentMutation = useMutation({
+    mutationFn: ({ postId, text }: { postId: string, text: string }) => 
+      addComment(postId, text),
+    onSuccess: () => {
+      // Invalidate and refetch comments
+      queryClient.invalidateQueries({ queryKey: ['comments', id] });
+      setComment('');
+      toast({
+        title: "Comment posted",
+        description: "Your comment has been added to the discussion.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error posting comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to post your comment. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleVote = (direction: 'up' | 'down') => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to vote on posts.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     toast({
       title: direction === 'up' ? "Upvoted" : "Downvoted",
       description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
@@ -22,6 +80,15 @@ const PostDetail: React.FC = () => {
   };
 
   const handleSubscribe = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to subscribe to posts.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     toast({
       title: "Subscribed to post",
       description: `You'll receive notifications for updates to this post.`,
@@ -30,6 +97,16 @@ const PostDetail: React.FC = () => {
   
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to comment.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (!comment.trim()) {
       toast({
         title: "Comment cannot be empty",
@@ -39,21 +116,35 @@ const PostDetail: React.FC = () => {
       return;
     }
     
-    toast({
-      title: "Comment posted",
-      description: "Your comment has been added to the discussion.",
-    });
-    
-    setComment('');
+    if (id) {
+      addCommentMutation.mutate({
+        postId: id,
+        text: comment.trim()
+      });
+    }
   };
 
-  if (!post) {
+  if (isPostLoading) {
+    return (
+      <div className="min-h-screen flex flex-col w-full bg-background">
+        <Header />
+        <div className="flex-grow flex justify-center items-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (postError || !post) {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
         <Header />
         <div className="flex-grow flex justify-center items-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
+            <p className="text-muted-foreground mb-4">
+              This post may have been removed or is not available.
+            </p>
             <Link to="/" className="text-primary hover:underline">
               Return to Home
             </Link>
@@ -102,7 +193,7 @@ const PostDetail: React.FC = () => {
                       <>
                         <span className="mx-1">•</span>
                         <MapPin size={12} className="mr-1" />
-                        <span>{post.distance.toFixed(1)} miles away</span>
+                        <span>{post.distance?.toFixed(1) || "Unknown"} miles away</span>
                       </>
                     )}
                   </div>
@@ -151,7 +242,7 @@ const PostDetail: React.FC = () => {
             </div>
             
             <div className="bg-card rounded-lg shadow p-4">
-              <h2 className="font-semibold mb-4">Comments ({post.commentCount})</h2>
+              <h2 className="font-semibold mb-4">Comments ({comments.length})</h2>
               <form className="flex mb-4" onSubmit={handleSubmitComment}>
                 <Avatar className="h-8 w-8 mr-3">
                   <AvatarFallback>
@@ -167,16 +258,68 @@ const PostDetail: React.FC = () => {
                     onChange={(e) => setComment(e.target.value)}
                   />
                   <div className="flex justify-end mt-2">
-                    <Button type="submit" size="sm">
-                      Post
+                    <Button 
+                      type="submit" 
+                      size="sm"
+                      disabled={addCommentMutation.isPending}
+                    >
+                      {addCommentMutation.isPending ? 'Posting...' : 'Post'}
                     </Button>
                   </div>
                 </div>
               </form>
               
-              <div className="text-center text-muted-foreground py-4">
-                No comments yet. Be the first to comment!
-              </div>
+              {areCommentsLoading ? (
+                <div className="flex justify-center my-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : commentsError ? (
+                <div className="text-center text-destructive my-4">
+                  Error loading comments. Please try again.
+                </div>
+              ) : comments.length === 0 ? (
+                <div className="text-center text-muted-foreground py-4">
+                  No comments yet. Be the first to comment!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {comments.map(comment => (
+                    <div key={comment.id} className="border-t pt-4">
+                      <div className="flex">
+                        <Link to={`/user/${comment.author.id}`} className="mr-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={comment.author.avatar} className="object-cover" />
+                            <AvatarFallback>
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Link to={`/user/${comment.author.id}`} className="font-medium text-sm hover:underline">
+                              {comment.author.pseudonym}
+                            </Link>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm">{comment.text}</p>
+                          <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                            <button className="flex items-center hover:text-foreground mr-3">
+                              <ArrowUp className="h-3 w-3 mr-1" />
+                              <span>{comment.votes}</span>
+                            </button>
+                            <button className="flex items-center hover:text-foreground mr-3">
+                              <ArrowDown className="h-3 w-3" />
+                            </button>
+                            <button className="hover:text-foreground">Reply</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
