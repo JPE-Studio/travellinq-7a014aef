@@ -13,6 +13,7 @@ const OnboardingCheck: React.FC = () => {
     // Show onboarding if:
     // 1. User is logged in
     // 2. AND either profile doesn't exist OR username is auto-generated (starts with user_)
+    // 3. OR username is missing or too short (less than 3 characters)
     const needsOnboarding = user && 
       (!profile || 
        !profile.pseudonym || 
