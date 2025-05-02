@@ -30,7 +30,7 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
   return (
     <div className={`relative ${mapHeight} rounded-md overflow-hidden`}>
       <MapContainer
-        center={currentLocation}
+        center={[currentLocation.lat, currentLocation.lng]}
         zoom={zoomLevel}
         style={{ height: "100%", width: "100%" }}
         className="z-0"
