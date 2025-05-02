@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
-import BottomNavigation from '@/components/BottomNavigation';
 import { fetchConversation } from '@/services/conversationService';
 import { sendMessage } from '@/services/messageService';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ import MessageList from '@/components/chat/MessageList';
 import MessageTextarea from '@/components/chat/MessageTextarea';
 import ChatSkeleton from '@/components/chat/ChatSkeleton';
 import ChatError from '@/components/chat/ChatError';
+import BottomNavigation from '@/components/BottomNavigation';
 
 interface Message {
   id: string;
@@ -49,9 +49,9 @@ const ChatScreen: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        console.log("Loading conversation:", userId);
+        
         const data = await fetchConversation(userId);
-        console.log("Conversation loaded:", data);
+        
         setMessages(data.messages);
         setOtherUser(data.otherUser);
         setCurrentUserId(data.currentUserId);
@@ -71,8 +71,8 @@ const ChatScreen: React.FC = () => {
     loadConversation();
 
     // Set up real-time subscription for new messages
-    const channel = supabase
-      .channel('public:messages')
+    const messageSubscription = supabase
+      .channel('messages-channel')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -80,7 +80,6 @@ const ChatScreen: React.FC = () => {
         filter: `conversation_id=eq.${userId}`
       }, (payload) => {
         const newMessage = payload.new as any;
-        console.log("Real-time message received:", newMessage);
         
         // Only add the message if it's not from the current user (to avoid duplicates)
         if (newMessage.sender_id !== currentUserId) {
@@ -108,7 +107,7 @@ const ChatScreen: React.FC = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messageSubscription);
     };
   }, [userId, navigate, user, currentUserId]);
 
@@ -116,9 +115,7 @@ const ChatScreen: React.FC = () => {
     if (!userId || !message.trim()) return;
     
     try {
-      console.log("Sending message:", message);
       const newMessage = await sendMessage(userId, message);
-      console.log("Message sent:", newMessage);
       
       // Add the message to the local state
       setMessages(prevMessages => [
@@ -131,7 +128,6 @@ const ChatScreen: React.FC = () => {
           read: newMessage.read
         }
       ]);
-      
     } catch (err) {
       console.error('Error sending message:', err);
       toast({
@@ -139,7 +135,6 @@ const ChatScreen: React.FC = () => {
         title: "Failed to send message",
         description: "Your message couldn't be sent. Please try again.",
       });
-      throw err;
     }
   };
   
