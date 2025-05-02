@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { createConversationForUser } from "@/utils/setupRlsPolicies";
 
 /**
  * Get or create a conversation between the current user and another user
@@ -53,37 +53,17 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     console.log("No existing conversation found, creating new one");
     
-    // Create a new conversation
-    const { data: newConversation, error: createError } = await supabase
-      .from("conversations")
-      .insert({})
-      .select()
-      .single();
+    // Create a new conversation using the secure RPC function
+    const newConversation = await createConversationForUser();
     
-    if (createError) {
-      console.error("Error creating conversation:", createError);
-      throw new Error("Failed to create conversation: " + createError.message);
+    if (!newConversation || !newConversation[0]) {
+      throw new Error("Failed to create conversation via RPC");
     }
     
-    const conversationId = newConversation.id;
-    console.log("Created new conversation:", conversationId);
+    const conversationId = newConversation[0].id;
+    console.log("Created new conversation with RPC:", conversationId);
     
-    // Add current user to conversation
-    const { error: currentUserPartError } = await supabase
-      .from("conversation_participants")
-      .insert({
-        conversation_id: conversationId,
-        user_id: currentUserId
-      });
-    
-    if (currentUserPartError) {
-      console.error("Error adding current user to conversation:", currentUserPartError);
-      // Clean up the conversation we just created
-      await supabase.from("conversations").delete().eq("id", conversationId);
-      throw new Error("Failed to add you to conversation: " + currentUserPartError.message);
-    }
-    
-    // Add other user to conversation
+    // Add the other user to the conversation
     const { error: otherUserPartError } = await supabase
       .from("conversation_participants")
       .insert({
@@ -93,9 +73,7 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     if (otherUserPartError) {
       console.error("Error adding other user to conversation:", otherUserPartError);
-      // Clean up everything if adding the other user fails
-      await supabase.from("conversation_participants").delete().eq("conversation_id", conversationId);
-      await supabase.from("conversations").delete().eq("id", conversationId);
+      // Note: no need to clean up the conversation as it will only be visible to current user
       throw new Error("Failed to add other user to conversation: " + otherUserPartError.message);
     }
     

@@ -92,3 +92,21 @@ export const checkRlsStatus = async () => {
     throw err;
   }
 };
+
+// Helper function to create a conversation for the current user
+export const createConversationForUser = async () => {
+  try {
+    const { data, error } = await supabase.rpc('create_conversation_for_user');
+    
+    if (error) {
+      console.error("Error creating conversation:", error);
+      throw error;
+    }
+    
+    console.log("Created conversation:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to create conversation:", err);
+    throw err;
+  }
+};

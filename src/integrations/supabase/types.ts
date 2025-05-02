@@ -421,6 +421,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_conversation_for_user: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: string
+        }[]
+      }
       find_conversation_between_users: {
         Args: { current_user_id: string; other_user_id: string }
         Returns: string
