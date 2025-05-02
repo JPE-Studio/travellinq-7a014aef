@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +13,6 @@ import { fetchComments, addComment } from '@/services/commentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Comment from '@/components/Comment';
-import UserProfileLink from '@/components/UserProfileLink';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -351,9 +351,16 @@ const PostDetail: React.FC = () => {
             
             <div className="bg-card rounded-lg shadow p-4 mb-4">
               <div className="flex items-center mb-3">
-                <UserProfileLink user={post.author} className="mr-3" />
+                <Link to={`/user/${post.author.id}`} className="mr-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={post.author.avatar} className="object-cover" />
+                    <AvatarFallback>
+                      <User className="h-6 w-6 text-muted-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
                 <div>
-                  <UserProfileLink user={post.author} showAvatar={false} className="font-semibold" />
+                  <Link to={`/user/${post.author.id}`} className="font-semibold hover:underline">{post.author.pseudonym}</Link>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
                     {post.location && (
