@@ -3,27 +3,44 @@ import React from 'react';
 import { Post } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { MapPin, User } from 'lucide-react';
+import { MapPin, User, ArrowUp, ArrowDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from '@/components/ui/use-toast';
 
 interface PostCardProps {
   post: Post;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
+  const handleSubscribe = () => {
+    toast({
+      title: "Subscribed to post",
+      description: `You'll receive notifications for updates to this post.`,
+    });
+  };
+
+  const handleVote = (direction: 'up' | 'down') => {
+    toast({
+      title: direction === 'up' ? "Upvoted" : "Downvoted",
+      description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
+    });
+  };
+
   return (
     <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
       {/* Post header with user info */}
       <div className="p-4">
         <div className="flex items-center mb-3">
-          <Avatar className="h-10 w-10 mr-3">
-            <AvatarImage src={post.author.avatar} />
-            <AvatarFallback>
-              <User className="h-5 w-5" />
-            </AvatarFallback>
-          </Avatar>
+          <Link to={`/user/${post.author.id}`} className="mr-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={post.author.avatar} className="object-cover" />
+              <AvatarFallback>
+                <User className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <div>
-            <p className="font-medium">{post.author.pseudonym}</p>
+            <Link to={`/user/${post.author.id}`} className="font-medium hover:underline">{post.author.pseudonym}</Link>
             <div className="flex items-center text-xs text-muted-foreground">
               <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
               {post.location && (
@@ -57,14 +74,32 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         
         {/* Post interactions */}
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
-          <div className="flex items-center">
-            <button className="flex items-center hover:text-foreground">
-              ▲ {post.votes}
+          <div className="flex items-center space-x-4">
+            <button 
+              className="flex items-center hover:text-foreground"
+              onClick={() => handleVote('up')}
+            >
+              <ArrowUp className="h-4 w-4 mr-1" />
+              <span>{post.votes}</span>
+            </button>
+            <button 
+              className="flex items-center hover:text-foreground"
+              onClick={() => handleVote('down')}
+            >
+              <ArrowDown className="h-4 w-4" />
             </button>
           </div>
-          <Link to={`/post/${post.id}`} className="hover:text-foreground">
-            {post.commentCount} comments
-          </Link>
+          <div className="flex items-center space-x-4">
+            <button 
+              className="hover:text-foreground"
+              onClick={handleSubscribe}
+            >
+              Subscribe
+            </button>
+            <Link to={`/post/${post.id}`} className="hover:text-foreground">
+              {post.commentCount} comments
+            </Link>
+          </div>
         </div>
       </div>
     </div>

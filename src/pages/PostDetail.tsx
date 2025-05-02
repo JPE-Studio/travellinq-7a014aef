@@ -1,15 +1,51 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import { mockPosts } from '@/data/mockData';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, User, ChevronLeft } from 'lucide-react';
+import { MapPin, User, ChevronLeft, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [comment, setComment] = useState('');
   const post = mockPosts.find(post => post.id === id);
+  
+  const handleVote = (direction: 'up' | 'down') => {
+    toast({
+      title: direction === 'up' ? "Upvoted" : "Downvoted",
+      description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
+    });
+  };
+
+  const handleSubscribe = () => {
+    toast({
+      title: "Subscribed to post",
+      description: `You'll receive notifications for updates to this post.`,
+    });
+  };
+  
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comment.trim()) {
+      toast({
+        title: "Comment cannot be empty",
+        description: "Please write something before posting your comment.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Comment posted",
+      description: "Your comment has been added to the discussion.",
+    });
+    
+    setComment('');
+  };
 
   if (!post) {
     return (
@@ -50,14 +86,16 @@ const PostDetail: React.FC = () => {
             
             <div className="bg-card rounded-lg shadow p-4 mb-4">
               <div className="flex items-center mb-3">
-                <Avatar className="h-10 w-10 mr-3">
-                  <AvatarImage src={post.author.avatar} />
-                  <AvatarFallback>
-                    <User className="h-6 w-6 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
+                <Link to={`/user/${post.author.id}`} className="mr-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={post.author.avatar} className="object-cover" />
+                    <AvatarFallback>
+                      <User className="h-6 w-6 text-muted-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
                 <div>
-                  <p className="font-semibold">{post.author.pseudonym}</p>
+                  <Link to={`/user/${post.author.id}`} className="font-semibold hover:underline">{post.author.pseudonym}</Link>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
                     {post.location && (
@@ -86,21 +124,35 @@ const PostDetail: React.FC = () => {
                 </div>
               )}
               
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center">
-                  <button className="flex items-center hover:text-foreground">
-                    ▲ {post.votes}
+              <div className="flex items-center justify-between text-sm mt-4">
+                <div className="flex items-center space-x-4">
+                  <button 
+                    className="flex items-center hover:text-foreground text-muted-foreground"
+                    onClick={() => handleVote('up')}
+                  >
+                    <ArrowUp className="h-4 w-4 mr-1" />
+                    <span>{post.votes}</span>
+                  </button>
+                  <button 
+                    className="flex items-center hover:text-foreground text-muted-foreground"
+                    onClick={() => handleVote('down')}
+                  >
+                    <ArrowDown className="h-4 w-4" />
                   </button>
                 </div>
-                <div>
-                  {post.commentCount} comments
-                </div>
+                
+                <button 
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={handleSubscribe}
+                >
+                  Subscribe
+                </button>
               </div>
             </div>
             
             <div className="bg-card rounded-lg shadow p-4">
               <h2 className="font-semibold mb-4">Comments ({post.commentCount})</h2>
-              <div className="flex mb-4">
+              <form className="flex mb-4" onSubmit={handleSubmitComment}>
                 <Avatar className="h-8 w-8 mr-3">
                   <AvatarFallback>
                     <User className="h-4 w-4 text-muted-foreground" />
@@ -108,17 +160,19 @@ const PostDetail: React.FC = () => {
                 </Avatar>
                 <div className="flex-grow">
                   <textarea 
-                    className="w-full p-2 border rounded-md resize-none text-sm"
+                    className="w-full p-2 border rounded-md resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Add a comment..."
                     rows={2}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
                   />
                   <div className="flex justify-end mt-2">
-                    <button className="bg-primary text-primary-foreground px-3 py-1 text-sm rounded-md">
+                    <Button type="submit" size="sm">
                       Post
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              </div>
+              </form>
               
               <div className="text-center text-muted-foreground py-4">
                 No comments yet. Be the first to comment!
