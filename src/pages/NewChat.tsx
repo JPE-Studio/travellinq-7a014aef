@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -9,9 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { User as AppUser } from '@/types';
-import { getOrCreateConversation } from '@/services/chatService';
+import { getOrCreateConversation } from '@/services/participantService';
 
 const NewChat: React.FC = () => {
   const navigate = useNavigate();
@@ -60,7 +58,7 @@ const NewChat: React.FC = () => {
     try {
       setCreatingConversation(otherUserId);
       
-      // Use the utility function from chatService
+      // Use the utility function from participantService
       const conversationId = await getOrCreateConversation(otherUserId);
       
       // Navigate to the conversation
