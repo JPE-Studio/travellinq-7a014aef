@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types";
 import { fetchUserProfile } from "./userService";
@@ -8,7 +9,7 @@ export const fetchUserConversations = async () => {
   if (!userSession.session) throw new Error("User not authenticated");
   
   try {
-    // Query without nesting to avoid recursion issues
+    // First, find the conversations the user is part of without nesting queries
     const { data: participations, error: participationsError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
@@ -53,7 +54,7 @@ export const fetchUserConversations = async () => {
           return null;
         }
         
-        // Simple query to get other participants without nesting
+        // Get other participants in a separate query
         const { data: otherParticipants, error: participantError } = await supabase
           .from("conversation_participants")
           .select("user_id")
@@ -210,32 +211,34 @@ export const getOrCreateConversation = async (otherUserId: string) => {
   const currentUserId = userSession.session.user.id;
   
   try {
-    // Check if a conversation already exists between these users - using direct queries
-    const { data: existingParticipations, error: checkError } = await supabase
+    // Step 1: First check if the users already have a conversation - using two separate queries
+    // Get all conversations the current user is part of
+    const { data: myConversations, error: myConversationsError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
       .eq("user_id", currentUserId);
     
-    if (checkError) throw checkError;
+    if (myConversationsError) throw myConversationsError;
     
-    if (existingParticipations?.length > 0) {
-      const conversationIds = existingParticipations.map(p => p.conversation_id);
+    if (myConversations && myConversations.length > 0) {
+      const myConversationIds = myConversations.map(p => p.conversation_id);
       
-      const { data: otherUserParticipations, error: otherUserError } = await supabase
+      // Check if the other user is part of any of these conversations
+      const { data: sharedConversations, error: sharedConversationsError } = await supabase
         .from("conversation_participants")
         .select("conversation_id")
         .eq("user_id", otherUserId)
-        .in("conversation_id", conversationIds);
+        .in("conversation_id", myConversationIds);
       
-      if (otherUserError) throw otherUserError;
+      if (sharedConversationsError) throw sharedConversationsError;
       
-      if (otherUserParticipations && otherUserParticipations.length > 0) {
+      if (sharedConversations && sharedConversations.length > 0) {
         // Found an existing conversation
-        return otherUserParticipations[0].conversation_id;
+        return sharedConversations[0].conversation_id;
       }
     }
     
-    // No conversation exists, create a new one
+    // Step 2: No existing conversation found, create a new one
     const { data: newConversation, error: createError } = await supabase
       .from("conversations")
       .insert({})
@@ -244,15 +247,18 @@ export const getOrCreateConversation = async (otherUserId: string) => {
     
     if (createError) throw createError;
     
-    // Add both users as participants
-    const { error: participantsError } = await supabase
+    // Step 3: Add participants one at a time to avoid the RLS recursion issue
+    const { error: currentUserParticipantError } = await supabase
       .from("conversation_participants")
-      .insert([
-        { conversation_id: newConversation.id, user_id: currentUserId },
-        { conversation_id: newConversation.id, user_id: otherUserId }
-      ]);
+      .insert({ conversation_id: newConversation.id, user_id: currentUserId });
     
-    if (participantsError) throw participantsError;
+    if (currentUserParticipantError) throw currentUserParticipantError;
+    
+    const { error: otherUserParticipantError } = await supabase
+      .from("conversation_participants")
+      .insert({ conversation_id: newConversation.id, user_id: otherUserId });
+    
+    if (otherUserParticipantError) throw otherUserParticipantError;
     
     return newConversation.id;
   } catch (error) {

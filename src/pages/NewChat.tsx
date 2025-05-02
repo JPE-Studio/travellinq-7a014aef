@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User as AppUser } from '@/types';
+import { getOrCreateConversation } from '@/services/chatService';
 
 const NewChat: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const NewChat: React.FC = () => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [creatingConversation, setCreatingConversation] = useState<string | null>(null);
   
   useEffect(() => {
     const loadUsers = async () => {
@@ -56,27 +58,13 @@ const NewChat: React.FC = () => {
     }
 
     try {
-      // Create a new conversation
-      const { data: conversationData, error: conversationError } = await supabase
-        .from('conversations')
-        .insert({})
-        .select()
-        .single();
-        
-      if (conversationError) throw conversationError;
+      setCreatingConversation(otherUserId);
       
-      // Add both users as participants
-      const { error: participantsError } = await supabase
-        .from('conversation_participants')
-        .insert([
-          { conversation_id: conversationData.id, user_id: user.id },
-          { conversation_id: conversationData.id, user_id: otherUserId }
-        ]);
-        
-      if (participantsError) throw participantsError;
+      // Use the utility function from chatService
+      const conversationId = await getOrCreateConversation(otherUserId);
       
       // Navigate to the conversation
-      navigate(`/chat/${conversationData.id}`);
+      navigate(`/chat/${conversationId}`);
       
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -85,6 +73,8 @@ const NewChat: React.FC = () => {
         title: "Error",
         description: "Failed to create conversation. Please try again.",
       });
+    } finally {
+      setCreatingConversation(null);
     }
   };
   
@@ -161,7 +151,11 @@ const NewChat: React.FC = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => createConversation(otherUser.id)}
+                    disabled={creatingConversation === otherUser.id}
                   >
+                    {creatingConversation === otherUser.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
                     Message
                   </Button>
                 </div>
