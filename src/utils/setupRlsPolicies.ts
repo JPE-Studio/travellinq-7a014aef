@@ -26,9 +26,10 @@ export const setupRlsPolicies = async () => {
 export const setupRealtimeTables = async () => {
   try {
     // This will enable realtime for the messages table
+    // Using type assertion since this function is not in the generated types
     const { error } = await supabase.rpc('add_table_to_publication', {
       table_name: 'messages'
-    });
+    } as any) as any;
     
     if (error) {
       console.error("Error setting up realtime for messages:", error);
@@ -49,10 +50,10 @@ export const enableRowLevelSecurity = async () => {
     const tables = ["conversations", "conversation_participants", "messages"];
     
     for (const table of tables) {
-      // Use direct SQL execution through a custom function
+      // Using type assertion for the custom function that isn't in the generated types
       const { error } = await supabase.rpc('execute_sql', {
         sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` 
-      });
+      } as any) as any;
       
       if (error && !error.message.includes("already enabled")) {
         console.error(`Error enabling RLS on ${table}:`, error);
@@ -72,8 +73,8 @@ export const enableRowLevelSecurity = async () => {
 export const checkRlsStatus = async () => {
   try {
     // Query pg_tables system table to check RLS status
-    // Using dynamic query approach to bypass strict typing constraints
-    const { data, error } = await supabase.from('pg_tables')
+    // Need to use type assertion since pg_tables isn't in the generated types
+    const { data, error } = await (supabase.from('pg_tables') as any)
       .select('tablename, rowsecurity')
       .eq('schemaname', 'public')
       .in('tablename', ['conversations', 'conversation_participants', 'messages']);
