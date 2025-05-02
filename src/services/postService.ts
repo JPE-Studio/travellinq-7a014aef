@@ -48,22 +48,29 @@ export const fetchPosts = async (
       }
     }
 
-    // Count comments for each post
+    // Count comments for each post - use a separate query for each post ID
     const postIds = posts.map(post => post.id);
+    
+    // Get comment counts for all posts in one query
     const { data: commentCounts, error: countError } = await supabase
       .from("comments")
-      .select("post_id, count(*)", { count: "exact", head: false })
-      .in("post_id", postIds)
-      .group("post_id");
+      .select("post_id, id")
+      .in("post_id", postIds);
     
     if (countError) {
       console.error("Error fetching comment counts:", countError);
     }
 
+    // Process the results to create a count map
     const commentCountMap: Record<string, number> = {};
-    commentCounts?.forEach(item => {
-      commentCountMap[item.post_id] = parseInt(item.count as unknown as string);
-    });
+    if (commentCounts) {
+      commentCounts.forEach(item => {
+        if (!commentCountMap[item.post_id]) {
+          commentCountMap[item.post_id] = 0;
+        }
+        commentCountMap[item.post_id]++;
+      });
+    }
     
     // Transform database posts to application posts
     const transformedPosts: Post[] = posts.map(post => {
