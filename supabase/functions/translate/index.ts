@@ -20,20 +20,17 @@ serve(async (req) => {
   try {
     const apiKey = "0773e26f-7418-427d-ad2a-c150f9c1910e:fx";
     
-    // Determine if it's a Pro API key (no ":fx" suffix)
-    const apiUrl = apiKey.includes(':fx') 
-      ? "https://api-free.deepl.com/v2/translate"
-      : "https://api.deepl.com/v2/translate";
-    
     // Get the request body
     const body = await req.json();
     const { text, targetLang, sourceLang, action } = body;
     
-    if (!text || !targetLang) {
+    // Handle the check action
+    if (action === 'check') {
+      console.log("Checking translation service availability");
       return new Response(
-        JSON.stringify({ error: "Missing required parameters" }),
+        JSON.stringify({ available: true }),
         { 
-          status: 400, 
+          status: 200, 
           headers: { 
             ...corsHeaders,
             "Content-Type": "application/json" 
@@ -42,16 +39,50 @@ serve(async (req) => {
       );
     }
     
+    // For translation and detection actions, validate required parameters
+    if (action === 'translate' || action === 'detect') {
+      if (!text) {
+        return new Response(
+          JSON.stringify({ error: "Missing text parameter" }),
+          { 
+            status: 400, 
+            headers: { 
+              ...corsHeaders,
+              "Content-Type": "application/json" 
+            } 
+          }
+        );
+      }
+      
+      if (action === 'translate' && !targetLang) {
+        return new Response(
+          JSON.stringify({ error: "Missing targetLang parameter" }),
+          { 
+            status: 400, 
+            headers: { 
+              ...corsHeaders,
+              "Content-Type": "application/json" 
+            } 
+          }
+        );
+      }
+    }
+    
+    // Determine if it's a Pro API key (no ":fx" suffix)
+    const apiUrl = apiKey.includes(':fx') 
+      ? "https://api-free.deepl.com/v2/translate"
+      : "https://api.deepl.com/v2/translate";
+    
     console.log(`Processing ${action || "translation"} request:`, {
-      textLength: text.length,
-      targetLang,
+      textLength: text?.length || 0,
+      targetLang: targetLang || "not specified",
       sourceLang: sourceLang || "auto-detect"
     });
     
     // Prepare request body according to DeepL API specifications
     const requestBody: Record<string, any> = {
-      text: [text],
-      target_lang: targetLang.toUpperCase()
+      text: [text || ""],
+      target_lang: targetLang ? targetLang.toUpperCase() : "EN"
     };
     
     // Add source language if provided

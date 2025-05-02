@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 // Function to check if translation is available
 export const isTranslationAvailable = async (): Promise<boolean> => {
   try {
-    // We're now checking if our translation edge function responds correctly
+    console.log("Checking translation availability...");
+    
+    // We're checking if our translation edge function responds correctly
     const { data, error } = await supabase.functions.invoke("translate", {
       body: { action: "check" }
     });
@@ -14,7 +16,7 @@ export const isTranslationAvailable = async (): Promise<boolean> => {
       return false;
     }
     
-    return true;
+    return data?.available === true;
   } catch (error) {
     console.error("Error checking translation availability:", error);
     return false;
