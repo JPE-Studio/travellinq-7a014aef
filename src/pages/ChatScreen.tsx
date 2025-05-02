@@ -112,7 +112,7 @@ const ChatScreen: React.FC = () => {
     };
   }, [userId, navigate, user, currentUserId]);
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string): Promise<void> => {
     if (!userId || !message.trim()) return;
     
     try {
@@ -132,7 +132,6 @@ const ChatScreen: React.FC = () => {
         }
       ]);
       
-      return newMessage;
     } catch (err) {
       console.error('Error sending message:', err);
       toast({
