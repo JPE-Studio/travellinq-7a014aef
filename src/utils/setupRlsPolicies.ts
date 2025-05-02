@@ -8,11 +8,7 @@ export const setupRlsPolicies = async () => {
     await enableRowLevelSecurity();
     
     // Call the setup_chat_policies function we created in SQL
-    // Use type assertion to bypass TypeScript's restricted types
-    const { data, error } = await supabase.rpc('setup_chat_policies') as unknown as {
-      data: any;
-      error: any;
-    };
+    const { data, error } = await supabase.rpc('setup_chat_policies');
     
     if (error) {
       console.error("Error setting up RLS policies:", error);
@@ -30,8 +26,7 @@ export const setupRlsPolicies = async () => {
 export const setupRealtimeTables = async () => {
   try {
     // This will enable realtime for the messages table
-    // Using a direct function call with type assertion to bypass TypeScript's type checking
-    const { error } = await (supabase.rpc as any)('add_table_to_publication', {
+    const { error } = await supabase.rpc('add_table_to_publication', {
       table_name: 'messages'
     });
     
@@ -54,8 +49,8 @@ export const enableRowLevelSecurity = async () => {
     const tables = ["conversations", "conversation_participants", "messages"];
     
     for (const table of tables) {
-      // Use more general type assertion method to bypass TypeScript's strict typing
-      const { error } = await (supabase.rpc as any)('execute_sql', {
+      // Use direct SQL execution through a custom function
+      const { error } = await supabase.rpc('execute_sql', {
         sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` 
       });
       
@@ -76,10 +71,9 @@ export const enableRowLevelSecurity = async () => {
 // Check if a table has RLS enabled
 export const checkRlsStatus = async () => {
   try {
-    // Using a raw query and type assertion to bypass TypeScript's table restrictions
-    // This allows querying system tables like pg_tables that aren't in the generated types
-    const { data, error } = await (supabase as any)
-      .from('pg_tables')
+    // Query pg_tables system table to check RLS status
+    // Using dynamic query approach to bypass strict typing constraints
+    const { data, error } = await supabase.from('pg_tables')
       .select('tablename, rowsecurity')
       .eq('schemaname', 'public')
       .in('tablename', ['conversations', 'conversation_participants', 'messages']);
