@@ -49,8 +49,10 @@ const Map: React.FC<MapProps> = ({
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const { toast } = useToast();
   const boundsSetRef = useRef(false);
+  // Track if map initialization has been attempted to prevent repeated attempts
+  const mapInitializedRef = useRef(false);
 
-  // Load token from localStorage or use default
+  // Load token from localStorage or use default (only once)
   useEffect(() => {
     // Initialize with the saved token or the provided default
     const savedToken = localStorage.getItem(MAPBOX_TOKEN_KEY) || DEFAULT_MAPBOX_TOKEN;
@@ -61,18 +63,13 @@ const Map: React.FC<MapProps> = ({
     }
   }, []);
 
-  // Clear markers when component unmounts or posts change
+  // Initialize map once when component mounts and token is available
   useEffect(() => {
-    return () => {
-      // Remove all markers
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-    };
-  }, [posts]);
+    if (!mapContainer.current || !mapboxToken || map.current || mapInitializedRef.current) return;
 
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || map.current) return;
-
+    // Mark that we've attempted to initialize the map
+    mapInitializedRef.current = true;
+    
     // Initialize map
     mapboxgl.accessToken = mapboxToken;
     
@@ -80,7 +77,7 @@ const Map: React.FC<MapProps> = ({
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [currentLocation.lng, currentLocation.lat], // Will use Vienna coordinates from props
+        center: [currentLocation.lng, currentLocation.lat],
         zoom: 12,
       });
 
@@ -119,14 +116,17 @@ const Map: React.FC<MapProps> = ({
       });
     }
 
-    // Cleanup
+    // Cleanup on unmount only
     return () => {
-      map.current?.remove();
-      map.current = null;
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+        mapInitializedRef.current = false;
+      }
     };
-  }, [mapboxToken, currentLocation, toast]);
+  }, [mapboxToken]); // Only depends on mapboxToken
 
-  // Add markers when map is ready and posts change
+  // Update markers when posts change or map becomes ready
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
@@ -171,7 +171,7 @@ const Map: React.FC<MapProps> = ({
     });
     
     // Fit map to bounds if we have posts to show and bounds haven't been set
-    if (validPosts.length > 0 && !boundsSetRef.current) {
+    if (validPosts.length > 0 && !boundsSetRef.current && map.current) {
       map.current.fitBounds(bounds, {
         padding: 70,
         maxZoom: 15
@@ -183,9 +183,18 @@ const Map: React.FC<MapProps> = ({
   // Resize map when expanded state or fullscreen state changes
   useEffect(() => {
     if (map.current && mapLoaded) {
-      map.current.resize();
+      setTimeout(() => {
+        map.current?.resize();
+      }, 100);
     }
   }, [expanded, fullscreen, mapLoaded]);
+
+  // Handle drastic current location change (like first load) by updating the map center
+  useEffect(() => {
+    if (map.current && mapLoaded) {
+      map.current.setCenter([currentLocation.lng, currentLocation.lat]);
+    }
+  }, [currentLocation, mapLoaded]);
 
   // Calculate z-index based on fullscreen state
   const zIndex = fullscreen ? 'z-50' : 'z-10';

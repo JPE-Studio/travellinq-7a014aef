@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, AlertCircle, Locate } from 'lucide-react';
@@ -19,10 +20,14 @@ const MapView: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const locationInitializedRef = useRef(false);
 
-  // Try to get user's location if allowed
+  // Try to get user's location only once when component mounts
   useEffect(() => {
-    getUserLocation();
+    if (!locationInitializedRef.current) {
+      locationInitializedRef.current = true;
+      getUserLocation();
+    }
   }, []);
 
   const getUserLocation = () => {
@@ -56,13 +61,16 @@ const MapView: React.FC = () => {
     }
   };
 
-  // Query for posts
+  // Query for posts - use staleTime to prevent frequent refetching
   const { data: posts = [], isLoading, error, refetch } = useQuery({
     queryKey: ['posts', currentLocation],
     queryFn: () => fetchPosts(
       currentLocation.lat,
       currentLocation.lng
-    )
+    ),
+    staleTime: 5 * 60 * 1000, // 5 minutes before considering data stale
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false // Don't refetch when component remounts
   });
 
   // Handle error separately with useEffect
