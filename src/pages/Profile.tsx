@@ -4,21 +4,30 @@ import Header from '@/components/Header';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, Settings, User, Loader2 } from 'lucide-react';
+import { MapPin, Settings, User, Loader2, MessageSquare, UserPlus } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPosts } from '@/services/postService';
 import PostCard from '@/components/PostCard';
 import { Button } from '@/components/ui/button';
 import { fetchUserProfile } from '@/services/userService';
+import { useToast } from '@/hooks/use-toast';
+import { BuddyConnection } from '@/types';
+import { connectWithBuddy, disconnectBuddy, getBuddyConnection } from '@/services/chatService';
+import { getOrCreateConversation } from '@/services/participantService';
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user, loading, profile } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [viewingOwnProfile, setViewingOwnProfile] = useState(true);
   const [viewedProfile, setViewedProfile] = useState<any>(null);
   const [viewedProfileLoading, setViewedProfileLoading] = useState(false);
+  const [buddyConnection, setBuddyConnection] = useState<BuddyConnection | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
   
   // Check if viewing own profile or someone else's
   useEffect(() => {
@@ -35,6 +44,17 @@ const Profile: React.FC = () => {
       fetchUserProfile(userId)
         .then(profileData => {
           setViewedProfile(profileData);
+          
+          // Check buddy connection when viewing other profile
+          if (user) {
+            getBuddyConnection(userId)
+              .then(connection => {
+                setBuddyConnection(connection);
+              })
+              .catch(error => {
+                console.error("Error checking buddy connection:", error);
+              });
+          }
         })
         .catch(error => {
           console.error("Error fetching user profile:", error);
@@ -56,6 +76,73 @@ const Profile: React.FC = () => {
     },
     enabled: !!(viewingOwnProfile ? user?.id : userId)
   });
+
+  // Handle connect with buddy
+  const handleConnect = async () => {
+    if (!userId || !user) return;
+
+    try {
+      setIsConnecting(true);
+      const connection = await connectWithBuddy(userId);
+      setBuddyConnection(connection);
+      toast({
+        title: "Connected as buddies!",
+        description: `You are now connected with ${viewedProfile?.pseudonym}`,
+      });
+    } catch (error) {
+      console.error("Error connecting with buddy:", error);
+      toast({
+        variant: "destructive",
+        title: "Connection failed",
+        description: error instanceof Error ? error.message : "Failed to connect with this user",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Handle disconnect buddy
+  const handleDisconnect = async () => {
+    if (!userId || !user) return;
+
+    try {
+      setIsDisconnecting(true);
+      await disconnectBuddy(userId);
+      setBuddyConnection(null);
+      toast({
+        title: "Disconnected",
+        description: `You are no longer connected with ${viewedProfile?.pseudonym}`,
+      });
+    } catch (error) {
+      console.error("Error disconnecting buddy:", error);
+      toast({
+        variant: "destructive",
+        title: "Disconnection failed",
+        description: error instanceof Error ? error.message : "Failed to disconnect from this user",
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  // Start a chat with this user
+  const handleStartChat = async () => {
+    if (!userId || !user) return;
+
+    try {
+      setIsStartingChat(true);
+      const conversationId = await getOrCreateConversation(userId);
+      navigate(`/chat/${conversationId}`);
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to start chat",
+        description: error instanceof Error ? error.message : "Could not create conversation",
+      });
+      setIsStartingChat(false);
+    }
+  };
   
   // If not loaded yet, return loading state
   if (loading || viewedProfileLoading) {
@@ -117,11 +204,56 @@ const Profile: React.FC = () => {
               </p>
             </div>
             
-            {viewingOwnProfile && (
+            {viewingOwnProfile ? (
               <div className="flex justify-center mb-8">
                 <Button onClick={() => navigate('/settings')} variant="outline" className="flex items-center text-sm">
                   <Settings size={16} className="mr-2" />
                   Edit Profile
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row justify-center gap-2 mb-8">
+                {buddyConnection ? (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDisconnect}
+                    disabled={isDisconnecting}
+                    className="flex items-center"
+                  >
+                    {isDisconnecting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="mr-2 h-4 w-4" />
+                    )}
+                    Disconnect
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleConnect}
+                    disabled={isConnecting}
+                    className="flex items-center"
+                  >
+                    {isConnecting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="mr-2 h-4 w-4" />
+                    )}
+                    Connect
+                  </Button>
+                )}
+
+                <Button 
+                  variant={buddyConnection ? "default" : "outline"}
+                  onClick={handleStartChat}
+                  disabled={isStartingChat}
+                  className="flex items-center"
+                >
+                  {isStartingChat ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                  )}
+                  Message
                 </Button>
               </div>
             )}
