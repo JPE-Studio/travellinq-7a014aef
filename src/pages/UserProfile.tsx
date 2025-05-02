@@ -2,13 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, MapPin, CalendarDays, Link2, Loader2 } from 'lucide-react';
+import { User, MapPin, CalendarDays, Link2, Loader2, Mail, Clock, Settings } from 'lucide-react';
 import { fetchUserProfile } from '@/services/userService';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import BottomNavigation from '@/components/BottomNavigation';
 import { getOrCreateConversation } from '@/services/participantService';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface UserProfileData {
   id: string;
@@ -18,6 +21,8 @@ interface UserProfileData {
   bio: string | null;
   website?: string | null;
   birthdate?: string | null;
+  joinedAt?: Date;
+  preferredLanguage?: string;
 }
 
 const UserProfile: React.FC = () => {
@@ -50,8 +55,10 @@ const UserProfile: React.FC = () => {
           avatar: profileData.avatar || '',
           location: profileData.location || null,
           bio: profileData.bio || null,
-          website: null,
-          birthdate: null
+          website: profileData.website || null,
+          birthdate: null,
+          joinedAt: profileData.joinedAt,
+          preferredLanguage: profileData.preferredLanguage
         });
       } catch (error) {
         console.error('Error loading user profile:', error);
@@ -117,60 +124,91 @@ const UserProfile: React.FC = () => {
     <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0">
       <Header />
       <div className="flex-grow flex flex-col">
-        <div className="max-w-3xl mx-auto px-4 py-6 w-full">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center">
-              <Avatar className="h-14 w-14 mr-3">
-                <AvatarImage src={userData?.avatar} alt={userData?.pseudonym} className="object-cover" />
-                <AvatarFallback>
-                  <User className="h-6 w-6 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-xl font-medium">{userData?.pseudonym}</h1>
-                {userData?.location && (
-                  <div className="flex items-center text-muted-foreground text-sm mt-0.5">
-                    <MapPin className="h-3.5 w-3.5 mr-1" />
-                    {userData.location}
+        <div className="max-w-md mx-auto px-4 py-4 w-full">
+          <Card className="shadow-sm bg-white">
+            <CardHeader className="pb-3 pt-6 px-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-14 w-14 border border-primary/10">
+                    <AvatarImage src={userData.avatar} alt={userData.pseudonym} className="object-cover" />
+                    <AvatarFallback className="bg-primary/5">
+                      <User className="h-6 w-6 text-primary/70" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h1 className="text-lg font-medium">{userData.pseudonym}</h1>
+                    {userData.location && (
+                      <div className="flex items-center text-muted-foreground text-xs mt-0.5">
+                        <MapPin className="h-3 w-3 mr-1 text-primary/50" />
+                        {userData.location}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Button 
+                    onClick={handleMessageUser} 
+                    disabled={messagingLoading}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    {messagingLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Mail className="h-3 w-3 mr-1" />
+                    )}
+                    Message
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <Separator />
+            
+            <CardContent className="px-6 py-4">
+              {userData.preferredLanguage && (
+                <div className="mb-4">
+                  <Badge variant="outline" className="bg-primary/5 hover:bg-primary/5 text-xs font-normal">
+                    {userData.preferredLanguage === 'en' ? 'English' : userData.preferredLanguage}
+                  </Badge>
+                </div>
+              )}
+              
+              {userData.bio && (
+                <div className="mb-4">
+                  <h2 className="text-sm font-medium mb-2 text-foreground/80">About</h2>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{userData.bio}</p>
+                </div>
+              )}
+              
+              <div className="space-y-2.5">
+                {userData.website && (
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <Link2 className="h-3 w-3 mr-2 text-primary/50" />
+                    <a 
+                      href={userData.website.startsWith('http') ? userData.website : `https://${userData.website}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="hover:text-primary hover:underline transition-colors"
+                    >
+                      {userData.website}
+                    </a>
+                  </div>
+                )}
+                
+                {userData.joinedAt && (
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3 mr-2 text-primary/50" />
+                    Joined {userData.joinedAt.toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </div>
                 )}
               </div>
-            </div>
-            <Button 
-              onClick={handleMessageUser} 
-              disabled={messagingLoading}
-              size="sm"
-              className="text-sm"
-            >
-              {messagingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
-              Message
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {userData?.bio && (
-              <div>
-                <h2 className="text-base font-medium mb-1.5">About</h2>
-                <p className="text-sm text-muted-foreground">{userData.bio}</p>
-              </div>
-            )}
-
-            {userData?.birthdate && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
-                Born on {new Date(userData.birthdate).toLocaleDateString()}
-              </div>
-            )}
-
-            {userData?.website && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                <a href={userData.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                  {userData.website}
-                </a>
-              </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
       <BottomNavigation />
