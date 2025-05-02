@@ -1,10 +1,27 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
+import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchPosts } from '@/services/postService';
 
 const MapView: React.FC = () => {
+  const [currentLocation, setCurrentLocation] = useState({ 
+    lat: 45.5152, // Portland, OR coordinates
+    lng: -122.6784 
+  });
+
+  // Query for posts
+  const { data: posts = [] } = useQuery({
+    queryKey: ['posts', currentLocation],
+    queryFn: () => fetchPosts(
+      currentLocation.lat,
+      currentLocation.lng
+    )
+  });
+
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
       {/* Full width header */}
@@ -27,9 +44,14 @@ const MapView: React.FC = () => {
             <h1 className="text-xl font-bold mb-4">Explore Locations</h1>
           </div>
           
-          {/* Map placeholder */}
-          <div className="flex-grow relative bg-muted flex items-center justify-center">
-            <p className="text-muted-foreground">Map functionality has been removed</p>
+          {/* Full-sized map */}
+          <div className="flex-grow relative mx-4 mb-4">
+            <Map 
+              posts={posts}
+              currentLocation={currentLocation}
+              expanded={true}
+              onToggleExpand={() => {}}
+            />
           </div>
         </div>
         
