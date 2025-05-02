@@ -1,11 +1,11 @@
+
 import React from 'react';
 import { Post } from '@/types';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Leaflet marker configuration
-// This is necessary because Leaflet's default marker icon relies on assets that are not correctly loaded by default in a Create React App environment.
+// Fix for leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
