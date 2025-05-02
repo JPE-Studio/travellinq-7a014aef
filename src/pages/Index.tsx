@@ -7,7 +7,6 @@ import PostFilters from '@/components/PostFilters';
 import CreatePostButton from '@/components/CreatePostButton';
 import OnboardingModal from '@/components/OnboardingModal';
 import { toast } from '@/components/ui/use-toast';
-import { Post } from '@/types';
 import { fetchPosts } from '@/services/postService';
 
 const Index: React.FC = () => {
@@ -41,22 +40,6 @@ const Index: React.FC = () => {
     const hasCompletedOnboarding = localStorage.getItem('travellinq-onboarding-completed');
     if (hasCompletedOnboarding === 'true') {
       setShowOnboarding(false);
-    }
-    
-    // Try to get user's location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (err) => {
-          console.error("Error getting location:", err);
-          // Keep default location
-        }
-      );
     }
     
     // Mock notification for nearby friend
