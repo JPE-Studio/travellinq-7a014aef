@@ -18,30 +18,45 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
   
   try {
     // First, try to find an existing conversation between these users
-    const { data: existingConversation, error: existingError } = await supabase
-      .rpc('find_conversation_between_users', { 
-        current_user_id: currentUserId, 
-        other_user_id: otherUserId 
-      });
+    const { data: existingConversations, error: existingError } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", currentUserId);
       
     if (existingError) {
-      console.error("Error searching for existing conversation:", existingError);
+      console.error("Error searching for existing conversation participants:", existingError);
       throw new Error("Failed to check for existing conversation: " + existingError.message);
     }
     
-    // If we found an existing conversation, return it
-    if (existingConversation) {
-      console.log("Found existing conversation:", existingConversation);
-      return existingConversation;
+    // If we found some conversations for the current user, check if the other user is part of any of them
+    if (existingConversations && existingConversations.length > 0) {
+      const conversationIds = existingConversations.map(c => c.conversation_id);
+      
+      const { data: matchingConversation, error: matchError } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", otherUserId)
+        .in("conversation_id", conversationIds)
+        .maybeSingle();
+      
+      if (matchError) {
+        console.error("Error checking for matching conversation:", matchError);
+        throw new Error("Failed to check for common conversation: " + matchError.message);
+      }
+      
+      // If we found a matching conversation, return it
+      if (matchingConversation) {
+        console.log("Found existing conversation:", matchingConversation.conversation_id);
+        return matchingConversation.conversation_id;
+      }
     }
     
     console.log("No existing conversation found, creating new one");
     
-    // Create a new conversation and add participants in separate steps
-    // Step 1: Create a new conversation
+    // Create a new conversation
     const { data: newConversation, error: createError } = await supabase
       .from("conversations")
-      .insert([{}])
+      .insert({})
       .select()
       .single();
     
@@ -53,28 +68,28 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     const conversationId = newConversation.id;
     console.log("Created new conversation:", conversationId);
     
-    // Step 2: Add current user to conversation
+    // Add current user to conversation
     const { error: currentUserPartError } = await supabase
       .from("conversation_participants")
-      .insert([{
+      .insert({
         conversation_id: conversationId,
         user_id: currentUserId
-      }]);
+      });
     
     if (currentUserPartError) {
       console.error("Error adding current user to conversation:", currentUserPartError);
-      // If this fails, clean up the conversation we just created
+      // Clean up the conversation we just created
       await supabase.from("conversations").delete().eq("id", conversationId);
       throw new Error("Failed to add you to conversation: " + currentUserPartError.message);
     }
     
-    // Step 3: Add other user to conversation
+    // Add other user to conversation
     const { error: otherUserPartError } = await supabase
       .from("conversation_participants")
-      .insert([{
+      .insert({
         conversation_id: conversationId,
         user_id: otherUserId
-      }]);
+      });
     
     if (otherUserPartError) {
       console.error("Error adding other user to conversation:", otherUserPartError);
