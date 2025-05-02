@@ -5,23 +5,35 @@ import { Database } from "@/integrations/supabase/types";
 
 // Get buddy connection between current user and another user
 export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnection | null> => {
-  // Get current user
-  const { data: session } = await supabase.auth.getSession();
-  if (!session?.session?.user.id) return null;
-  
-  const { data, error } = await supabase
-    .from('buddy_connections')
-    .select("*")
-    .eq("user_id", session.session.user.id)
-    .eq("buddy_id", buddyId)
-    .maybeSingle();
-  
-  if (error) {
-    console.error("Error fetching buddy connection:", error);
-    throw error;
+  try {
+    // Get current user
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user.id) {
+      console.log("No authenticated user session found");
+      return null;
+    }
+    
+    const userId = session.session.user.id;
+    console.log(`Checking buddy connection between ${userId} and ${buddyId}`);
+    
+    const { data, error } = await supabase
+      .from('buddy_connections')
+      .select("*")
+      .eq("user_id", userId)
+      .eq("buddy_id", buddyId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error("Error fetching buddy connection:", error);
+      throw error;
+    }
+    
+    console.log("Buddy connection data:", data);
+    return data as BuddyConnection | null;
+  } catch (error) {
+    console.error("Exception in getBuddyConnection:", error);
+    return null;
   }
-  
-  return data as BuddyConnection | null;
 };
 
 // Connect with a buddy

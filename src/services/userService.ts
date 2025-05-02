@@ -10,7 +10,14 @@ export const fetchUserProfile = async (userId: string): Promise<User> => {
     .eq("id", userId)
     .single();
   
-  if (error) throw error;
+  if (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+  
+  if (!data) {
+    throw new Error("User profile not found");
+  }
   
   return {
     id: data.id,
@@ -35,7 +42,10 @@ export const fetchUserProfiles = async (userIds: string[]): Promise<User[]> => {
     .select("*")
     .in("id", userIds);
   
-  if (error) throw error;
+  if (error) {
+    console.error("Error fetching user profiles:", error);
+    throw error;
+  }
   
   return data.map(profile => ({
     id: profile.id,
@@ -65,7 +75,10 @@ export const fetchOtherUsers = async (): Promise<User[]> => {
   
   const { data, error } = await query;
   
-  if (error) throw error;
+  if (error) {
+    console.error("Error fetching other users:", error);
+    throw error;
+  }
   
   return data.map(profile => ({
     id: profile.id,

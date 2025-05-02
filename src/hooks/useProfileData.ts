@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchUserProfile } from '@/services/userService';
@@ -48,7 +47,9 @@ export const useProfileData = (userId: string | undefined, currentUser: User | n
     const loadUserProfile = async () => {
       try {
         setLoading(true);
+        console.log("Fetching user profile for ID:", userId);
         const profileData = await fetchUserProfile(userId);
+        console.log("Profile data received:", profileData);
         
         setUserData({
           id: profileData.id,
@@ -65,19 +66,23 @@ export const useProfileData = (userId: string | undefined, currentUser: User | n
 
         // Check if already connected as buddies
         if (currentUser) {
+          console.log("Checking buddy connection for current user:", currentUser.id);
           const connection = await getBuddyConnection(userId);
+          console.log("Buddy connection data:", connection);
           setBuddyConnection(connection);
         }
 
         // Calculate approximate distance if user location is available
         if (currentUser && currentUser.latitude && currentUser.longitude && 
             profileData.latitude && profileData.longitude) {
+          console.log("Calculating distance between users");
           const distance = calculateDistance(
             currentUser.latitude, 
             currentUser.longitude, 
             profileData.latitude, 
             profileData.longitude
           );
+          console.log("Calculated distance:", distance);
           setApproximateDistance(distance);
         }
       } catch (error) {
