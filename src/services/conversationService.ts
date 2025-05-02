@@ -10,6 +10,10 @@ export const fetchConversation = async (conversationId: string) => {
   if (sessionError || !userSession.session) throw new Error("User not authenticated");
   
   try {
+    // Add a small delay to ensure any RPC transactions have completed
+    // This helps prevent race conditions with RLS policies
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     // Check if the user is a participant in this conversation
     const { data: userParticipation, error: partError } = await supabase
       .from("conversation_participants")

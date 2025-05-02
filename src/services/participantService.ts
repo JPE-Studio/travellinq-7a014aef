@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { createConversationForUser } from "@/utils/setupRlsPolicies";
 
@@ -73,9 +74,11 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     if (otherUserPartError) {
       console.error("Error adding other user to conversation:", otherUserPartError);
-      // Note: no need to clean up the conversation as it will only be visible to current user
       throw new Error("Failed to add other user to conversation: " + otherUserPartError.message);
     }
+    
+    // Add a small delay to ensure the participant records are fully committed before navigation
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     return conversationId;
   } catch (error) {
