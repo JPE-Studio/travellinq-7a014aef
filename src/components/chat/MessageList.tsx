@@ -27,6 +27,16 @@ const MessageList: React.FC<MessageListProps> = ({ messages, currentUserId, othe
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Group messages by date
+  const groupedMessages = messages.reduce((acc, message) => {
+    const date = message.timestamp.toLocaleDateString();
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(message);
+    return acc;
+  }, {} as Record<string, Message[]>);
+
   return (
     <div className="flex-grow overflow-y-auto scrollbar-hide p-4 pb-20 md:pb-4">
       {messages.length === 0 && (
@@ -35,13 +45,23 @@ const MessageList: React.FC<MessageListProps> = ({ messages, currentUserId, othe
         </div>
       )}
       
-      {messages.map(msg => (
-        <MessageItem 
-          key={msg.id} 
-          message={msg}
-          isSentByMe={msg.senderId === currentUserId}
-          otherUser={otherUser}
-        />
+      {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+        <div key={date} className="mb-4">
+          <div className="flex justify-center mb-4">
+            <span className="text-xs py-1 px-3 bg-muted/50 rounded-full text-muted-foreground">
+              {new Date(date).toLocaleDateString()}
+            </span>
+          </div>
+          
+          {dateMessages.map(msg => (
+            <MessageItem 
+              key={msg.id} 
+              message={msg}
+              isSentByMe={msg.senderId === currentUserId}
+              otherUser={otherUser}
+            />
+          ))}
+        </div>
       ))}
       <div ref={messagesEndRef} />
     </div>
