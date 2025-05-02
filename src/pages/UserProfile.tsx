@@ -117,27 +117,32 @@ const UserProfile: React.FC = () => {
     <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0">
       <Header />
       <div className="flex-grow flex flex-col">
-        <div className="max-w-3xl mx-auto px-4 py-8 w-full">
-          <div className="flex items-center justify-between mb-6">
+        <div className="max-w-3xl mx-auto px-4 py-6 w-full">
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center">
-              <Avatar className="h-16 w-16 mr-4">
+              <Avatar className="h-14 w-14 mr-3">
                 <AvatarImage src={userData?.avatar} alt={userData?.pseudonym} className="object-cover" />
                 <AvatarFallback>
-                  <User className="h-8 w-8 text-muted-foreground" />
+                  <User className="h-6 w-6 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-2xl font-bold">{userData?.pseudonym}</h1>
+                <h1 className="text-xl font-medium">{userData?.pseudonym}</h1>
                 {userData?.location && (
-                  <div className="flex items-center text-muted-foreground mt-1">
-                    <MapPin className="h-4 w-4 mr-1" />
+                  <div className="flex items-center text-muted-foreground text-sm mt-0.5">
+                    <MapPin className="h-3.5 w-3.5 mr-1" />
                     {userData.location}
                   </div>
                 )}
               </div>
             </div>
-            <Button onClick={handleMessageUser} disabled={messagingLoading}>
-              {messagingLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            <Button 
+              onClick={handleMessageUser} 
+              disabled={messagingLoading}
+              size="sm"
+              className="text-sm"
+            >
+              {messagingLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
               Message
             </Button>
           </div>
@@ -145,21 +150,21 @@ const UserProfile: React.FC = () => {
           <div className="space-y-4">
             {userData?.bio && (
               <div>
-                <h2 className="text-lg font-semibold mb-2">About</h2>
-                <p className="text-muted-foreground">{userData.bio}</p>
+                <h2 className="text-base font-medium mb-1.5">About</h2>
+                <p className="text-sm text-muted-foreground">{userData.bio}</p>
               </div>
             )}
 
             {userData?.birthdate && (
-              <div className="flex items-center text-muted-foreground">
-                <CalendarDays className="h-4 w-4 mr-2" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
                 Born on {new Date(userData.birthdate).toLocaleDateString()}
               </div>
             )}
 
             {userData?.website && (
-              <div className="flex items-center text-muted-foreground">
-                <Link2 className="h-4 w-4 mr-2" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Link2 className="h-3.5 w-3.5 mr-1.5" />
                 <a href={userData.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
                   {userData.website}
                 </a>
