@@ -54,10 +54,10 @@ export const enableRowLevelSecurity = async () => {
     const tables = ["conversations", "conversation_participants", "messages"];
     
     for (const table of tables) {
-      const { error } = await supabase.rpc(
-        'execute_sql',
-        { sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` }
-      ) as unknown as { error: any };
+      // Use more general type assertion method to bypass TypeScript's strict typing
+      const { error } = await (supabase.rpc as any)('execute_sql', {
+        sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` 
+      });
       
       if (error && !error.message.includes("already enabled")) {
         console.error(`Error enabling RLS on ${table}:`, error);
@@ -76,7 +76,10 @@ export const enableRowLevelSecurity = async () => {
 // Check if a table has RLS enabled
 export const checkRlsStatus = async () => {
   try {
-    const { data, error } = await supabase.from('pg_tables')
+    // Using a raw query and type assertion to bypass TypeScript's table restrictions
+    // This allows querying system tables like pg_tables that aren't in the generated types
+    const { data, error } = await (supabase as any)
+      .from('pg_tables')
       .select('tablename, rowsecurity')
       .eq('schemaname', 'public')
       .in('tablename', ['conversations', 'conversation_participants', 'messages']);
