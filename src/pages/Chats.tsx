@@ -1,14 +1,25 @@
+
 import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, Plus, Search } from 'lucide-react';
+import { User, Plus, Search, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchUserConversations } from '@/services/conversationService';
+import { fetchUserConversations, deleteConversation } from '@/services/conversationService';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PageLayout from '@/components/PageLayout';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ConversationPreview {
   id: string;
@@ -32,29 +43,31 @@ const Chats: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  
+  const loadConversations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const conversationsData = await fetchUserConversations();
+      setConversations(conversationsData || []);
+    } catch (err) {
+      console.error('Error loading conversations:', err);
+      setError('Unable to load conversations');
+      if (err instanceof Error && err.message !== 'No conversations found') {
+        toast({
+          variant: "destructive",
+          title: "Error loading messages",
+          description: "We couldn't load your conversations. Please try again later.",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
   
   useEffect(() => {
-    const loadConversations = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const conversationsData = await fetchUserConversations();
-        setConversations(conversationsData || []);
-      } catch (err) {
-        console.error('Error loading conversations:', err);
-        setError('Unable to load conversations');
-        if (err instanceof Error && err.message !== 'No conversations found') {
-          toast({
-            variant: "destructive",
-            title: "Error loading messages",
-            description: "We couldn't load your conversations. Please try again later.",
-          });
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadConversations();
   }, [toast]);
   
@@ -68,6 +81,37 @@ const Chats: React.FC = () => {
 
   const handleCreateChat = () => {
     navigate('/chats/new');
+  };
+  
+  const handleDeleteClick = (conversationId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setConversationToDelete(conversationId);
+    setDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteConfirm = async () => {
+    if (!conversationToDelete) return;
+    
+    try {
+      await deleteConversation(conversationToDelete);
+      toast({
+        title: "Conversation deleted",
+        description: "The conversation has been permanently deleted.",
+      });
+      // Remove the deleted conversation from the state
+      setConversations(conversations.filter(c => c.id !== conversationToDelete));
+    } catch (err) {
+      console.error('Error deleting conversation:', err);
+      toast({
+        variant: "destructive",
+        title: "Error deleting conversation",
+        description: err instanceof Error ? err.message : "An error occurred while deleting the conversation.",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
+    }
   };
 
   const filteredConversations = conversations.filter(conversation => 
@@ -139,10 +183,18 @@ const Chats: React.FC = () => {
                         : 'No messages yet'}
                     </p>
                   </div>
-                  <div className="text-xs text-muted-foreground shrink-0">
-                    {conversation.lastMessage
-                      ? formatDistanceToNow(conversation.lastMessage.timestamp, { addSuffix: false })
-                      : ''}
+                  <div className="flex flex-col items-end shrink-0">
+                    <div className="text-xs text-muted-foreground mb-2">
+                      {conversation.lastMessage
+                        ? formatDistanceToNow(conversation.lastMessage.timestamp, { addSuffix: false })
+                        : ''}
+                    </div>
+                    <button 
+                      onClick={(e) => handleDeleteClick(conversation.id, e)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </Link>
               ))
@@ -172,6 +224,27 @@ const Chats: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this conversation and all its messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageLayout>
   );
 };
