@@ -17,6 +17,7 @@ const MapView: React.FC = () => {
   });
   const [expanded, setExpanded] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   // Try to get user's location if allowed
   useEffect(() => {
@@ -79,6 +80,28 @@ const MapView: React.FC = () => {
     setExpanded(!expanded);
   };
 
+  const handleToggleFullscreen = () => {
+    setFullscreen(!fullscreen);
+    // When entering or exiting fullscreen, we want to update the map
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 100);
+  };
+
+  // If in fullscreen mode, only show the map
+  if (fullscreen) {
+    return (
+      <Map 
+        posts={posts}
+        currentLocation={currentLocation}
+        expanded={expanded}
+        onToggleExpand={handleToggleExpand}
+        fullscreen={fullscreen}
+        onToggleFullscreen={handleToggleFullscreen}
+      />
+    );
+  }
+
   return (
     <PageLayout>
       <div className="p-4 flex justify-between items-center">
@@ -123,6 +146,8 @@ const MapView: React.FC = () => {
             currentLocation={currentLocation}
             expanded={expanded}
             onToggleExpand={handleToggleExpand}
+            fullscreen={fullscreen}
+            onToggleFullscreen={handleToggleFullscreen}
           />
         </div>
       )}

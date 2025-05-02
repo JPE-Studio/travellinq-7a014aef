@@ -1,9 +1,10 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Post } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface MapProps {
   posts: Post[];
@@ -13,13 +14,27 @@ interface MapProps {
   };
   expanded: boolean;
   onToggleExpand: () => void;
+  fullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 const MAPBOX_TOKEN_KEY = 'mapbox_token';
 const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoianBlLXN0dWRpbyIsImEiOiJjbWE2a2hwcjgwcWRlMmlzNjlsdGhqMWN3In0.DeZp50DLkrA8eI1AQs778w';
 
-const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExpand }) => {
-  const mapHeight = expanded ? 'h-96' : 'h-48';
+const Map: React.FC<MapProps> = ({ 
+  posts, 
+  currentLocation, 
+  expanded, 
+  onToggleExpand,
+  fullscreen = false,
+  onToggleFullscreen
+}) => {
+  const mapHeight = fullscreen 
+    ? 'h-full' 
+    : expanded 
+      ? 'h-96' 
+      : 'h-48';
+
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>('');
@@ -169,15 +184,15 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
     }
   }, [posts, mapLoaded, currentLocation]);
 
-  // Resize map when expanded state changes
+  // Resize map when expanded state or fullscreen state changes
   useEffect(() => {
     if (map.current && mapLoaded) {
       map.current.resize();
     }
-  }, [expanded, mapLoaded]);
+  }, [expanded, fullscreen, mapLoaded]);
 
   return (
-    <div className={`relative ${mapHeight} rounded-md overflow-hidden transition-all duration-300 ease-in-out`}>
+    <div className={`relative ${mapHeight} rounded-md overflow-hidden transition-all duration-300 ease-in-out ${fullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
       {!mapboxToken ? (
         <div className="text-muted-foreground text-center p-4 bg-muted h-full flex items-center justify-center">
           <p>Loading map...</p>
@@ -185,12 +200,28 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
       ) : (
         <div ref={mapContainer} className="h-full w-full" />
       )}
-      <button
-        className="absolute bottom-2 right-2 bg-card text-foreground p-2 rounded-md shadow-md hover:bg-muted transition-colors z-10"
-        onClick={onToggleExpand}
-      >
-        {expanded ? 'Collapse' : 'Expand'}
-      </button>
+      
+      <div className="absolute bottom-2 right-2 flex gap-2 z-10">
+        {onToggleFullscreen && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="bg-card text-foreground rounded-md shadow-md hover:bg-muted transition-colors"
+            onClick={onToggleFullscreen}
+          >
+            {fullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </Button>
+        )}
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-card text-foreground rounded-md shadow-md hover:bg-muted transition-colors"
+          onClick={onToggleExpand}
+        >
+          {expanded ? 'Collapse' : 'Expand'}
+        </Button>
+      </div>
     </div>
   );
 };

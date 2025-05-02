@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Map from '@/components/Map';
@@ -12,6 +13,7 @@ import PageLayout from '@/components/PageLayout';
 
 const Index: React.FC = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [mapFullscreen, setMapFullscreen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentLocation, setCurrentLocation] = useState({ lat: 45.5152, lng: -122.6784 });
   const [filters, setFilters] = useState({
@@ -107,6 +109,28 @@ const Index: React.FC = () => {
     setMapExpanded(!mapExpanded);
   };
 
+  const handleToggleMapFullscreen = () => {
+    setMapFullscreen(!mapFullscreen);
+    // When entering or exiting fullscreen, we want to update the map
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 100);
+  };
+
+  // If map is in fullscreen mode, only show the map
+  if (mapFullscreen) {
+    return (
+      <Map 
+        posts={posts}
+        currentLocation={currentLocation}
+        expanded={mapExpanded}
+        onToggleExpand={handleToggleMapExpand}
+        fullscreen={mapFullscreen}
+        onToggleFullscreen={handleToggleMapFullscreen}
+      />
+    );
+  }
+
   return (
     <PageLayout showHeader={true}>
       {/* Main content */}
@@ -122,6 +146,8 @@ const Index: React.FC = () => {
           currentLocation={currentLocation}
           expanded={mapExpanded}
           onToggleExpand={handleToggleMapExpand}
+          fullscreen={mapFullscreen}
+          onToggleFullscreen={handleToggleMapFullscreen}
         />
         
         {/* Filters */}
