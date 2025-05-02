@@ -36,16 +36,33 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
+      {/* Full width header */}
       <Header />
       
-      <Map 
-        posts={mockPosts}
-        currentLocation={currentLocation}
-        expanded={mapExpanded}
-        onToggleExpand={handleToggleMapExpand}
-      />
-      
-      <PostList posts={mockPosts} />
+      {/* Content area with potential ad spaces */}
+      <div className="flex flex-row w-full">
+        {/* Left sidebar space (for ads) */}
+        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
+          {/* Ad space */}
+        </div>
+        
+        {/* Main content */}
+        <div className="flex-grow flex flex-col">
+          <Map 
+            posts={mockPosts}
+            currentLocation={currentLocation}
+            expanded={mapExpanded}
+            onToggleExpand={handleToggleMapExpand}
+          />
+          
+          <PostList posts={mockPosts} />
+        </div>
+        
+        {/* Right sidebar space (for ads) */}
+        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
+          {/* Ad space */}
+        </div>
+      </div>
       
       <CreatePostButton />
       
