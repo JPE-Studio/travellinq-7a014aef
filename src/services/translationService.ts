@@ -1,6 +1,30 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Function to check if translation is available
+export const isTranslationAvailable = async (): Promise<boolean> => {
+  try {
+    // Get the API key from Supabase
+    const { data: secrets, error: secretsError } = await supabase
+      .functions.invoke("get_secrets", {
+        body: { keys: ["DEEPL_API_KEY"] }
+      });
+
+    if (secretsError) {
+      console.error("Failed to get DeepL API key:", secretsError);
+      return false;
+    }
+    
+    const apiKey = secrets?.DEEPL_API_KEY;
+    
+    // Check if we have a valid API key
+    return !!apiKey && typeof apiKey === 'string' && apiKey.trim() !== '';
+  } catch (error) {
+    console.error("Error checking translation availability:", error);
+    return false;
+  }
+};
+
 // Function to translate text using DeepL API
 export const translateText = async (
   text: string, 

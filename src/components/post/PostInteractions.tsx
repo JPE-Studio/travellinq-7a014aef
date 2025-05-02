@@ -15,6 +15,7 @@ interface PostInteractionsProps {
   isTranslating: boolean;
   handleTranslate: () => void;
   showTranslateButton?: boolean;
+  translationAvailable?: boolean;
 }
 
 const PostInteractions: React.FC<PostInteractionsProps> = ({
@@ -28,6 +29,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
   isTranslating,
   handleTranslate,
   showTranslateButton = true,
+  translationAvailable = true,
 }) => {
   return (
     <div className="flex items-center justify-between text-sm mt-4">
@@ -56,7 +58,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
         </Link>
       </div>
       
-      {showTranslateButton && (
+      {showTranslateButton && translationAvailable && (
         <Button 
           variant="ghost" 
           size="sm" 

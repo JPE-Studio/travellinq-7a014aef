@@ -25,7 +25,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { votes, userVote, loading: votingLoading, handleVote } = usePostVoting(post.id, post.votes);
   
   // Post translation logic - now with auto-translate disabled
-  const { isTranslating, translatedText, detectedLanguage, handleTranslate } = usePostTranslation(post.text, autoTranslate);
+  const { isTranslating, translatedText, detectedLanguage, handleTranslate, translationAvailable } = usePostTranslation(post.text, autoTranslate);
   
   // Combined loading state
   const loading = subscriptionLoading || votingLoading;
@@ -60,6 +60,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           isTranslating={isTranslating}
           handleTranslate={handleTranslate}
           showTranslateButton={true} // Always show the translate button
+          translationAvailable={translationAvailable} // Pass the translation availability flag
         />
       </div>
     </div>

@@ -3,17 +3,27 @@ import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { languages } from '@/utils/formatUtils';
-import { translateText, detectLanguage } from '@/services/translationService';
+import { translateText, detectLanguage, isTranslationAvailable } from '@/services/translationService';
 
 export const usePostTranslation = (postText: string, autoTranslate: boolean = false) => {
   const { profile } = useAuth();
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+  const [translationAvailable, setTranslationAvailable] = useState(true);
+
+  // Check if translation is available on component mount
+  useEffect(() => {
+    const checkTranslation = async () => {
+      const available = await isTranslationAvailable();
+      setTranslationAvailable(available);
+    };
+    checkTranslation();
+  }, []);
 
   // Function to handle translation
   const performTranslation = async () => {
-    if (!postText.trim()) return;
+    if (!postText.trim() || !translationAvailable) return;
     
     setIsTranslating(true);
     try {
@@ -67,12 +77,22 @@ export const usePostTranslation = (postText: string, autoTranslate: boolean = fa
 
   // Effect to automatically translate when autoTranslate is true
   useEffect(() => {
-    if (autoTranslate && profile?.preferredLanguage && postText.trim()) {
+    if (autoTranslate && profile?.preferredLanguage && postText.trim() && translationAvailable) {
       performTranslation();
     }
-  }, [postText, profile?.preferredLanguage, autoTranslate]);
+  }, [postText, profile?.preferredLanguage, autoTranslate, translationAvailable]);
 
   const handleTranslate = async () => {
+    // If translation is not available, show a message
+    if (!translationAvailable) {
+      toast({
+        title: "Translation unavailable",
+        description: "Translation service is not configured. Please contact the admin.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // If we already have a translation, toggle back to original text
     if (translatedText) {
       setTranslatedText(null);
@@ -82,5 +102,11 @@ export const usePostTranslation = (postText: string, autoTranslate: boolean = fa
     await performTranslation();
   };
 
-  return { isTranslating, translatedText, detectedLanguage, handleTranslate };
+  return { 
+    isTranslating, 
+    translatedText, 
+    detectedLanguage, 
+    handleTranslate,
+    translationAvailable
+  };
 };
