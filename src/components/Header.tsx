@@ -3,7 +3,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ProfileButton from './ProfileButton';
-import { currentUser } from '@/data/mockData';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -22,7 +21,7 @@ const Header: React.FC = () => {
         
         <div className="flex items-center gap-4">
           {user ? (
-            <ProfileButton user={currentUser} />
+            <ProfileButton />
           ) : (
             <Button 
               variant="outline" 
