@@ -20,7 +20,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { votes, userVote, loading: votingLoading, handleVote } = usePostVoting(post.id, post.votes);
   
   // Post translation logic
-  const { isTranslating, translatedText, handleTranslate } = usePostTranslation(post.text);
+  const { isTranslating, translatedText, detectedLanguage, handleTranslate } = usePostTranslation(post.text);
   
   // Combined loading state
   const loading = subscriptionLoading || votingLoading;
@@ -40,6 +40,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <PostContent 
           post={post}
           translatedText={translatedText}
+          detectedLanguage={detectedLanguage}
         />
         
         {/* Post interactions */}

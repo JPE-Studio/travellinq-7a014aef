@@ -3,26 +3,43 @@ import { useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { languages } from '@/utils/formatUtils';
+import { translateText, detectLanguage } from '@/services/translationService';
 
 export const usePostTranslation = (postText: string) => {
   const { profile } = useAuth();
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
 
   const handleTranslate = async () => {
-    // We would typically use a translation API here
-    // For now we'll just simulate translation
+    if (!postText.trim()) return;
+    
     setIsTranslating(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Simple mock translation - in a real app, use a translation API
+      // Get user's preferred language or default to English
       const targetLang = profile?.preferredLanguage || 'en';
-      setTranslatedText(`[Translated to ${languages.find(l => l.value === targetLang)?.label || 'your language'}] ${postText}`);
+      
+      // First detect the language of the post
+      const sourceLang = await detectLanguage(postText);
+      setDetectedLanguage(sourceLang);
+      
+      // Don't translate if the source language is already the target language
+      if (sourceLang === targetLang.toLowerCase()) {
+        toast({
+          title: "No translation needed",
+          description: "The post is already in your preferred language."
+        });
+        setIsTranslating(false);
+        return;
+      }
+      
+      // Translate the text
+      const translated = await translateText(postText, targetLang, sourceLang);
+      setTranslatedText(translated);
+      
       toast({
         title: "Post translated",
-        description: `Post has been translated to ${languages.find(l => l.value === targetLang)?.label || 'your language'}.`
+        description: `Post has been translated from ${languages.find(l => l.value === sourceLang)?.label || sourceLang} to ${languages.find(l => l.value === targetLang)?.label || targetLang}.`
       });
     } catch (error) {
       console.error("Error translating post:", error);
@@ -36,5 +53,5 @@ export const usePostTranslation = (postText: string) => {
     }
   };
 
-  return { isTranslating, translatedText, handleTranslate };
+  return { isTranslating, translatedText, detectedLanguage, handleTranslate };
 };

@@ -2,15 +2,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Post } from '@/types';
+import { languages } from '@/utils/formatUtils';
 
 interface PostContentProps {
   post: Post;
   translatedText: string | null;
+  detectedLanguage?: string | null;
 }
 
-const PostContent: React.FC<PostContentProps> = ({ post, translatedText }) => {
+const PostContent: React.FC<PostContentProps> = ({ post, translatedText, detectedLanguage }) => {
   return (
     <Link to={`/post/${post.id}`} className="block">
+      {translatedText && detectedLanguage && (
+        <div className="text-xs text-muted-foreground mb-1">
+          Translated from {languages.find(l => l.value === detectedLanguage)?.label || detectedLanguage}
+        </div>
+      )}
+      
       <p className="mb-3 text-foreground">{translatedText || post.text}</p>
     
       {/* Post images if available */}
