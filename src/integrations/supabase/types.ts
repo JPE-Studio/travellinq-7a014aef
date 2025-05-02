@@ -425,6 +425,14 @@ export type Database = {
         Args: { current_user_id: string; other_user_id: string }
         Returns: string
       }
+      is_conversation_participant: {
+        Args: { conversation_id: string; user_id: string }
+        Returns: boolean
+      }
+      setup_chat_policies: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       post_category: "campsite" | "service" | "question" | "general"
