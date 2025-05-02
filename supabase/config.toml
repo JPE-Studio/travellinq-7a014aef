@@ -1,1 +1,6 @@
+
+# Specify your Supabase project ID and enabling edge functions
 project_id = "vuhnwdmuupstcqputgba"
+
+[functions.enable_realtime]
+verify_jwt = true

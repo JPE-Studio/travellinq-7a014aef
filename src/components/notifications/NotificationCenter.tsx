@@ -9,10 +9,15 @@ import {
 } from '@/components/ui/popover';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import NotificationsList from './NotificationsList';
 import { Notification } from './NotificationItem';
 import { toast } from '@/components/ui/use-toast';
+import { 
+  fetchNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  subscribeToNotifications
+} from '@/services/notificationService';
 
 const NotificationCenter: React.FC = () => {
   const { user } = useAuth();
@@ -21,62 +26,14 @@ const NotificationCenter: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const fetchNotifications = async () => {
+  const loadNotifications = async () => {
     if (!user) return;
     
     setLoading(true);
     try {
-      // This is a mock implementation - in a real app, you would fetch from your database
-      // For now, we'll create some sample notifications
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          type: 'reply',
-          message: 'Alex replied to your post about the campsite in Vienna',
-          createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-          read: false,
-          userId: 'alex-id',
-          userName: 'Alex',
-          userAvatar: '',
-          postId: 'post-1',
-          link: '/post/post-1'
-        },
-        {
-          id: '2',
-          type: 'vote',
-          message: 'Maria upvoted your post about the local restaurant',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-          read: true,
-          userId: 'maria-id',
-          userName: 'Maria',
-          userAvatar: '',
-          postId: 'post-2',
-          link: '/post/post-2'
-        },
-        {
-          id: '3',
-          type: 'nearby',
-          message: 'John is within 2 miles of your location',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12), // 12 hours ago
-          read: false,
-          userId: 'john-id',
-          userName: 'John',
-          userAvatar: '',
-          link: '/profile/john-id'
-        },
-        {
-          id: '4',
-          type: 'subscription',
-          message: 'There are 3 new replies to a post you\'re subscribed to',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-          read: true,
-          postId: 'post-3',
-          link: '/post/post-3'
-        }
-      ];
-      
-      setNotifications(mockNotifications);
-      setUnreadCount(mockNotifications.filter(n => !n.read).length);
+      const notificationsData = await fetchNotifications();
+      setNotifications(notificationsData);
+      setUnreadCount(notificationsData.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast({
@@ -91,26 +48,47 @@ const NotificationCenter: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      fetchNotifications();
+      loadNotifications();
+      
+      // Subscribe to new notifications
+      const unsubscribe = subscribeToNotifications((notification) => {
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      });
+      
+      return unsubscribe;
     }
   }, [user]);
 
   const handleMarkAsRead = async (id: string) => {
-    // In a real app, you would update the database
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    try {
+      await markNotificationAsRead(id);
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   const handleMarkAllAsRead = async () => {
-    // In a real app, you would update the database
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-    setUnreadCount(0);
-    toast({
-      title: "Success",
-      description: "All notifications marked as read"
-    });
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+      toast({
+        title: "Success",
+        description: "All notifications marked as read"
+      });
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark notifications as read. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
