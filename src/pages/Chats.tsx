@@ -40,7 +40,7 @@ const Chats: React.FC = () => {
                     <p className="font-medium">{user.pseudonym}</p>
                     <p className="text-sm text-muted-foreground truncate">
                       {user.id === 'user-2' 
-                        ? 'Thanks for the recommendation! I'll check it out.' 
+                        ? "Thanks for the recommendation! I'll check it out."
                         : 'Hey there! Are you still in Portland area?'}
                     </p>
                   </div>
