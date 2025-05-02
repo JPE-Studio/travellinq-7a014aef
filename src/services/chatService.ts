@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { BuddyConnection } from "@/types";
-import { Database } from "@/integrations/supabase/types";
 
 // Get current authenticated user ID
 async function getCurrentUserId(): Promise<string | null> {
@@ -16,6 +15,11 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
     
     if (!userId) {
       console.log("No authenticated user session found");
+      return null;
+    }
+    
+    if (userId === buddyId) {
+      console.log("User and buddy are the same person, no connection needed");
       return null;
     }
     
@@ -47,6 +51,10 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
   
   if (!userId) {
     throw new Error("You must be logged in to connect with buddies");
+  }
+  
+  if (userId === buddyId) {
+    throw new Error("You cannot connect with yourself as a buddy");
   }
   
   const { data, error } = await supabase

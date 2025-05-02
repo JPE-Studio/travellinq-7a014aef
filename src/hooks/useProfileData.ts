@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchUserProfile } from '@/services/userService';
@@ -35,6 +36,7 @@ export const useProfileData = (userId: string | undefined, currentUser: User | n
 
   useEffect(() => {
     if (!userId) {
+      console.error("No user ID provided");
       toast({
         variant: "destructive",
         title: "Error",
@@ -48,12 +50,24 @@ export const useProfileData = (userId: string | undefined, currentUser: User | n
       try {
         setLoading(true);
         console.log("Fetching user profile for ID:", userId);
+        
         const profileData = await fetchUserProfile(userId);
         console.log("Profile data received:", profileData);
         
+        if (!profileData) {
+          console.error("No profile data returned");
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "User profile not found.",
+          });
+          setLoading(false);
+          return;
+        }
+        
         setUserData({
           id: profileData.id,
-          pseudonym: profileData.pseudonym,
+          pseudonym: profileData.pseudonym || 'Unknown User',
           avatar: profileData.avatar || '',
           location: profileData.location || null,
           bio: profileData.bio || null,
@@ -66,10 +80,14 @@ export const useProfileData = (userId: string | undefined, currentUser: User | n
 
         // Check if already connected as buddies
         if (currentUser) {
-          console.log("Checking buddy connection for current user:", currentUser.id);
-          const connection = await getBuddyConnection(userId);
-          console.log("Buddy connection data:", connection);
-          setBuddyConnection(connection);
+          try {
+            console.log("Checking buddy connection for current user:", currentUser.id);
+            const connection = await getBuddyConnection(userId);
+            console.log("Buddy connection data:", connection);
+            setBuddyConnection(connection);
+          } catch (error) {
+            console.error("Error checking buddy connection:", error);
+          }
         }
 
         // Calculate approximate distance if user location is available

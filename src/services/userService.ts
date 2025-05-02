@@ -18,6 +18,12 @@ const mapProfileToUser = (profile: any): User => ({
 
 // Fetch user profile by ID
 export const fetchUserProfile = async (userId: string): Promise<User> => {
+  console.log(`Fetching user profile for ID: ${userId}`);
+  
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+  
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -33,7 +39,9 @@ export const fetchUserProfile = async (userId: string): Promise<User> => {
     throw new Error("User profile not found");
   }
   
-  return mapProfileToUser(data);
+  const user = mapProfileToUser(data);
+  console.log("Profile data received:", user);
+  return user;
 };
 
 // Fetch multiple user profiles by IDs
