@@ -38,6 +38,7 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
     }
     
     console.log("Buddy connection data:", data);
+    // Use type assertion to handle potential missing status field
     return data as BuddyConnection | null;
   } catch (error) {
     console.error("Exception in getBuddyConnection:", error);
@@ -75,7 +76,8 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
     throw error;
   }
   
-  return data as BuddyConnection;
+  // Use type assertion to handle potential type mismatches
+  return data as unknown as BuddyConnection;
 };
 
 // Accept a buddy connection request
@@ -86,9 +88,12 @@ export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConn
     throw new Error("You must be logged in to accept connection requests");
   }
   
+  // Define update data with explicit type
+  const updateData: { status: 'active' } = { status: 'active' };
+  
   const { data, error } = await supabase
     .from('buddy_connections')
-    .update({ status: 'active' })
+    .update(updateData)
     .eq("user_id", requesterId)
     .eq("buddy_id", userId)
     .eq("status", 'pending')
@@ -100,7 +105,8 @@ export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConn
     throw error;
   }
   
-  return data as BuddyConnection;
+  // Use type assertion
+  return data as unknown as BuddyConnection;
 };
 
 // Reject a buddy connection request
@@ -111,9 +117,12 @@ export const rejectBuddyRequest = async (requesterId: string): Promise<void> => 
     throw new Error("You must be logged in to reject connection requests");
   }
   
+  // Define update data with explicit type
+  const updateData: { status: 'rejected' } = { status: 'rejected' };
+  
   const { error } = await supabase
     .from('buddy_connections')
-    .update({ status: 'rejected' })
+    .update(updateData)
     .eq("user_id", requesterId)
     .eq("buddy_id", userId)
     .eq("status", 'pending');
@@ -152,7 +161,8 @@ export const updateBuddyNotificationSettings = async (
     throw error;
   }
   
-  return data as BuddyConnection;
+  // Use type assertion
+  return data as unknown as BuddyConnection;
 };
 
 // Disconnect from a buddy
