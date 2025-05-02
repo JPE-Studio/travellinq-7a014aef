@@ -1,15 +1,20 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Post, User } from "@/types";
 import { fetchUserProfile } from "./userService";
 
-// Fetch all posts with distance calculation
+// Fetch all posts with distance calculation and pagination
 export const fetchPosts = async (
   latitude?: number,
   longitude?: number,
   radius?: number,
-  categories?: string[]
+  categories?: string[],
+  page: number = 1,
+  limit: number = 10
 ): Promise<Post[]> => {
   try {
+    const offset = (page - 1) * limit;
+    
     const { data: posts, error } = await supabase
       .from("posts")
       .select(`
@@ -20,7 +25,8 @@ export const fetchPosts = async (
           order_index
         )
       `)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
     
     if (error) throw error;
 

@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import PostList from '@/components/PostList';
 import PostFilters from '@/components/PostFilters';
 import CreatePostButton from '@/components/CreatePostButton';
@@ -10,6 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import PageLayout from '@/components/PageLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+const POSTS_PER_PAGE = 10;
+
 const Index: React.FC = () => {
   const isMobile = useIsMobile();
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -17,6 +20,7 @@ const Index: React.FC = () => {
   const [filters, setFilters] = useState({
     radius: 50,
     autoRadius: true,
+    categories: ['general', 'campsite', 'service', 'question'] as string[]
   });
   const [isLocating, setIsLocating] = useState(false);
 
@@ -43,21 +47,36 @@ const Index: React.FC = () => {
     }
   }, []);
 
-  // Query for posts with filters
-  const { 
-    data: posts = [], 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
+  // Use infinite query for posts with pagination
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error
+  } = useInfiniteQuery({
     queryKey: ['posts', currentLocation, filters],
-    queryFn: () => fetchPosts(
+    queryFn: ({ pageParam = 1 }) => fetchPosts(
       currentLocation.lat,
       currentLocation.lng,
       filters.autoRadius ? undefined : filters.radius,
-      ['general', 'campsite', 'service', 'question'] // Include all categories by default
-    )
+      filters.categories,
+      pageParam,
+      POSTS_PER_PAGE
+    ),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      // If the last page had fewer posts than the limit, we've reached the end
+      if (lastPage.length < POSTS_PER_PAGE) {
+        return undefined;
+      }
+      return allPages.length + 1;
+    }
   });
+
+  // Flatten all pages of posts into a single array
+  const posts = data?.pages.flatMap(page => page) || [];
 
   useEffect(() => {
     // Onboarding modal logic - show modal only if user doesn't have a pseudonym
@@ -90,6 +109,7 @@ const Index: React.FC = () => {
     setFilters({
       radius: newFilters.radius,
       autoRadius: newFilters.autoRadius,
+      categories: newFilters.categories,
     });
     toast({
       title: "Filters Applied",
@@ -117,7 +137,7 @@ const Index: React.FC = () => {
           <PostFilters onFilterChange={handleFilterChange} />
         </div>
         
-        {isLoading ? (
+        {isLoading && posts.length === 0 ? (
           <div className="flex justify-center items-center p-8">
             <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
           </div>
@@ -125,14 +145,19 @@ const Index: React.FC = () => {
           <div className="text-center p-8 text-destructive">
             <p>Error loading posts. Please try again later.</p>
             <button 
-              onClick={() => refetch()}
+              onClick={() => fetchNextPage({ cancelRefetch: true })}
               className="mt-2 text-primary hover:underline"
             >
               Retry
             </button>
           </div>
         ) : (
-          <PostList posts={posts} />
+          <PostList 
+            posts={posts} 
+            loading={isFetchingNextPage}
+            hasMore={!!hasNextPage}
+            onLoadMore={() => fetchNextPage()}
+          />
         )}
       </div>
       
