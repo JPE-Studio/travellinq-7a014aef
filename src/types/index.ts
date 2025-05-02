@@ -46,5 +46,5 @@ export interface BuddyConnection {
   notify_at_100km: boolean;
   notify_at_50km: boolean;
   notify_at_20km: boolean;
-  created_at: Date;
+  created_at: string; // Changed from Date to string to match what Supabase returns
 }

@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { BuddyConnection } from "@/types";
+import { Database } from "@/integrations/supabase/types";
 
 // Get current authenticated user ID
 async function getCurrentUserId(): Promise<string | null> {
@@ -38,7 +39,6 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
     }
     
     console.log("Buddy connection data:", data);
-    // Use type assertion to handle potential missing status field
     return data as BuddyConnection | null;
   } catch (error) {
     console.error("Exception in getBuddyConnection:", error);
@@ -58,16 +58,19 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
     throw new Error("You cannot connect with yourself as a buddy");
   }
   
+  // Create connection data with proper typing
+  const connectionData = {
+    user_id: userId,
+    buddy_id: buddyId,
+    status: 'pending' as const,
+    notify_at_100km: true,
+    notify_at_50km: true,
+    notify_at_20km: true
+  };
+  
   const { data, error } = await supabase
     .from('buddy_connections')
-    .insert({
-      user_id: userId,
-      buddy_id: buddyId,
-      status: 'pending',
-      notify_at_100km: true,
-      notify_at_50km: true,
-      notify_at_20km: true
-    })
+    .insert(connectionData)
     .select("*")
     .single();
   
@@ -76,8 +79,7 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
     throw error;
   }
   
-  // Use type assertion to handle potential type mismatches
-  return data as unknown as BuddyConnection;
+  return data as BuddyConnection;
 };
 
 // Accept a buddy connection request
@@ -88,8 +90,10 @@ export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConn
     throw new Error("You must be logged in to accept connection requests");
   }
   
-  // Define update data with explicit type
-  const updateData: { status: 'active' } = { status: 'active' };
+  type BuddyUpdateType = Database['public']['Tables']['buddy_connections']['Update'];
+  const updateData: BuddyUpdateType = { 
+    status: 'active' 
+  };
   
   const { data, error } = await supabase
     .from('buddy_connections')
@@ -105,8 +109,7 @@ export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConn
     throw error;
   }
   
-  // Use type assertion
-  return data as unknown as BuddyConnection;
+  return data as BuddyConnection;
 };
 
 // Reject a buddy connection request
@@ -117,8 +120,10 @@ export const rejectBuddyRequest = async (requesterId: string): Promise<void> => 
     throw new Error("You must be logged in to reject connection requests");
   }
   
-  // Define update data with explicit type
-  const updateData: { status: 'rejected' } = { status: 'rejected' };
+  type BuddyUpdateType = Database['public']['Tables']['buddy_connections']['Update'];
+  const updateData: BuddyUpdateType = { 
+    status: 'rejected' 
+  };
   
   const { error } = await supabase
     .from('buddy_connections')
@@ -161,8 +166,7 @@ export const updateBuddyNotificationSettings = async (
     throw error;
   }
   
-  // Use type assertion
-  return data as unknown as BuddyConnection;
+  return data as BuddyConnection;
 };
 
 // Disconnect from a buddy
