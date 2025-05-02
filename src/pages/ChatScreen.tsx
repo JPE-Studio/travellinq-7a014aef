@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +5,7 @@ import { fetchConversation } from '@/services/conversationService';
 import { sendMessage } from '@/services/messageService';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import PageLayout from '@/components/PageLayout';
 
 // Import custom components
 import ChatHeader from '@/components/chat/ChatHeader';
@@ -13,7 +13,6 @@ import MessageList from '@/components/chat/MessageList';
 import MessageTextarea from '@/components/chat/MessageTextarea';
 import ChatSkeleton from '@/components/chat/ChatSkeleton';
 import ChatError from '@/components/chat/ChatError';
-import BottomNavigation from '@/components/BottomNavigation';
 
 interface Message {
   id: string;
@@ -155,7 +154,7 @@ const ChatScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
+    <PageLayout showHeader={false}>
       <ChatHeader otherUser={otherUser} onUserProfileClick={handleUserProfileClick} />
       
       <MessageList 
@@ -165,9 +164,7 @@ const ChatScreen: React.FC = () => {
       />
       
       <MessageTextarea onSendMessage={handleSendMessage} />
-      
-      <BottomNavigation />
-    </div>
+    </PageLayout>
   );
 };
 

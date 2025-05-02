@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User, ChevronLeft, Loader2 } from 'lucide-react';
@@ -19,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import PageLayout from '@/components/PageLayout';
 
 const languages = [
   { value: 'en', label: 'English' },
@@ -153,159 +152,139 @@ const Settings: React.FC = () => {
   }
   
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
-      {/* Full width header */}
-      <Header />
-      
-      {/* Content area with ad spaces */}
-      <div className="flex flex-row w-full">
-        {/* Left sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
-        </div>
+    <PageLayout>
+      <div className="max-w-3xl mx-auto px-4 py-4 w-full">
+        <Link to="/profile" className="flex items-center text-sm text-muted-foreground mb-4 hover:text-foreground">
+          <ChevronLeft size={16} className="mr-1" />
+          Back to profile
+        </Link>
         
-        {/* Main content */}
-        <div className="flex-grow flex flex-col">
-          {/* Page specific content here */}
-          <div className="max-w-3xl mx-auto px-4 py-4 w-full">
-            <Link to="/profile" className="flex items-center text-sm text-muted-foreground mb-4 hover:text-foreground">
-              <ChevronLeft size={16} className="mr-1" />
-              Back to profile
-            </Link>
-            
-            <h1 className="text-2xl font-bold mb-6">Settings</h1>
-            
-            <div className="bg-card rounded-lg shadow p-6 mb-6">
-              <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
-              
-              <div className="flex items-center mb-6">
-                <Avatar className="h-16 w-16 mr-4">
-                  <AvatarImage src={avatarPreview || profile?.avatar} />
-                  <AvatarFallback>
-                    <User className="h-8 w-8 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
-                <label className="px-4 py-2 border rounded-md text-sm cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
-                  Change Profile Photo
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleImageChange}
-                  />
-                </label>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Display Name</Label>
-                  <Input 
-                    type="text" 
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Bio</Label>
-                  <Textarea 
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    rows={3}
-                    className="resize-none"
-                  />
-                </div>
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Location</Label>
-                  <Input 
-                    type="text" 
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g. Portland, OR"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your location will be stored and used to show nearby posts
-                  </p>
-                </div>
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Preferred Language</Label>
-                  <Select
-                    value={preferredLanguage}
-                    onValueChange={setPreferredLanguage}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {languages.map((language) => (
-                        <SelectItem key={language.value} value={language.value}>
-                          {language.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your preferred language for content translation
-                  </p>
-                </div>
-              </div>
+        <h1 className="text-2xl font-bold mb-6">Settings</h1>
+        
+        <div className="bg-card rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
+          
+          <div className="flex items-center mb-6">
+            <Avatar className="h-16 w-16 mr-4">
+              <AvatarImage src={avatarPreview || profile?.avatar} />
+              <AvatarFallback>
+                <User className="h-8 w-8 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+            <label className="px-4 py-2 border rounded-md text-sm cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
+              Change Profile Photo
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleImageChange}
+              />
+            </label>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <Label className="block text-sm font-medium mb-1">Display Name</Label>
+              <Input 
+                type="text" 
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
             </div>
-            
-            <div className="bg-card rounded-lg shadow p-6 mb-6">
-              <h2 className="text-lg font-semibold mb-4">Preferences</h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Notifications</p>
-                    <p className="text-sm text-muted-foreground">
-                      Enable push notifications
-                    </p>
-                  </div>
-                  <Switch id="notifications" defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Location Sharing</p>
-                    <p className="text-sm text-muted-foreground">
-                      Share your location with the community
-                    </p>
-                  </div>
-                  <Switch id="location-sharing" defaultChecked />
-                </div>
-              </div>
+            <div>
+              <Label className="block text-sm font-medium mb-1">Bio</Label>
+              <Textarea 
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
             </div>
-            
-            <div className="flex justify-end space-x-4">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/profile')}
-                disabled={isSaving}
+            <div>
+              <Label className="block text-sm font-medium mb-1">Location</Label>
+              <Input 
+                type="text" 
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Portland, OR"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Your location will be stored and used to show nearby posts
+              </p>
+            </div>
+            <div>
+              <Label className="block text-sm font-medium mb-1">Preferred Language</Label>
+              <Select
+                value={preferredLanguage}
+                onValueChange={setPreferredLanguage}
               >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSaveChanges} 
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
-              </Button>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((language) => (
+                    <SelectItem key={language.value} value={language.value}>
+                      {language.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your preferred language for content translation
+              </p>
             </div>
           </div>
         </div>
         
-        {/* Right sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
+        <div className="bg-card rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4">Preferences</h2>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Notifications</p>
+                <p className="text-sm text-muted-foreground">
+                  Enable push notifications
+                </p>
+              </div>
+              <Switch id="notifications" defaultChecked />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Location Sharing</p>
+                <p className="text-sm text-muted-foreground">
+                  Share your location with the community
+                </p>
+              </div>
+              <Switch id="location-sharing" defaultChecked />
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/profile')}
+            disabled={isSaving}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSaveChanges} 
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

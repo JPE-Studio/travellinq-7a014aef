@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
@@ -10,6 +9,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import { toast } from '@/components/ui/use-toast';
 import { fetchPosts } from '@/services/postService';
 import { useAuth } from '@/contexts/AuthContext';
+import PageLayout from '@/components/PageLayout';
 
 const Index: React.FC = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
@@ -88,54 +88,38 @@ const Index: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background overflow-hidden">
-      {/* Full width header */}
-      <Header />
-      
-      {/* Content area with potential ad spaces */}
-      <div className="flex flex-row w-full">
-        {/* Left sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
+    <PageLayout showHeader={true}>
+      {/* Main content */}
+      <div className="flex-grow flex flex-col overflow-hidden">
+        <Map 
+          posts={posts}
+          currentLocation={currentLocation}
+          expanded={mapExpanded}
+          onToggleExpand={handleToggleMapExpand}
+        />
+        
+        {/* Filters */}
+        <div className="bg-background border-b p-2 flex justify-end">
+          <PostFilters onFilterChange={handleFilterChange} />
         </div>
         
-        {/* Main content */}
-        <div className="flex-grow flex flex-col overflow-hidden pb-safe">
-          <Map 
-            posts={posts}
-            currentLocation={currentLocation}
-            expanded={mapExpanded}
-            onToggleExpand={handleToggleMapExpand}
-          />
-          
-          {/* Filters */}
-          <div className="bg-background border-b p-2 flex justify-end">
-            <PostFilters onFilterChange={handleFilterChange} />
+        {isLoading ? (
+          <div className="flex justify-center items-center p-8">
+            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
           </div>
-          
-          {isLoading ? (
-            <div className="flex justify-center items-center p-8">
-              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : error ? (
-            <div className="text-center p-8 text-destructive">
-              <p>Error loading posts. Please try again later.</p>
-              <button 
-                onClick={() => refetch()}
-                className="mt-2 text-primary hover:underline"
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <PostList posts={posts} />
-          )}
-        </div>
-        
-        {/* Right sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
-        </div>
+        ) : error ? (
+          <div className="text-center p-8 text-destructive">
+            <p>Error loading posts. Please try again later.</p>
+            <button 
+              onClick={() => refetch()}
+              className="mt-2 text-primary hover:underline"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <PostList posts={posts} />
+        )}
       </div>
       
       <CreatePostButton />
@@ -144,7 +128,7 @@ const Index: React.FC = () => {
         isOpen={showOnboarding} 
         onComplete={handleCompleteOnboarding} 
       />
-    </div>
+    </PageLayout>
   );
 };
 

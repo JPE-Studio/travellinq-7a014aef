@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/Header';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, AlertCircle } from 'lucide-react';
@@ -8,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchPosts } from '@/services/postService';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
+import PageLayout from '@/components/PageLayout';
 
 const MapView: React.FC = () => {
   const { toast } = useToast();
@@ -61,61 +60,42 @@ const MapView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
-      {/* Full width header */}
-      <Header />
-      
-      {/* Content area with ad spaces */}
-      <div className="flex flex-row w-full">
-        {/* Left sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
-        </div>
-        
-        {/* Main content */}
-        <div className="flex-grow flex flex-col">
-          <div className="p-4">
-            <Link to="/" className="flex items-center text-sm text-muted-foreground mb-2 hover:text-foreground">
-              <ChevronLeft size={16} className="mr-1" />
-              Back to feed
-            </Link>
-            <h1 className="text-xl font-bold mb-4">Explore Locations</h1>
-          </div>
-          
-          {isLoading ? (
-            <div className="flex-grow flex items-center justify-center">
-              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : error ? (
-            <div className="flex-grow flex flex-col items-center justify-center p-4">
-              <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-              <div className="text-destructive text-center mb-4">
-                <p className="font-semibold mb-1">Error loading map data</p>
-                <p className="text-sm">Please try again later</p>
-              </div>
-              <Button onClick={() => refetch()} variant="outline">
-                Retry
-              </Button>
-            </div>
-          ) : (
-            /* Full-sized map */
-            <div className="flex-grow relative mx-4 mb-4">
-              <Map 
-                posts={posts}
-                currentLocation={currentLocation}
-                expanded={expanded}
-                onToggleExpand={handleToggleExpand}
-              />
-            </div>
-          )}
-        </div>
-        
-        {/* Right sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
-        </div>
+    <PageLayout>
+      <div className="p-4">
+        <Link to="/" className="flex items-center text-sm text-muted-foreground mb-2 hover:text-foreground">
+          <ChevronLeft size={16} className="mr-1" />
+          Back to feed
+        </Link>
+        <h1 className="text-xl font-bold mb-4">Explore Locations</h1>
       </div>
-    </div>
+      
+      {isLoading ? (
+        <div className="flex-grow flex items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
+        </div>
+      ) : error ? (
+        <div className="flex-grow flex flex-col items-center justify-center p-4">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <div className="text-destructive text-center mb-4">
+            <p className="font-semibold mb-1">Error loading map data</p>
+            <p className="text-sm">Please try again later</p>
+          </div>
+          <Button onClick={() => refetch()} variant="outline">
+            Retry
+          </Button>
+        </div>
+      ) : (
+        /* Full-sized map */
+        <div className="flex-grow relative mx-4 mb-4">
+          <Map 
+            posts={posts}
+            currentLocation={currentLocation}
+            expanded={expanded}
+            onToggleExpand={handleToggleExpand}
+          />
+        </div>
+      )}
+    </PageLayout>
   );
 };
 

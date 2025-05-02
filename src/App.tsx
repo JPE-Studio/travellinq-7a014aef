@@ -14,7 +14,6 @@ import Chats from "./pages/Chats";
 import Settings from "./pages/Settings";
 import ChatScreen from "./pages/ChatScreen";
 import Auth from "./pages/Auth";
-import BottomNavigation from "./components/BottomNavigation";
 import NewChat from "./pages/NewChat";
 import UserDetail from "./pages/UserDetail";
 
@@ -42,7 +41,6 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <BottomNavigation />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

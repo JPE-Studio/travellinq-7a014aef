@@ -1,11 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/Header';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MapPin, Settings, User, Loader2, MessageSquare, UserPlus } from 'lucide-react';
-import BottomNavigation from '@/components/BottomNavigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPosts } from '@/services/postService';
 import PostCard from '@/components/PostCard';
@@ -15,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BuddyConnection } from '@/types';
 import { connectWithBuddy, disconnectBuddy, getBuddyConnection } from '@/services/chatService';
 import { getOrCreateConversation } from '@/services/participantService';
+import PageLayout from '@/components/PageLayout';
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -174,119 +172,98 @@ const Profile: React.FC = () => {
   }
   
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0 overflow-hidden">
-      {/* Full width header */}
-      <Header />
-      
-      {/* Content area with ad spaces */}
-      <div className="flex flex-row w-full">
-        {/* Left sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
+    <PageLayout>
+      {/* Main content */}
+      <div className="max-w-3xl mx-auto px-4 py-4 w-full scrollbar-hide">
+        <div className="flex flex-col items-center space-y-4 mb-8">
+          <Avatar className="h-24 w-24">
+            <AvatarImage src={displayProfile?.avatar} alt={displayProfile?.pseudonym} className="object-cover" />
+            <AvatarFallback>
+              <User className="h-12 w-12 text-muted-foreground" />
+            </AvatarFallback>
+          </Avatar>
+          <h1 className="text-2xl font-bold">{displayProfile?.pseudonym || (viewingOwnProfile ? user?.email?.split('@')[0] : 'Unknown User')}</h1>
+          {displayProfile?.bio && <p className="text-muted-foreground text-center">{displayProfile.bio}</p>}
+          {!displayProfile?.bio && <p className="text-muted-foreground text-center">No bio yet</p>}
+          <p className="text-sm text-muted-foreground">
+            Joined {displayProfile?.joinedAt?.toLocaleDateString() || 'recently'}
+          </p>
         </div>
         
-        {/* Main content */}
-        <div className="flex-grow flex flex-col overflow-hidden">
-          {/* Page specific content here */}
-          <div className="max-w-3xl mx-auto px-4 py-4 w-full scrollbar-hide pb-safe">
-            <div className="flex flex-col items-center space-y-4 mb-8">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={displayProfile?.avatar} alt={displayProfile?.pseudonym} className="object-cover" />
-                <AvatarFallback>
-                  <User className="h-12 w-12 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-              <h1 className="text-2xl font-bold">{displayProfile?.pseudonym || (viewingOwnProfile ? user?.email?.split('@')[0] : 'Unknown User')}</h1>
-              {displayProfile?.bio && <p className="text-muted-foreground text-center">{displayProfile.bio}</p>}
-              {!displayProfile?.bio && <p className="text-muted-foreground text-center">No bio yet</p>}
-              <p className="text-sm text-muted-foreground">
-                Joined {displayProfile?.joinedAt?.toLocaleDateString() || 'recently'}
-              </p>
-            </div>
-            
-            {viewingOwnProfile ? (
-              <div className="flex justify-center mb-8">
-                <Button onClick={() => navigate('/settings')} variant="outline" className="flex items-center text-sm">
-                  <Settings size={16} className="mr-2" />
-                  Edit Profile
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row justify-center gap-2 mb-8">
-                {buddyConnection ? (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleDisconnect}
-                    disabled={isDisconnecting}
-                    className="flex items-center"
-                  >
-                    {isDisconnecting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <UserPlus className="mr-2 h-4 w-4" />
-                    )}
-                    Disconnect
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleConnect}
-                    disabled={isConnecting}
-                    className="flex items-center"
-                  >
-                    {isConnecting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <UserPlus className="mr-2 h-4 w-4" />
-                    )}
-                    Connect
-                  </Button>
-                )}
-
-                <Button 
-                  variant={buddyConnection ? "default" : "outline"}
-                  onClick={handleStartChat}
-                  disabled={isStartingChat}
-                  className="flex items-center"
-                >
-                  {isStartingChat ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                  )}
-                  Message
-                </Button>
-              </div>
-            )}
-            
-            <div className="border-t pt-8">
-              <h2 className="text-xl font-semibold mb-4">{viewingOwnProfile ? 'My Posts' : 'Posts'}</h2>
-              {isLoadingPosts ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              ) : posts.length > 0 ? (
-                <div className="space-y-4">
-                  {posts.map(post => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  {viewingOwnProfile ? "You haven't created any posts yet." : "This user hasn't created any posts yet."}
-                </div>
-              )}
-            </div>
+        {viewingOwnProfile ? (
+          <div className="flex justify-center mb-8">
+            <Button onClick={() => navigate('/settings')} variant="outline" className="flex items-center text-sm">
+              <Settings size={16} className="mr-2" />
+              Edit Profile
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row justify-center gap-2 mb-8">
+            {buddyConnection ? (
+              <Button 
+                variant="outline" 
+                onClick={handleDisconnect}
+                disabled={isDisconnecting}
+                className="flex items-center"
+              >
+                {isDisconnecting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="mr-2 h-4 w-4" />
+                )}
+                Disconnect
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleConnect}
+                disabled={isConnecting}
+                className="flex items-center"
+              >
+                {isConnecting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="mr-2 h-4 w-4" />
+                )}
+                Connect
+              </Button>
+            )}
+
+            <Button 
+              variant={buddyConnection ? "default" : "outline"}
+              onClick={handleStartChat}
+              disabled={isStartingChat}
+              className="flex items-center"
+            >
+              {isStartingChat ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MessageSquare className="mr-2 h-4 w-4" />
+              )}
+              Message
+            </Button>
+          </div>
+        )}
         
-        {/* Right sidebar space (for ads) */}
-        <div className="hidden lg:block lg:w-1/6 bg-muted/10">
-          {/* Ad space */}
+        <div className="border-t pt-8">
+          <h2 className="text-xl font-semibold mb-4">{viewingOwnProfile ? 'My Posts' : 'Posts'}</h2>
+          {isLoadingPosts ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : posts.length > 0 ? (
+            <div className="space-y-4">
+              {posts.map(post => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              {viewingOwnProfile ? "You haven't created any posts yet." : "This user hasn't created any posts yet."}
+            </div>
+          )}
         </div>
       </div>
-      
-      <BottomNavigation />
-    </div>
+    </PageLayout>
   );
 };
 
