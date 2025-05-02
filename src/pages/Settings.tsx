@@ -29,29 +29,9 @@ const Settings: React.FC = () => {
     if (profile) {
       setDisplayName(profile.pseudonym || '');
       setBio(profile.bio || '');
-      
-      // Load location from user metadata if available
-      const fetchLocation = async () => {
-        if (user) {
-          try {
-            const { data: userData } = await supabase
-              .from('profiles')
-              .select('location')
-              .eq('id', user.id)
-              .single();
-              
-            if (userData && userData.location) {
-              setLocation(userData.location);
-            }
-          } catch (error) {
-            console.error("Error fetching user location:", error);
-          }
-        }
-      };
-      
-      fetchLocation();
+      setLocation(profile.location || '');
     }
-  }, [profile, user]);
+  }, [profile]);
   
   // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
