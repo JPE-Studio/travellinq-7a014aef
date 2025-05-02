@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ThumbsUp, ThumbsDown, MessageSquare, Loader2, Translate } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageSquare, Loader2, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -71,7 +71,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
             </>
           ) : (
             <>
-              <Translate className="h-4 w-4 mr-1" />
+              <Languages className="h-4 w-4 mr-1" />
               {translatedText ? 'Show Original' : 'Translate'}
             </>
           )}
