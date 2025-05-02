@@ -3,17 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { BuddyConnection } from "@/types";
 import { Database } from "@/integrations/supabase/types";
 
+// Get current authenticated user ID
+async function getCurrentUserId(): Promise<string | null> {
+  const { data: session } = await supabase.auth.getSession();
+  return session?.session?.user.id || null;
+}
+
 // Get buddy connection between current user and another user
 export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnection | null> => {
   try {
-    // Get current user
-    const { data: session } = await supabase.auth.getSession();
-    if (!session?.session?.user.id) {
+    const userId = await getCurrentUserId();
+    
+    if (!userId) {
       console.log("No authenticated user session found");
       return null;
     }
     
-    const userId = session.session.user.id;
     console.log(`Checking buddy connection between ${userId} and ${buddyId}`);
     
     const { data, error } = await supabase
@@ -38,14 +43,16 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
 
 // Connect with a buddy
 export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection> => {
-  // Get current user
-  const { data: session } = await supabase.auth.getSession();
-  if (!session?.session?.user.id) throw new Error("You must be logged in to connect with buddies");
+  const userId = await getCurrentUserId();
+  
+  if (!userId) {
+    throw new Error("You must be logged in to connect with buddies");
+  }
   
   const { data, error } = await supabase
     .from('buddy_connections')
     .insert({
-      user_id: session.session.user.id,
+      user_id: userId,
       buddy_id: buddyId,
       notify_at_100km: true,
       notify_at_50km: true,
@@ -71,14 +78,16 @@ export const updateBuddyNotificationSettings = async (
     notify_at_20km?: boolean;
   }
 ): Promise<BuddyConnection> => {
-  // Get current user
-  const { data: session } = await supabase.auth.getSession();
-  if (!session?.session?.user.id) throw new Error("You must be logged in to update connections");
+  const userId = await getCurrentUserId();
+  
+  if (!userId) {
+    throw new Error("You must be logged in to update connections");
+  }
   
   const { data, error } = await supabase
     .from('buddy_connections')
     .update(settings)
-    .eq("user_id", session.session.user.id)
+    .eq("user_id", userId)
     .eq("buddy_id", buddyId)
     .select("*")
     .single();
@@ -93,14 +102,16 @@ export const updateBuddyNotificationSettings = async (
 
 // Disconnect from a buddy
 export const disconnectBuddy = async (buddyId: string): Promise<void> => {
-  // Get current user
-  const { data: session } = await supabase.auth.getSession();
-  if (!session?.session?.user.id) throw new Error("You must be logged in to disconnect buddies");
+  const userId = await getCurrentUserId();
+  
+  if (!userId) {
+    throw new Error("You must be logged in to disconnect buddies");
+  }
   
   const { error } = await supabase
     .from('buddy_connections')
     .delete()
-    .eq("user_id", session.session.user.id)
+    .eq("user_id", userId)
     .eq("buddy_id", buddyId);
   
   if (error) {

@@ -2,6 +2,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types";
 
+// Helper function to map profile data to User type
+const mapProfileToUser = (profile: any): User => ({
+  id: profile.id,
+  pseudonym: profile.pseudonym,
+  avatar: profile.avatar,
+  bio: profile.bio,
+  location: profile.location,
+  joinedAt: new Date(profile.joined_at),
+  preferredLanguage: profile.preferred_language,
+  website: profile.website,
+  latitude: profile.latitude,
+  longitude: profile.longitude
+});
+
 // Fetch user profile by ID
 export const fetchUserProfile = async (userId: string): Promise<User> => {
   const { data, error } = await supabase
@@ -19,18 +33,7 @@ export const fetchUserProfile = async (userId: string): Promise<User> => {
     throw new Error("User profile not found");
   }
   
-  return {
-    id: data.id,
-    pseudonym: data.pseudonym,
-    avatar: data.avatar,
-    bio: data.bio,
-    location: data.location,
-    joinedAt: new Date(data.joined_at),
-    preferredLanguage: data.preferred_language,
-    website: data.website,
-    latitude: data.latitude,
-    longitude: data.longitude
-  };
+  return mapProfileToUser(data);
 };
 
 // Fetch multiple user profiles by IDs
@@ -47,18 +50,7 @@ export const fetchUserProfiles = async (userIds: string[]): Promise<User[]> => {
     throw error;
   }
   
-  return data.map(profile => ({
-    id: profile.id,
-    pseudonym: profile.pseudonym,
-    avatar: profile.avatar,
-    bio: profile.bio,
-    location: profile.location,
-    joinedAt: new Date(profile.joined_at),
-    preferredLanguage: profile.preferred_language,
-    website: profile.website,
-    latitude: profile.latitude,
-    longitude: profile.longitude
-  }));
+  return data.map(mapProfileToUser);
 };
 
 // Fetch all user profiles except current user
@@ -80,16 +72,5 @@ export const fetchOtherUsers = async (): Promise<User[]> => {
     throw error;
   }
   
-  return data.map(profile => ({
-    id: profile.id,
-    pseudonym: profile.pseudonym,
-    avatar: profile.avatar,
-    bio: profile.bio,
-    location: profile.location,
-    joinedAt: new Date(profile.joined_at),
-    preferredLanguage: profile.preferred_language,
-    website: profile.website,
-    latitude: profile.latitude,
-    longitude: profile.longitude
-  }));
+  return data.map(mapProfileToUser);
 };
