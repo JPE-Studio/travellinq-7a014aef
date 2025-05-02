@@ -22,7 +22,8 @@ export const setupRlsPolicies = async () => {
 // Add a function to make Postgres tables available for real-time
 export const setupRealtimeTables = async () => {
   try {
-    const { error } = await supabase.rpc('supabase_functions.enable_realtime', {
+    // Use type assertion to fix the TypeScript error
+    const { error } = await (supabase.rpc as any)('supabase_functions.enable_realtime', {
       table_name: 'notifications'
     });
     
