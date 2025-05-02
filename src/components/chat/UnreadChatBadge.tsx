@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getUnreadMessageCount } from '@/services/messageService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UnreadChatBadgeProps {
   className?: string;
@@ -33,7 +34,6 @@ const UnreadChatBadge: React.FC<UnreadChatBadgeProps> = ({ className }) => {
     const interval = setInterval(fetchUnreadCount, 30000); // Every 30 seconds
     
     // Set up realtime subscription for new messages
-    const { supabase } = require('@/integrations/supabase/client');
     const channel = supabase
       .channel('schema-db-changes')
       .on(
