@@ -1,12 +1,26 @@
 
 import React from 'react';
 import Header from '@/components/Header';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { currentUser } from '@/data/mockData';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MapPin, Settings, User } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 
 const Profile: React.FC = () => {
+  const { user, loading } = useAuth();
+  
+  // If not loaded yet, return nothing
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  // Redirect to auth page if not logged in
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
   return (
     <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0 overflow-hidden">
       {/* Full width header */}
