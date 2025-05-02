@@ -17,6 +17,19 @@ interface PostCardProps {
   post: Post;
 }
 
+// Function to format distance in a readable way
+const formatDistance = (miles: number): string => {
+  if (miles < 0.1) {
+    return 'Very close by';
+  } else if (miles < 1) {
+    return `${(miles * 1760).toFixed(0)} yards away`;
+  } else if (miles < 10) {
+    return `${miles.toFixed(1)} miles away`;
+  } else {
+    return `${Math.round(miles)} miles away`;
+  }
+};
+
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { user, profile } = useAuth();
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -237,14 +250,14 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                     {post.distance !== undefined ? (
                       <>
                         <span className={post.distance <= 10 ? "text-forest font-medium" : ""}>
-                          {post.distance.toFixed(1)} miles away
+                          {formatDistance(post.distance)}
                         </span>
                         {post.distance <= 5 && (
                           <span className="ml-1 bg-forest/20 text-forest px-1 rounded text-[10px]">Near you</span>
                         )}
                       </>
                     ) : (
-                      <span>Distance unknown</span>
+                      <span>Location available</span>
                     )}
                   </span>
                 </>
@@ -271,7 +284,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           )}
         </Link>
         
-        {/* Translate button - updated to be smaller with gray outline */}
+        {/* Translate button */}
         {!translatedText && user && (
           <Button 
             variant="outline" 
@@ -284,6 +297,13 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             {isTranslating ? 'Translating...' : 'Translate'}
           </Button>
         )}
+        
+        {/* Category badge */}
+        <div className="mb-2">
+          <Badge variant="outline" className="text-xs capitalize">
+            {post.category}
+          </Badge>
+        </div>
         
         {/* Post interactions */}
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">

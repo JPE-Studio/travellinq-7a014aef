@@ -1,38 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, AlertCircle } from 'lucide-react';
+import { ChevronLeft, AlertCircle, Locate } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPosts } from '@/services/postService';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import PageLayout from '@/components/PageLayout';
+import { Post } from '@/types';
 
 const MapView: React.FC = () => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState({ 
-    lat: 45.5152, // Portland, OR coordinates
+    lat: 45.5152, // Portland, OR coordinates as default
     lng: -122.6784 
   });
   const [expanded, setExpanded] = useState(true);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Try to get user's location if allowed
   useEffect(() => {
+    getUserLocation();
+  }, []);
+
+  const getUserLocation = () => {
     if (navigator.geolocation) {
+      setIsLocating(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setCurrentLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
+          setIsLocating(false);
         },
         (error) => {
           console.log('Error getting location:', error);
+          toast({
+            title: "Location error",
+            description: "We couldn't access your location. Using default location instead.",
+            variant: "destructive",
+          });
+          setIsLocating(false);
           // Keep the default location
         }
       );
+    } else {
+      toast({
+        title: "Geolocation not supported",
+        description: "Your browser doesn't support geolocation.",
+        variant: "destructive",
+      });
     }
-  }, []);
+  };
 
   // Query for posts
   const { data: posts = [], isLoading, error, refetch } = useQuery({
@@ -61,12 +81,23 @@ const MapView: React.FC = () => {
 
   return (
     <PageLayout>
-      <div className="p-4">
-        <Link to="/" className="flex items-center text-sm text-muted-foreground mb-2 hover:text-foreground">
-          <ChevronLeft size={16} className="mr-1" />
-          Back to feed
-        </Link>
-        <h1 className="text-xl font-bold mb-4">Explore Locations</h1>
+      <div className="p-4 flex justify-between items-center">
+        <div>
+          <Link to="/" className="flex items-center text-sm text-muted-foreground mb-2 hover:text-foreground">
+            <ChevronLeft size={16} className="mr-1" />
+            Back to feed
+          </Link>
+          <h1 className="text-xl font-bold">Explore Locations</h1>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={getUserLocation}
+          disabled={isLocating}
+        >
+          <Locate size={16} className="mr-1" />
+          {isLocating ? 'Locating...' : 'My Location'}
+        </Button>
       </div>
       
       {isLoading ? (
@@ -93,6 +124,13 @@ const MapView: React.FC = () => {
             expanded={expanded}
             onToggleExpand={handleToggleExpand}
           />
+        </div>
+      )}
+
+      {/* Post count indicator */}
+      {!isLoading && !error && (
+        <div className="text-center text-sm text-muted-foreground mb-4">
+          Showing {posts.length} {posts.length === 1 ? 'post' : 'posts'} on the map
         </div>
       )}
     </PageLayout>

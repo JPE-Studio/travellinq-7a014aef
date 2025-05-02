@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Post } from '@/types';
+import { useToast } from '@/components/ui/use-toast';
 
 interface MapProps {
   posts: Post[];
@@ -24,6 +25,8 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const { toast } = useToast();
+  const boundsSetRef = useRef(false);
 
   // Load token from localStorage or use default
   useEffect(() => {
@@ -65,13 +68,33 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
         'top-right'
       );
 
+      // Add geolocate control
+      const geolocate = new mapboxgl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true
+        },
+        trackUserLocation: true,
+        showUserHeading: true
+      });
+      
+      newMap.addControl(geolocate, 'top-right');
+
       newMap.on('load', () => {
         setMapLoaded(true);
+        // Attempt to automatically locate user once map is loaded
+        setTimeout(() => {
+          geolocate.trigger();
+        }, 1000);
       });
 
       map.current = newMap;
     } catch (error) {
       console.error('Error initializing Mapbox map:', error);
+      toast({
+        title: "Map Error",
+        description: "Failed to initialize map. Please try again.",
+        variant: "destructive",
+      });
     }
 
     // Cleanup
@@ -79,7 +102,7 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxToken, currentLocation]);
+  }, [mapboxToken, currentLocation, toast]);
 
   // Add markers when map is ready and posts change
   useEffect(() => {
@@ -96,14 +119,25 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
     
     markersRef.current.push(currentLocationMarker);
 
-    // Add markers for posts
-    posts.forEach(post => {
+    // Create bounds object to fit all markers
+    const bounds = new mapboxgl.LngLatBounds();
+    
+    // Include current location in bounds
+    bounds.extend([currentLocation.lng, currentLocation.lat]);
+
+    // Add markers for posts with valid location data
+    const validPosts = posts.filter(post => post.location && !isNaN(post.location.lat) && !isNaN(post.location.lng));
+    
+    validPosts.forEach(post => {
       if (post.location) {
         // Create a popup with post info
         const popup = new mapboxgl.Popup({ offset: 25 })
           .setHTML(`
-            <h3 class="font-semibold">${post.category}</h3>
-            <p class="text-sm">${post.text.substring(0, 100)}${post.text.length > 100 ? '...' : ''}</p>
+            <div class="p-2">
+              <h3 class="font-semibold">${post.category}</h3>
+              <p class="text-sm">${post.text.substring(0, 100)}${post.text.length > 100 ? '...' : ''}</p>
+              <a href="/post/${post.id}" class="text-xs text-blue-500 hover:underline">View details</a>
+            </div>
           `);
 
         // Determine marker color based on category
@@ -119,8 +153,20 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
           .addTo(map.current);
         
         markersRef.current.push(marker);
+        
+        // Add to bounds
+        bounds.extend([post.location.lng, post.location.lat]);
       }
     });
+    
+    // Fit map to bounds if we have posts to show and bounds haven't been set
+    if (validPosts.length > 0 && !boundsSetRef.current) {
+      map.current.fitBounds(bounds, {
+        padding: 70,
+        maxZoom: 15
+      });
+      boundsSetRef.current = true;
+    }
   }, [posts, mapLoaded, currentLocation]);
 
   // Resize map when expanded state changes

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import Header from '@/components/Header';
 import Map from '@/components/Map';
 import PostList from '@/components/PostList';
 import PostFilters from '@/components/PostFilters';
@@ -20,8 +19,30 @@ const Index: React.FC = () => {
     autoRadius: true,
     categories: ['general', 'campsite', 'service', 'question'],
   });
+  const [isLocating, setIsLocating] = useState(false);
 
   const { user, profile } = useAuth();
+
+  // Get user's location when component mounts
+  useEffect(() => {
+    if (navigator.geolocation) {
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setIsLocating(false);
+        },
+        (error) => {
+          console.log('Error getting location:', error);
+          setIsLocating(false);
+          // Keep using default location
+        }
+      );
+    }
+  }, []);
 
   // Query for posts with filters
   const { 
@@ -40,15 +61,14 @@ const Index: React.FC = () => {
   });
 
   useEffect(() => {
-    // Nur das Onboarding-Modal anzeigen, wenn der Benutzer angemeldet ist,
-    // aber noch keinen Pseudonym hat (nach Registrierung)
+    // Onboarding modal logic
     if (user && (!profile || !profile.pseudonym || profile.pseudonym === '')) {
       setShowOnboarding(true);
     } else {
       setShowOnboarding(false);
     }
     
-    // Mock notification for nearby friend
+    // Friend nearby notification
     const timer = setTimeout(() => {
       const friendNearby = localStorage.getItem('friend-notification-shown');
       if (!friendNearby) {
@@ -91,6 +111,12 @@ const Index: React.FC = () => {
     <PageLayout showHeader={true}>
       {/* Main content */}
       <div className="flex-grow flex flex-col overflow-hidden">
+        {isLocating ? (
+          <div className="bg-primary/10 p-2 text-center text-sm">
+            <span>Locating your position...</span>
+          </div>
+        ) : null}
+        
         <Map 
           posts={posts}
           currentLocation={currentLocation}
