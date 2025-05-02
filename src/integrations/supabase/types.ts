@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      buddy_connections: {
+        Row: {
+          buddy_id: string
+          created_at: string
+          id: string
+          notify_at_100km: boolean
+          notify_at_20km: boolean
+          notify_at_50km: boolean
+          user_id: string
+        }
+        Insert: {
+          buddy_id: string
+          created_at?: string
+          id?: string
+          notify_at_100km?: boolean
+          notify_at_20km?: boolean
+          notify_at_50km?: boolean
+          user_id: string
+        }
+        Update: {
+          buddy_id?: string
+          created_at?: string
+          id?: string
+          notify_at_100km?: boolean
+          notify_at_20km?: boolean
+          notify_at_50km?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           author_id: string
