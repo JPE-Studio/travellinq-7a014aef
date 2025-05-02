@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types";
+import { fetchUserProfile } from "./userService";
 
 // Fetch all conversations for the current user
 export const fetchUserConversations = async () => {
@@ -16,65 +16,79 @@ export const fetchUserConversations = async () => {
   if (participationsError) throw participationsError;
   if (!participations.length) return [];
   
-  // Get conversations with participants and last message
+  // Get conversation IDs
   const conversationIds = participations.map(p => p.conversation_id);
   
-  // Get all conversations
+  // First, fetch all conversations and participants
   const { data: conversations, error: convoError } = await supabase
     .from("conversations")
     .select(`
       id,
       created_at,
       conversation_participants!inner (
-        user_id,
-        profiles:user_id (
-          pseudonym,
-          avatar
-        )
-      ),
-      messages (
-        id,
-        content,
-        sender_id,
-        created_at,
-        read
+        user_id
       )
     `)
-    .in("id", conversationIds)
-    .order("created_at", { foreignTable: "messages", ascending: false });
+    .in("id", conversationIds);
   
   if (convoError) throw convoError;
   
-  // Get the other participant in each conversation
-  return conversations.map(convo => {
-    // Find the participant that isn't the current user
-    const otherParticipant = convo.conversation_participants.find(
-      p => p.user_id !== userSession.session?.user.id
-    );
-    
-    // Get the last message if any exist
-    const lastMessage = convo.messages && convo.messages.length > 0 
-      ? convo.messages[0] 
-      : null;
-    
-    // Extract user information
-    const otherUser = otherParticipant?.profiles;
-    
-    return {
-      id: convo.id,
-      otherUser: {
-        id: otherParticipant?.user_id,
-        pseudonym: otherUser?.pseudonym || "Unknown User",
-        avatar: otherUser?.avatar
-      },
-      lastMessage: lastMessage ? {
-        content: lastMessage.content,
-        timestamp: new Date(lastMessage.created_at),
-        isFromCurrentUser: lastMessage.sender_id === userSession.session?.user.id,
-        read: lastMessage.read
-      } : null
-    };
-  });
+  // Fetch the last message for each conversation
+  const conversationsWithMessages = await Promise.all(
+    conversations.map(async (convo) => {
+      // Get the last message
+      const { data: messages, error: msgError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", convo.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      
+      if (msgError) throw msgError;
+      
+      // Find the other participant that isn't the current user
+      const otherParticipantUserId = convo.conversation_participants.find(
+        p => p.user_id !== userSession.session?.user.id
+      )?.user_id;
+      
+      let otherUserInfo = {
+        id: otherParticipantUserId,
+        pseudonym: "Unknown User",
+        avatar: undefined
+      };
+      
+      // Get other user's profile information
+      if (otherParticipantUserId) {
+        try {
+          const otherUserProfile = await fetchUserProfile(otherParticipantUserId);
+          otherUserInfo = {
+            id: otherParticipantUserId,
+            pseudonym: otherUserProfile.pseudonym,
+            avatar: otherUserProfile.avatar
+          };
+        } catch (err) {
+          console.error("Error fetching other user profile:", err);
+        }
+      }
+      
+      const lastMessage = messages && messages.length > 0 
+        ? messages[0] 
+        : null;
+      
+      return {
+        id: convo.id,
+        otherUser: otherUserInfo,
+        lastMessage: lastMessage ? {
+          content: lastMessage.content,
+          timestamp: new Date(lastMessage.created_at),
+          isFromCurrentUser: lastMessage.sender_id === userSession.session?.user.id,
+          read: lastMessage.read
+        } : null
+      };
+    })
+  );
+  
+  return conversationsWithMessages;
 };
 
 // Fetch a single conversation with all messages
