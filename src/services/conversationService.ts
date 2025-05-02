@@ -2,7 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchUserProfile } from "./userService";
 
-// Fetch a single conversation with all messages
+/**
+ * Fetch a single conversation with all messages
+ */
 export const fetchConversation = async (conversationId: string) => {
   const { data: userSession, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !userSession.session) throw new Error("User not authenticated");
@@ -90,7 +92,9 @@ export const fetchConversation = async (conversationId: string) => {
   }
 };
 
-// Fetch all conversations for the current user
+/**
+ * Fetch all conversations for the current user
+ */
 export const fetchUserConversations = async () => {
   const { data: userSession, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !userSession.session) throw new Error("User not authenticated");

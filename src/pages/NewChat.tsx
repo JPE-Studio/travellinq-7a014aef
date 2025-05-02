@@ -8,7 +8,7 @@ import { fetchOtherUsers } from '@/services/userService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { User as AppUser } from '@/types';
 import { getOrCreateConversation } from '@/services/participantService';
 
@@ -65,11 +65,9 @@ const NewChat: React.FC = () => {
       setCreatingConversation(otherUserId);
       console.log("Creating conversation with user:", otherUserId);
       
-      // Use the utility function from participantService
       const conversationId = await getOrCreateConversation(otherUserId);
       console.log("Conversation created/found:", conversationId);
       
-      // Navigate to the conversation
       navigate(`/chat/${conversationId}`);
       
     } catch (error) {

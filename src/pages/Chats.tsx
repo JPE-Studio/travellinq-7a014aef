@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, ChevronLeft, Loader2, Search, Plus } from 'lucide-react';
+import { User, Plus, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import BottomNavigation from '@/components/BottomNavigation';
 import { fetchUserConversations } from '@/services/conversationService';
 import { formatDistanceToNow } from 'date-fns';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,6 @@ const Chats: React.FC = () => {
       } catch (err) {
         console.error('Error loading conversations:', err);
         setError('Unable to load conversations');
-        // Use toast only for unexpected errors, not for empty state
         if (err instanceof Error && err.message !== 'No conversations found') {
           toast({
             variant: "destructive",
@@ -70,7 +69,6 @@ const Chats: React.FC = () => {
   };
 
   const handleCreateChat = () => {
-    // Navigate to a page to select users to chat with
     navigate('/chats/new');
   };
 

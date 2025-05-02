@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { fetchConversation } from '@/services/conversationService';
 import { sendMessage } from '@/services/messageService';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,7 @@ const ChatScreen: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!userId) {
@@ -102,7 +103,7 @@ const ChatScreen: React.FC = () => {
         });
 
         // Mark the message as read if it's not from the current user
-        if (newMessage.sender_id !== currentUserId) {
+        if (currentUserId && newMessage.sender_id !== currentUserId) {
           supabase
             .from('messages')
             .update({ read: true })
@@ -119,18 +120,15 @@ const ChatScreen: React.FC = () => {
       console.log("Cleaning up message subscription");
       supabase.removeChannel(messageSubscription);
     };
-  }, [userId, navigate, user, currentUserId]);
+  }, [userId, navigate, user, currentUserId, toast]);
 
   const handleSendMessage = async (message: string): Promise<void> => {
     if (!userId || !message.trim()) return;
     
     try {
       console.log("Sending message to conversation:", userId);
-      const newMessage = await sendMessage(userId, message);
-      console.log("Message sent successfully:", newMessage);
-      
-      // Don't add the message to local state as it will come back via the subscription
-      // This prevents duplicates
+      await sendMessage(userId, message);
+      // Message will be added via the subscription
     } catch (err) {
       console.error('Error sending message:', err);
       toast({
@@ -138,7 +136,6 @@ const ChatScreen: React.FC = () => {
         title: "Failed to send message",
         description: "Your message couldn't be sent. Please try again.",
       });
-      // Re-throw the error so the MessageTextarea can handle it
       throw err;
     }
   };

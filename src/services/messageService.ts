@@ -1,16 +1,16 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Send a new message
+/**
+ * Send a new message to a conversation
+ */
 export const sendMessage = async (conversationId: string, content: string) => {
   const { data: userSession, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !userSession.session) throw new Error("User not authenticated");
+  if (sessionError || !userSession.session) {
+    throw new Error("User not authenticated");
+  }
   
   try {
-    console.log("Sending message to conversation:", conversationId);
-    console.log("Content:", content);
-    console.log("Sender:", userSession.session.user.id);
-
     const { data, error } = await supabase
       .from("messages")
       .insert({
@@ -26,7 +26,6 @@ export const sendMessage = async (conversationId: string, content: string) => {
       throw error;
     }
     
-    console.log("Message sent successfully:", data);
     return data;
   } catch (error) {
     console.error("Exception in sendMessage:", error);
@@ -34,7 +33,9 @@ export const sendMessage = async (conversationId: string, content: string) => {
   }
 };
 
-// Mark messages as read
+/**
+ * Mark messages as read
+ */
 export const markMessagesAsRead = async (messageIds: string[]) => {
   if (!messageIds || !messageIds.length) return;
   
@@ -54,13 +55,15 @@ export const markMessagesAsRead = async (messageIds: string[]) => {
   }
 };
 
-// Get unread message count for current user
+/**
+ * Get unread message count for current user
+ */
 export const getUnreadMessageCount = async () => {
   const { data: userSession, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !userSession.session) return 0;
   
   try {
-    // First get all conversations the user is part of
+    // Get all conversations the user is part of
     const { data: participations, error: partError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
@@ -68,7 +71,7 @@ export const getUnreadMessageCount = async () => {
     
     if (partError || !participations || !participations.length) return 0;
     
-    // Then count unread messages in these conversations that were not sent by the current user
+    // Count unread messages in these conversations not sent by current user
     const { count, error: countError } = await supabase
       .from("messages")
       .select("*", { count: "exact", head: true })

@@ -1,5 +1,5 @@
 
-// Export all chat-related functionality from the individual service files
+// Import individual services
 export * from './conversationService';
-export * from './messageService';
+export * from './messageService'; 
 export * from './participantService';

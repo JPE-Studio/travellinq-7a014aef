@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User, MapPin, CalendarDays, Link2, Loader2 } from 'lucide-react';
 import { fetchUserProfile } from '@/services/userService';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import BottomNavigation from '@/components/BottomNavigation';
@@ -13,11 +13,11 @@ import { getOrCreateConversation } from '@/services/participantService';
 interface UserProfileData {
   id: string;
   pseudonym: string;
-  avatar: string;
+  avatar?: string;
   location: string | null;
   bio: string | null;
-  website: string | null;
-  birthdate: string | null;
+  website?: string | null;
+  birthdate?: string | null;
 }
 
 const UserProfile: React.FC = () => {
@@ -44,15 +44,14 @@ const UserProfile: React.FC = () => {
         setLoading(true);
         const profileData = await fetchUserProfile(userId);
         
-        // Convert User type to UserProfileData type
         setUserData({
           id: profileData.id,
           pseudonym: profileData.pseudonym,
           avatar: profileData.avatar || '',
           location: profileData.location || null,
           bio: profileData.bio || null,
-          website: null, // Add missing property
-          birthdate: null // Add missing property
+          website: null,
+          birthdate: null
         });
       } catch (error) {
         console.error('Error loading user profile:', error);
@@ -73,7 +72,7 @@ const UserProfile: React.FC = () => {
     if (!userData) return;
     
     try {
-      setMessagingLoading(true); // Use a separate loading state for the messaging action
+      setMessagingLoading(true);
       const conversationId = await getOrCreateConversation(userData.id);
       console.log("Conversation created/found:", conversationId);
       navigate(`/chat/${conversationId}`);

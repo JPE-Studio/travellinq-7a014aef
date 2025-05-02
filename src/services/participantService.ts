@@ -1,10 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Get or create a conversation between the current user and another user
+/**
+ * Get or create a conversation between the current user and another user
+ */
 export const getOrCreateConversation = async (otherUserId: string): Promise<string> => {
   const { data: userSession, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !userSession.session) throw new Error("User not authenticated");
+  if (sessionError || !userSession.session) {
+    throw new Error("User not authenticated");
+  }
   
   const currentUserId = userSession.session.user.id;
   
@@ -75,7 +79,9 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
   }
 };
 
-// Get conversation participants
+/**
+ * Get conversation participants
+ */
 export const getConversationParticipants = async (conversationId: string) => {
   const { data, error } = await supabase
     .from("conversation_participants")
