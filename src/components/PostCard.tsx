@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Post } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -270,17 +269,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           )}
         </Link>
         
-        {/* Translate button */}
+        {/* Translate button - updated to be smaller with gray outline */}
         {!translatedText && user && (
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
             onClick={handleTranslate}
             disabled={isTranslating}
-            className="mb-2 text-xs flex items-center gap-1"
+            className="mb-2 text-xs border border-gray-300 h-8 px-3"
           >
             <Languages className="h-3 w-3 mr-1" />
-            {isTranslating ? 'Translating...' : 'Translate to my language'}
+            {isTranslating ? 'Translating...' : 'Translate'}
           </Button>
         )}
         
