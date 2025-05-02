@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
@@ -7,7 +8,6 @@ import { fetchPosts } from '@/services/postService';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import PageLayout from '@/components/PageLayout';
-import { Post } from '@/types';
 
 const MapView: React.FC = () => {
   const { toast } = useToast();
