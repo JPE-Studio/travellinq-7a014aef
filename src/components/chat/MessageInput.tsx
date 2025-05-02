@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface MessageInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -10,16 +11,26 @@ interface MessageInputProps {
 
 const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
   const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!message.trim() || sending) return;
     
     try {
+      setSending(true);
       await onSendMessage(message.trim());
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to send message",
+        description: "Please try again later."
+      });
+    } finally {
+      setSending(false);
     }
   };
 
@@ -33,12 +44,13 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => {
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Type a message..."
         className="flex-grow"
+        disabled={sending}
       />
       <Button 
         type="submit" 
         size="icon" 
         variant={message.trim() ? "default" : "ghost"} 
-        disabled={!message.trim()}
+        disabled={!message.trim() || sending}
       >
         <Send className="h-5 w-5" />
       </Button>
