@@ -22,13 +22,16 @@ const MapView: React.FC = () => {
       currentLocation.lat,
       currentLocation.lng
     ),
-    onError: (err) => {
-      toast({
-        title: "Error loading map data",
-        description: "Failed to load posts for the map view.",
-        variant: "destructive",
-      });
-      console.error(err);
+    // Using onSettled instead of onError in TanStack Query v5+
+    onSettled: (data, error) => {
+      if (error) {
+        toast({
+          title: "Error loading map data",
+          description: "Failed to load posts for the map view.",
+          variant: "destructive",
+        });
+        console.error(error);
+      }
     }
   });
 
