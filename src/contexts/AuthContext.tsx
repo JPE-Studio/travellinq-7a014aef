@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 import { User as AppUser } from '@/types';
 
 type AuthContextType = {
@@ -10,7 +9,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   profile: AppUser | null;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, username?: string, avatarFile?: File | null) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -71,19 +70,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           setProfile(null);
         }
-        
-        // Let user know about sign-in/out events
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Signed in successfully",
-            description: "Welcome back to Travellinq!",
-          });
-        } else if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Signed out",
-            description: "You have been signed out successfully.",
-          });
-        }
       }
     );
 
@@ -105,20 +91,62 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  // Helper function to upload avatar image
+  const uploadAvatar = async (userId: string, file: File) => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload the file to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+        
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      throw error;
+    }
+  };
+
+  const signUp = async (email: string, password: string, username?: string, avatarFile?: File | null) => {
+    try {
+      const { error, data } = await supabase.auth.signUp({ email, password });
+      
       if (error) throw error;
-      toast({
-        title: "Sign up successful",
-        description: "Please check your email for a verification link.",
-      });
+      
+      if (data.user && username) {
+        let avatarUrl = null;
+        
+        // If avatar file is provided, upload it
+        if (avatarFile) {
+          avatarUrl = await uploadAvatar(data.user.id, avatarFile);
+        }
+        
+        // Create or update the user's profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            pseudonym: username,
+            avatar: avatarUrl,
+            joined_at: new Date().toISOString()
+          });
+          
+        if (profileError) {
+          console.error("Error creating user profile:", profileError);
+        }
+      }
     } catch (error: any) {
-      toast({
-        title: "Sign up failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Sign up failed:", error.message);
       throw error;
     }
   };
@@ -131,11 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       if (error) throw error;
     } catch (error: any) {
-      toast({
-        title: "Sign in failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Sign in failed:", error.message);
       throw error;
     }
   };
@@ -145,11 +169,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error: any) {
-      toast({
-        title: "Sign out failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Sign out failed:", error.message);
       throw error;
     }
   };
