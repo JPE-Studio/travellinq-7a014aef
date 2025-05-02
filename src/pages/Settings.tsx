@@ -29,9 +29,29 @@ const Settings: React.FC = () => {
     if (profile) {
       setDisplayName(profile.pseudonym || '');
       setBio(profile.bio || '');
-      // Location would come from a separate field if we had it in the profile table
+      
+      // Load location from user metadata if available
+      const fetchLocation = async () => {
+        if (user) {
+          try {
+            const { data: userData } = await supabase
+              .from('profiles')
+              .select('location')
+              .eq('id', user.id)
+              .single();
+              
+            if (userData && userData.location) {
+              setLocation(userData.location);
+            }
+          } catch (error) {
+            console.error("Error fetching user location:", error);
+          }
+        }
+      };
+      
+      fetchLocation();
     }
-  }, [profile]);
+  }, [profile, user]);
   
   // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,7 +112,8 @@ const Settings: React.FC = () => {
         .update({
           pseudonym: displayName,
           bio: bio,
-          avatar: avatarUrl
+          avatar: avatarUrl,
+          location: location
         })
         .eq('id', user.id);
       
@@ -198,6 +219,9 @@ const Settings: React.FC = () => {
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g. Portland, OR"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your location will be stored and used to show nearby posts
+                  </p>
                 </div>
               </div>
             </div>

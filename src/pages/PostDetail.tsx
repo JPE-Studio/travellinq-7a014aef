@@ -1,22 +1,28 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, User, ChevronLeft, ArrowUp, ArrowDown } from 'lucide-react';
+import { MapPin, User, ChevronLeft, ThumbsUp, ThumbsDown, Bell, BellOff, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { fetchPostById } from '@/services/postService';
+import { fetchPostById, votePost } from '@/services/postService';
 import { fetchComments, addComment } from '@/services/commentService';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import Comment from '@/components/Comment';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [comment, setComment] = useState('');
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [votes, setVotes] = useState(0);
+  const [userVote, setUserVote] = useState<1 | -1 | null>(null);
   
   // Query for post data
   const { 
@@ -31,7 +37,7 @@ const PostDetail: React.FC = () => {
   
   // Query for comments
   const { 
-    data: comments = [], 
+    data: commentsData = [], 
     isLoading: areCommentsLoading, 
     error: commentsError 
   } = useQuery({
@@ -39,6 +45,88 @@ const PostDetail: React.FC = () => {
     queryFn: () => fetchComments(id as string),
     enabled: !!id
   });
+  
+  // Update local state when post data comes in
+  useEffect(() => {
+    if (post) {
+      setVotes(post.votes);
+    }
+  }, [post]);
+  
+  // Check if user is already subscribed to this post
+  useEffect(() => {
+    if (!user || !id) return;
+
+    const checkSubscription = async () => {
+      try {
+        const { data } = await supabase
+          .from('post_subscriptions')
+          .select('id')
+          .eq('post_id', id)
+          .eq('user_id', user.id)
+          .single();
+        
+        setIsSubscribed(!!data);
+      } catch (error) {
+        // No subscription found
+        setIsSubscribed(false);
+      }
+    };
+
+    // Check if user has already voted on this post
+    const checkUserVote = async () => {
+      try {
+        const { data } = await supabase
+          .from('user_post_votes')
+          .select('vote_type')
+          .eq('post_id', id)
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data) {
+          setUserVote(data.vote_type as 1 | -1);
+        }
+      } catch (error) {
+        // No vote found
+        setUserVote(null);
+      }
+    };
+
+    checkSubscription();
+    checkUserVote();
+  }, [id, user]);
+  
+  // Organize comments into a tree structure with parent/child relationships
+  const organizedComments = React.useMemo(() => {
+    const commentMap: Record<string, typeof commentsData[0] & { replies?: typeof commentsData }> = {};
+    const topLevelComments: (typeof commentsData[0] & { replies?: typeof commentsData })[] = [];
+    
+    // First pass: create a map of all comments
+    commentsData.forEach(comment => {
+      commentMap[comment.id] = { ...comment, replies: [] };
+    });
+    
+    // Second pass: organize into parent/child relationships
+    commentsData.forEach(comment => {
+      if (comment.parentCommentId) {
+        // This is a reply, add to parent's replies array
+        if (commentMap[comment.parentCommentId]) {
+          if (!commentMap[comment.parentCommentId].replies) {
+            commentMap[comment.parentCommentId].replies = [];
+          }
+          commentMap[comment.parentCommentId].replies?.push(commentMap[comment.id]);
+        } else {
+          // Parent comment not found, treat as top-level
+          topLevelComments.push(commentMap[comment.id]);
+        }
+      } else {
+        // This is a top-level comment
+        topLevelComments.push(commentMap[comment.id]);
+      }
+    });
+    
+    return topLevelComments;
+  }, [commentsData]);
   
   // Mutation for adding comments
   const addCommentMutation = useMutation({
@@ -63,23 +151,7 @@ const PostDetail: React.FC = () => {
     }
   });
 
-  const handleVote = (direction: 'up' | 'down') => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to vote on posts.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    toast({
-      title: direction === 'up' ? "Upvoted" : "Downvoted",
-      description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
-    });
-  };
-
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -89,10 +161,112 @@ const PostDetail: React.FC = () => {
       return;
     }
     
-    toast({
-      title: "Subscribed to post",
-      description: `You'll receive notifications for updates to this post.`,
-    });
+    if (!id) return;
+    
+    setLoading(true);
+
+    try {
+      if (isSubscribed) {
+        // Unsubscribe
+        await supabase
+          .from('post_subscriptions')
+          .delete()
+          .eq('post_id', id)
+          .eq('user_id', user.id);
+
+        setIsSubscribed(false);
+        toast({
+          title: "Unsubscribed",
+          description: `You'll no longer receive notifications for this post.`,
+        });
+      } else {
+        // Subscribe
+        await supabase
+          .from('post_subscriptions')
+          .insert({
+            post_id: id,
+            user_id: user.id
+          });
+
+        setIsSubscribed(true);
+        toast({
+          title: "Subscribed",
+          description: `You'll receive notifications for updates to this post.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling subscription:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update subscription. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVote = async (direction: 'up' | 'down') => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to vote on posts.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!id) return;
+    
+    setLoading(true);
+    
+    try {
+      const voteType = direction === 'up' ? 1 : -1;
+      
+      // If user already voted the same way, treat as removing vote
+      if (userVote === voteType) {
+        // Remove vote
+        await supabase
+          .from('user_post_votes')
+          .delete()
+          .eq('post_id', id)
+          .eq('user_id', user.id);
+        
+        setVotes(prev => prev - voteType); // Adjust the vote count
+        setUserVote(null);
+        
+        toast({
+          title: "Vote removed",
+          description: `Your vote has been removed.`,
+        });
+      } else {
+        // Add or change vote
+        await votePost(id, voteType);
+        
+        // If changing vote, need to adjust by 2 (remove old vote and add new one)
+        if (userVote !== null) {
+          setVotes(prev => prev - userVote + voteType);
+        } else {
+          setVotes(prev => prev + voteType);
+        }
+        
+        setUserVote(voteType);
+        
+        toast({
+          title: direction === 'up' ? "Upvoted" : "Downvoted",
+          description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error voting:", error);
+      toast({
+        title: "Error",
+        description: "Failed to register your vote. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleSubmitComment = (e: React.FormEvent) => {
@@ -193,7 +367,12 @@ const PostDetail: React.FC = () => {
                       <>
                         <span className="mx-1">•</span>
                         <MapPin size={12} className="mr-1" />
-                        <span>{post.distance?.toFixed(1) || "Unknown"} miles away</span>
+                        <span>
+                          {post.distance !== undefined ? 
+                            `${post.distance.toFixed(1)} miles away` : 
+                            "Distance unknown"
+                          }
+                        </span>
                       </>
                     )}
                   </div>
@@ -218,33 +397,47 @@ const PostDetail: React.FC = () => {
               <div className="flex items-center justify-between text-sm mt-4">
                 <div className="flex items-center space-x-4">
                   <button 
-                    className="flex items-center hover:text-foreground text-muted-foreground"
+                    className={`flex items-center transition-colors ${userVote === 1 ? 'text-blue-500' : 'hover:text-foreground text-muted-foreground'}`}
                     onClick={() => handleVote('up')}
+                    disabled={loading}
                   >
-                    <ArrowUp className="h-4 w-4 mr-1" />
-                    <span>{post.votes}</span>
+                    <ThumbsUp className="h-4 w-4 mr-1" />
+                    <span>{votes}</span>
                   </button>
                   <button 
-                    className="flex items-center hover:text-foreground text-muted-foreground"
+                    className={`flex items-center transition-colors ${userVote === -1 ? 'text-red-500' : 'hover:text-foreground text-muted-foreground'}`}
                     onClick={() => handleVote('down')}
+                    disabled={loading}
                   >
-                    <ArrowDown className="h-4 w-4" />
+                    <ThumbsDown className="h-4 w-4" />
                   </button>
                 </div>
                 
                 <button 
-                  className="text-muted-foreground hover:text-foreground"
+                  className={`flex items-center ${isSubscribed ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   onClick={handleSubscribe}
+                  disabled={loading}
                 >
-                  Subscribe
+                  {isSubscribed ? (
+                    <>
+                      <Bell className="h-4 w-4 mr-1 fill-primary" />
+                      <span>Subscribed</span>
+                    </>
+                  ) : (
+                    <>
+                      <BellOff className="h-4 w-4 mr-1" />
+                      <span>Subscribe</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
             
             <div className="bg-card rounded-lg shadow p-4">
-              <h2 className="font-semibold mb-4">Comments ({comments.length})</h2>
+              <h2 className="font-semibold mb-4">Comments ({organizedComments.length})</h2>
               <form className="flex mb-4" onSubmit={handleSubmitComment}>
                 <Avatar className="h-8 w-8 mr-3">
+                  <AvatarImage src={profile?.avatar} />
                   <AvatarFallback>
                     <User className="h-4 w-4 text-muted-foreground" />
                   </AvatarFallback>
@@ -263,7 +456,12 @@ const PostDetail: React.FC = () => {
                       size="sm"
                       disabled={addCommentMutation.isPending}
                     >
-                      {addCommentMutation.isPending ? 'Posting...' : 'Post'}
+                      {addCommentMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Posting...
+                        </>
+                      ) : 'Post'}
                     </Button>
                   </div>
                 </div>
@@ -277,46 +475,24 @@ const PostDetail: React.FC = () => {
                 <div className="text-center text-destructive my-4">
                   Error loading comments. Please try again.
                 </div>
-              ) : comments.length === 0 ? (
+              ) : organizedComments.length === 0 ? (
                 <div className="text-center text-muted-foreground py-4">
                   No comments yet. Be the first to comment!
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {comments.map(comment => (
-                    <div key={comment.id} className="border-t pt-4">
-                      <div className="flex">
-                        <Link to={`/user/${comment.author.id}`} className="mr-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={comment.author.avatar} className="object-cover" />
-                            <AvatarFallback>
-                              <User className="h-4 w-4" />
-                            </AvatarFallback>
-                          </Avatar>
-                        </Link>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <Link to={`/user/${comment.author.id}`} className="font-medium text-sm hover:underline">
-                              {comment.author.pseudonym}
-                            </Link>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-sm">{comment.text}</p>
-                          <div className="flex items-center mt-2 text-xs text-muted-foreground">
-                            <button className="flex items-center hover:text-foreground mr-3">
-                              <ArrowUp className="h-3 w-3 mr-1" />
-                              <span>{comment.votes}</span>
-                            </button>
-                            <button className="flex items-center hover:text-foreground mr-3">
-                              <ArrowDown className="h-3 w-3" />
-                            </button>
-                            <button className="hover:text-foreground">Reply</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {organizedComments.map(comment => (
+                    <React.Fragment key={comment.id}>
+                      <Comment comment={comment} postId={id as string} />
+                      {comment.replies?.map(reply => (
+                        <Comment 
+                          key={reply.id} 
+                          comment={reply} 
+                          postId={id as string}
+                          nested={true} 
+                        />
+                      ))}
+                    </React.Fragment>
                   ))}
                 </div>
               )}

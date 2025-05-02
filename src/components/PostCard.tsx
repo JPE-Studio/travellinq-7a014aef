@@ -1,29 +1,182 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Post } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { MapPin, User, ArrowUp, ArrowDown } from 'lucide-react';
+import { MapPin, User, ThumbsUp, ThumbsDown, Bell, BellOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { votePost } from '@/services/postService';
+import { Badge } from '@/components/ui/badge';
 
 interface PostCardProps {
   post: Post;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const handleSubscribe = () => {
-    toast({
-      title: "Subscribed to post",
-      description: `You'll receive notifications for updates to this post.`,
-    });
+  const { user } = useAuth();
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [votes, setVotes] = useState(post.votes);
+  const [userVote, setUserVote] = useState<1 | -1 | null>(null);
+
+  // Check if user is already subscribed to this post
+  useEffect(() => {
+    if (!user) return;
+
+    const checkSubscription = async () => {
+      try {
+        const { data } = await supabase
+          .from('post_subscriptions')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .single();
+        
+        setIsSubscribed(!!data);
+      } catch (error) {
+        // No subscription found
+        setIsSubscribed(false);
+      }
+    };
+
+    // Check if user has already voted on this post
+    const checkUserVote = async () => {
+      try {
+        const { data } = await supabase
+          .from('user_post_votes')
+          .select('vote_type')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data) {
+          setUserVote(data.vote_type as 1 | -1);
+        }
+      } catch (error) {
+        // No vote found
+        setUserVote(null);
+      }
+    };
+
+    checkSubscription();
+    checkUserVote();
+  }, [post.id, user]);
+
+  const handleSubscribe = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to subscribe to posts.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (isSubscribed) {
+        // Unsubscribe
+        await supabase
+          .from('post_subscriptions')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', user.id);
+
+        setIsSubscribed(false);
+        toast({
+          title: "Unsubscribed",
+          description: `You'll no longer receive notifications for this post.`,
+        });
+      } else {
+        // Subscribe
+        await supabase
+          .from('post_subscriptions')
+          .insert({
+            post_id: post.id,
+            user_id: user.id
+          });
+
+        setIsSubscribed(true);
+        toast({
+          title: "Subscribed",
+          description: `You'll receive notifications for updates to this post.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling subscription:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update subscription. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVote = (direction: 'up' | 'down') => {
-    toast({
-      title: direction === 'up' ? "Upvoted" : "Downvoted",
-      description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
-    });
+  const handleVote = async (direction: 'up' | 'down') => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to vote on posts.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const voteType = direction === 'up' ? 1 : -1;
+      
+      // If user already voted the same way, treat as removing vote
+      if (userVote === voteType) {
+        // Remove vote
+        await supabase
+          .from('user_post_votes')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', user.id);
+        
+        setVotes(prev => prev - voteType); // Adjust the vote count
+        setUserVote(null);
+        
+        toast({
+          title: "Vote removed",
+          description: `Your vote has been removed.`,
+        });
+      } else {
+        // Add or change vote
+        await votePost(post.id, voteType);
+        
+        // If changing vote, need to adjust by 2 (remove old vote and add new one)
+        if (userVote !== null) {
+          setVotes(prev => prev - userVote + voteType);
+        } else {
+          setVotes(prev => prev + voteType);
+        }
+        
+        setUserVote(voteType);
+        
+        toast({
+          title: direction === 'up' ? "Upvoted" : "Downvoted",
+          description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error voting:", error);
+      toast({
+        title: "Error",
+        description: "Failed to register your vote. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,25 +242,38 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
           <div className="flex items-center space-x-4">
             <button 
-              className="flex items-center hover:text-foreground"
+              className={`flex items-center transition-colors ${userVote === 1 ? 'text-blue-500' : 'hover:text-foreground'}`}
               onClick={() => handleVote('up')}
+              disabled={loading}
             >
-              <ArrowUp className="h-4 w-4 mr-1" />
-              <span>{post.votes}</span>
+              <ThumbsUp className="h-4 w-4 mr-1" />
+              <span>{votes}</span>
             </button>
             <button 
-              className="flex items-center hover:text-foreground"
+              className={`flex items-center transition-colors ${userVote === -1 ? 'text-red-500' : 'hover:text-foreground'}`}
               onClick={() => handleVote('down')}
+              disabled={loading}
             >
-              <ArrowDown className="h-4 w-4" />
+              <ThumbsDown className="h-4 w-4" />
             </button>
           </div>
           <div className="flex items-center space-x-4">
             <button 
-              className="hover:text-foreground"
+              className={`flex items-center hover:text-foreground ${isSubscribed ? 'text-primary' : ''}`}
               onClick={handleSubscribe}
+              disabled={loading}
             >
-              Subscribe
+              {isSubscribed ? (
+                <>
+                  <Bell className="h-4 w-4 mr-1 fill-primary" />
+                  <span>Subscribed</span>
+                </>
+              ) : (
+                <>
+                  <BellOff className="h-4 w-4 mr-1" />
+                  <span>Subscribe</span>
+                </>
+              )}
             </button>
             <Link to={`/post/${post.id}`} className="hover:text-foreground">
               {post.commentCount} comments
