@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import Map from '@/components/Map';
 import PostList from '@/components/PostList';
 import PostFilters from '@/components/PostFilters';
 import CreatePostButton from '@/components/CreatePostButton';
@@ -14,8 +12,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index: React.FC = () => {
   const isMobile = useIsMobile();
-  const [mapExpanded, setMapExpanded] = useState(false);
-  const [mapFullscreen, setMapFullscreen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentLocation, setCurrentLocation] = useState({ lat: 48.2082, lng: 16.3719 }); // Vienna, Austria
   const [filters, setFilters] = useState({
@@ -104,40 +100,6 @@ const Index: React.FC = () => {
     // Welcome toast is now shown in the OnboardingModal component after successful profile creation
   };
 
-  const handleToggleMapExpand = () => {
-    setMapExpanded(!mapExpanded);
-  };
-
-  const handleToggleMapFullscreen = () => {
-    setMapFullscreen(!mapFullscreen);
-    // When entering or exiting fullscreen, we want to update the map
-    setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 100);
-  };
-
-  // If map is in fullscreen mode, only show the map
-  if (mapFullscreen) {
-    return (
-      <div className="fixed inset-0 z-50 bg-background flex flex-col">
-        <div className="flex-grow relative">
-          <Map 
-            posts={posts}
-            currentLocation={currentLocation}
-            expanded={mapExpanded}
-            onToggleExpand={handleToggleMapExpand}
-            fullscreen={mapFullscreen}
-            onToggleFullscreen={handleToggleMapFullscreen}
-          />
-        </div>
-        {/* Always show bottom navigation in fullscreen mode on mobile */}
-        <div className="md:hidden">
-          <div className="h-16"></div> {/* Spacer for the bottom navigation */}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <PageLayout showHeader={true}>
       {/* Main content */}
@@ -148,17 +110,8 @@ const Index: React.FC = () => {
           </div>
         ) : null}
         
-        <Map 
-          posts={posts}
-          currentLocation={currentLocation}
-          expanded={mapExpanded}
-          onToggleExpand={handleToggleMapExpand}
-          fullscreen={mapFullscreen}
-          onToggleFullscreen={handleToggleMapFullscreen}
-        />
-        
-        {/* Filters */}
-        <div className="bg-background border-b p-2 flex justify-end">
+        {/* Distance Filter at the top */}
+        <div className="bg-background p-2 border-b">
           <PostFilters onFilterChange={handleFilterChange} />
         </div>
         

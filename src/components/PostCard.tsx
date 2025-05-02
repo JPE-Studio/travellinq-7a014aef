@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Post } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { MapPin, User, ThumbsUp, ThumbsDown, Bell, BellOff, Languages } from 'lucide-react';
+import { MapPin, User, ThumbsUp, ThumbsDown, Bell, BellOff, Languages, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -227,44 +227,59 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   return (
     <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
-      {/* Post header with user info */}
+      {/* Post header with user info and subscribe button */}
       <div className="p-4">
-        <Link to={`/profile/${post.author.id}`} className="flex items-center mb-3">
-          <div className="mr-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={post.author.avatar} className="object-cover" />
-              <AvatarFallback>
-                <User className="h-5 w-5" />
-              </AvatarFallback>
-            </Avatar>
-          </div>
-          <div>
-            <div className="font-medium hover:underline">{post.author.pseudonym}</div>
-            <div className="flex flex-wrap items-center text-xs text-muted-foreground">
-              <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
-              {post.location && (
-                <>
-                  <span className="mx-1">•</span>
-                  <MapPin size={12} className="mr-1" />
-                  <span className="flex items-center">
-                    {post.distance !== undefined ? (
-                      <>
-                        <span className={post.distance <= 10 ? "text-forest font-medium" : ""}>
-                          {formatDistance(post.distance)}
-                        </span>
-                        {post.distance <= 5 && (
-                          <span className="ml-1 bg-forest/20 text-forest px-1 rounded text-[10px]">Near you</span>
-                        )}
-                      </>
-                    ) : (
-                      <span>Location available</span>
-                    )}
-                  </span>
-                </>
-              )}
+        <div className="flex items-center justify-between mb-3">
+          <Link to={`/profile/${post.author.id}`} className="flex items-center">
+            <div className="mr-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={post.author.avatar} className="object-cover" />
+                <AvatarFallback>
+                  <User className="h-5 w-5" />
+                </AvatarFallback>
+              </Avatar>
             </div>
-          </div>
-        </Link>
+            <div>
+              <div className="font-medium hover:underline">{post.author.pseudonym}</div>
+              <div className="flex flex-wrap items-center text-xs text-muted-foreground">
+                <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
+                {post.location && (
+                  <>
+                    <span className="mx-1">•</span>
+                    <MapPin size={12} className="mr-1" />
+                    <span className="flex items-center">
+                      {post.distance !== undefined ? (
+                        <>
+                          <span className={post.distance <= 10 ? "text-forest font-medium" : ""}>
+                            {formatDistance(post.distance)}
+                          </span>
+                          {post.distance <= 5 && (
+                            <span className="ml-1 bg-forest/20 text-forest px-1 rounded text-[10px]">Near you</span>
+                          )}
+                        </>
+                      ) : (
+                        <span>Location available</span>
+                      )}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </Link>
+          
+          {/* Subscribe button moved to top right */}
+          <button 
+            className={`flex items-center hover:text-foreground ${isSubscribed ? 'text-primary' : ''}`}
+            onClick={handleSubscribe}
+            disabled={loading}
+          >
+            {!isSubscribed ? (
+              <Bell className="h-5 w-5" />
+            ) : (
+              <BellOff className="h-5 w-5" />
+            )}
+          </button>
+        </div>
 
         <Link to={`/post/${post.id}`} className="block">
           <p className="mb-3 text-foreground">{translatedText || post.text}</p>
@@ -283,20 +298,6 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             </div>
           )}
         </Link>
-        
-        {/* Translate button */}
-        {!translatedText && user && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleTranslate}
-            disabled={isTranslating}
-            className="mb-2 text-xs border border-gray-300 h-8 px-3"
-          >
-            <Languages className="h-3 w-3 mr-1" />
-            {isTranslating ? 'Translating...' : 'Translate'}
-          </Button>
-        )}
         
         {/* Category badge */}
         <div className="mb-2">
@@ -324,28 +325,26 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               <ThumbsDown className="h-4 w-4" />
             </button>
           </div>
-          <div className="flex items-center space-x-4">
-            <button 
-              className={`flex items-center hover:text-foreground ${isSubscribed ? 'text-primary' : ''}`}
-              onClick={handleSubscribe}
-              disabled={loading}
+          
+          {/* Translate button in the center */}
+          {!translatedText && user && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleTranslate}
+              disabled={isTranslating}
+              className="text-xs border border-gray-300 h-8 px-3"
             >
-              {!isSubscribed ? (
-                <>
-                  <Bell className="h-4 w-4 mr-1" />
-                  <span>Subscribe</span>
-                </>
-              ) : (
-                <>
-                  <BellOff className="h-4 w-4 mr-1" />
-                  <span>Unsubscribe</span>
-                </>
-              )}
-            </button>
-            <Link to={`/post/${post.id}`} className="hover:text-foreground">
-              {post.commentCount} comments
-            </Link>
-          </div>
+              <Languages className="h-3 w-3 mr-1" />
+              {isTranslating ? 'Translating...' : 'Translate'}
+            </Button>
+          )}
+          
+          {/* Comments link with icon instead of text */}
+          <Link to={`/post/${post.id}`} className="flex items-center hover:text-foreground">
+            <MessageCircle className="h-4 w-4 mr-1" />
+            <span>{post.commentCount}</span>
+          </Link>
         </div>
       </div>
     </div>
