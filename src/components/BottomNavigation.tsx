@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, MapPin, MessageSquare, Bell, User } from 'lucide-react';
+import { Home, MapPin, MessageSquare, User } from 'lucide-react';
 import UnreadChatBadge from './chat/UnreadChatBadge';
 
 const BottomNavigation = () => {
@@ -11,7 +11,6 @@ const BottomNavigation = () => {
   const onHomePage = location.pathname === "/" || location.pathname === "/home";
   const onMapPage = location.pathname === "/map";
   const onChatsPage = location.pathname === "/chats" || location.pathname.startsWith("/chat/");
-  const onNotificationsPage = location.pathname === "/notifications";
   const onProfilePage = location.pathname === "/profile";
 
   return (
@@ -40,14 +39,6 @@ const BottomNavigation = () => {
           <MessageSquare className="h-5 w-5" />
           <UnreadChatBadge />
           <span className="text-xs mt-1">Chats</span>
-        </NavLink>
-        
-        <NavLink
-          to="/notifications"
-          className={`flex flex-col items-center ${onNotificationsPage ? 'text-primary' : 'text-muted-foreground'}`}
-        >
-          <Bell className="h-5 w-5" />
-          <span className="text-xs mt-1">Alerts</span>
         </NavLink>
         
         <NavLink
