@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -151,26 +152,15 @@ const Map: React.FC<MapProps> = ({
     
     validPosts.forEach(post => {
       if (post.location) {
-        // Create a popup with post info
-        const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <div class="p-2">
-              <h3 class="font-semibold">${post.category}</h3>
-              <p class="text-sm">${post.text.substring(0, 100)}${post.text.length > 100 ? '...' : ''}</p>
-              <a href="/post/${post.id}" class="text-xs text-blue-500 hover:underline">View details</a>
-            </div>
-          `);
-
         // Determine marker color based on category
         let color = '#2E5E4E'; // Default forest green
         if (post.category === 'campsite') color = '#3A7D44';
         if (post.category === 'service') color = '#D5A021';
         if (post.category === 'question') color = '#61A8FF';
 
-        // Add marker for this post
+        // Add marker for this post without popup
         const marker = new mapboxgl.Marker({ color })
           .setLngLat([post.location.lng, post.location.lat])
-          .setPopup(popup)
           .addTo(map.current);
         
         markersRef.current.push(marker);
