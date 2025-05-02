@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User, Plus, Search, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchUserConversations, deleteConversation } from '@/services/conversationService';
+import { fetchUserConversations, deleteConversation } from '@/services/conversations';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
