@@ -2,17 +2,27 @@
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, User, MessageCircle } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { MapPin, User, MessageCircle, QrCode } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { mockUsers } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import BottomNavigation from '@/components/BottomNavigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import QRCode from 'react-qr-code';
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const [isConnected, setIsConnected] = useState(false);
   const [isLocationShared, setIsLocationShared] = useState(true); // For demo purpose, default to true
+  const navigate = useNavigate();
   
   // Find the user from mock data
   const user = mockUsers.find(user => user.id === userId);
@@ -31,11 +41,9 @@ const UserProfile: React.FC = () => {
   };
   
   const handleMessage = () => {
-    toast({
-      title: "Starting conversation",
-      description: `Opening chat with ${user?.pseudonym}.`,
-    });
-    // In a real app, we would navigate to the chat page
+    if (user) {
+      navigate(`/chat/${user.id}`);
+    }
   };
 
   const toggleNotification = () => {
@@ -44,6 +52,9 @@ const UserProfile: React.FC = () => {
       description: `You'll be notified when ${user?.pseudonym} is nearby.`,
     });
   };
+
+  // Generate QR code data
+  const qrCodeValue = user ? `nomadlink://user/${user.id}` : '';
 
   if (!user) {
     return (
@@ -103,6 +114,29 @@ const UserProfile: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 Joined {user.joinedAt.toLocaleDateString()}
               </p>
+              
+              {/* QR Code Dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4" />
+                    Show QR Code
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Connect with {user.pseudonym}</DialogTitle>
+                    <DialogDescription>
+                      Scan this QR code to connect directly with {user.pseudonym}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex items-center justify-center py-6">
+                    <div className="p-2 bg-white rounded-lg">
+                      <QRCode value={qrCodeValue} size={200} />
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
             
             <div className="flex justify-center gap-4 mb-8">

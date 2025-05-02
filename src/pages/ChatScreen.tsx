@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User, ArrowLeft, Send } from 'lucide-react';
@@ -24,6 +24,7 @@ const ChatScreen: React.FC = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   
   // Find the user from mock data
   const user = mockUsers.find(user => user.id === userId);
@@ -100,6 +101,12 @@ const ChatScreen: React.FC = () => {
       description: `Your message to ${user.pseudonym} has been sent.`,
     });
   };
+  
+  const handleUserProfileClick = () => {
+    if (userId) {
+      navigate(`/user/${userId}`);
+    }
+  };
 
   if (!user || !currentUser) {
     return (
@@ -125,13 +132,16 @@ const ChatScreen: React.FC = () => {
         <Link to="/chats" className="mr-2">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <Avatar className="h-8 w-8 mr-2">
-          <AvatarImage src={user.avatar} alt={user.pseudonym} className="object-cover" />
-          <AvatarFallback>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
+        <div 
+          className="flex items-center flex-1 cursor-pointer" 
+          onClick={handleUserProfileClick}
+        >
+          <Avatar className="h-8 w-8 mr-2">
+            <AvatarImage src={user.avatar} alt={user.pseudonym} className="object-cover" />
+            <AvatarFallback>
+              <User className="h-4 w-4 text-muted-foreground" />
+            </AvatarFallback>
+          </Avatar>
           <p className="font-medium">{user.pseudonym}</p>
         </div>
       </div>
