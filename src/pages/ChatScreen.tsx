@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +11,7 @@ import PageLayout from '@/components/PageLayout';
 import ChatHeader from '@/components/chat/ChatHeader';
 import MessageList from '@/components/chat/MessageList';
 import MessageTextarea from '@/components/chat/MessageTextarea';
-import ChatSkeleton from '@/components/chat/ChatSkeleton';
+import ChatSkeleton from '@/components/chat/ChatError';
 import ChatError from '@/components/chat/ChatError';
 
 interface Message {
@@ -58,6 +57,32 @@ const ChatScreen: React.FC = () => {
         setMessages(data.messages);
         setOtherUser(data.otherUser);
         setCurrentUserId(data.currentUserId);
+        
+        // Set up real-time subscription for new messages
+        const unsubscribe = setupChatSubscription(userId, (newMessage) => {
+          console.log("Real-time message received:", newMessage);
+          const formattedMessage = {
+            id: newMessage.id,
+            senderId: newMessage.sender_id,
+            text: newMessage.content,
+            timestamp: new Date(newMessage.created_at),
+            read: newMessage.read
+          };
+          
+          setMessages(prevMessages => {
+            // Check if we already have this message to avoid duplicates
+            if (prevMessages.some(msg => msg.id === formattedMessage.id)) {
+              return prevMessages;
+            }
+            return [...prevMessages, formattedMessage];
+          });
+        });
+        
+        // Clean up subscription on unmount
+        return () => {
+          unsubscribe();
+        };
+        
       } catch (err) {
         console.error('Error loading conversation:', err);
         setError(err instanceof Error ? err.message : 'Failed to load conversation');
@@ -72,55 +97,7 @@ const ChatScreen: React.FC = () => {
     };
 
     loadConversation();
-
-    // Set up real-time subscription for new messages
-    const messageSubscription = supabase
-      .channel('messages-channel')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${userId}`
-      }, (payload) => {
-        const newMessage = payload.new as any;
-        console.log("New message received:", newMessage);
-        
-        // Avoid duplicates by checking if we already have this message
-        setMessages(prevMessages => {
-          const messageExists = prevMessages.some(msg => msg.id === newMessage.id);
-          if (messageExists) return prevMessages;
-          
-          return [
-            ...prevMessages, 
-            {
-              id: newMessage.id,
-              senderId: newMessage.sender_id,
-              text: newMessage.content,
-              timestamp: new Date(newMessage.created_at),
-              read: newMessage.read
-            }
-          ];
-        });
-
-        // Mark the message as read if it's not from the current user
-        if (currentUserId && newMessage.sender_id !== currentUserId) {
-          supabase
-            .from('messages')
-            .update({ read: true })
-            .eq('id', newMessage.id)
-            .then(({ error }) => {
-              if (error) console.error("Error marking message as read:", error);
-            });
-        }
-      })
-      .subscribe();
-
-    // Clean up subscription on component unmount
-    return () => {
-      console.log("Cleaning up message subscription");
-      supabase.removeChannel(messageSubscription);
-    };
-  }, [userId, navigate, user, currentUserId, toast]);
+  }, [userId, navigate, user, toast]);
 
   const handleSendMessage = async (message: string): Promise<void> => {
     if (!userId || !message.trim()) return;
@@ -167,6 +144,26 @@ const ChatScreen: React.FC = () => {
       <MessageTextarea onSendMessage={handleSendMessage} />
     </PageLayout>
   );
+};
+
+// Helper function for setting up chat subscriptions
+const setupChatSubscription = (conversationId: string, onNewMessage: (message: any) => void) => {
+  const channel = supabase
+    .channel('messages-channel-' + conversationId)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `conversation_id=eq.${conversationId}`
+    }, (payload) => {
+      console.log("New message received:", payload);
+      onNewMessage(payload.new);
+    })
+    .subscribe();
+    
+  return () => {
+    supabase.removeChannel(channel);
+  };
 };
 
 export default ChatScreen;

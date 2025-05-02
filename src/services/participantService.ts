@@ -40,7 +40,7 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     // Create a new conversation
     const { data: newConversation, error: createError } = await supabase
       .from("conversations")
-      .insert({})
+      .insert([{}])
       .select()
       .single();
     
@@ -54,10 +54,10 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     // Add current user to conversation
     const { error: currentUserPartError } = await supabase
       .from("conversation_participants")
-      .insert({
+      .insert([{
         conversation_id: newConversation.id,
         user_id: currentUserId
-      });
+      }]);
     
     if (currentUserPartError) {
       console.error("Error adding current user to conversation:", currentUserPartError);
@@ -67,10 +67,10 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     // Add other user to conversation
     const { error: otherUserPartError } = await supabase
       .from("conversation_participants")
-      .insert({
+      .insert([{
         conversation_id: newConversation.id,
         user_id: otherUserId
-      });
+      }]);
     
     if (otherUserPartError) {
       console.error("Error adding other user to conversation:", otherUserPartError);

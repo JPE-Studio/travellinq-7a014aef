@@ -6,10 +6,13 @@ export { acceptBuddyRequest, rejectBuddyRequest } from './buddyRequestHandler';
 export { updateBuddyNotificationSettings, disconnectBuddy } from './buddyConnectionSettings';
 export { getCurrentUserId } from './buddyUtils';
 
+// Import supabase client
+import { supabase } from "@/integrations/supabase/client";
+
 // Real-time chat subscription utility
 export const setupChatSubscription = (conversationId: string, onNewMessage: (message: any) => void) => {
   const channel = supabase
-    .channel('messages-channel')
+    .channel(`messages-channel-${conversationId}`)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -25,6 +28,3 @@ export const setupChatSubscription = (conversationId: string, onNewMessage: (mes
     supabase.removeChannel(channel);
   };
 };
-
-// Import supabase client
-import { supabase } from "@/integrations/supabase/client";
