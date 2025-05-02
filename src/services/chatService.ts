@@ -39,7 +39,16 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
     }
     
     console.log("Buddy connection data:", data);
-    return data as BuddyConnection | null;
+    
+    // Convert Supabase data to BuddyConnection type with status
+    if (data) {
+      return {
+        ...data,
+        status: data.status || 'active' // Default to 'active' if status doesn't exist
+      } as BuddyConnection;
+    }
+    
+    return null;
   } catch (error) {
     console.error("Exception in getBuddyConnection:", error);
     return null;
@@ -62,7 +71,7 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
   const connectionData = {
     user_id: userId,
     buddy_id: buddyId,
-    status: 'pending' as const,
+    status: 'pending',
     notify_at_100km: true,
     notify_at_50km: true,
     notify_at_20km: true
@@ -79,7 +88,11 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
     throw error;
   }
   
-  return data as BuddyConnection;
+  // Return with proper typing
+  return {
+    ...data,
+    status: 'pending'
+  } as BuddyConnection;
 };
 
 // Accept a buddy connection request
@@ -90,17 +103,25 @@ export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConn
     throw new Error("You must be logged in to accept connection requests");
   }
   
-  type BuddyUpdateType = Database['public']['Tables']['buddy_connections']['Update'];
-  const updateData: BuddyUpdateType = { 
-    status: 'active' 
-  };
-  
-  const { data, error } = await supabase
+  // First, fetch the current record to ensure it exists
+  const { data: existingConnection, error: fetchError } = await supabase
     .from('buddy_connections')
-    .update(updateData)
+    .select("*")
     .eq("user_id", requesterId)
     .eq("buddy_id", userId)
     .eq("status", 'pending')
+    .single();
+  
+  if (fetchError || !existingConnection) {
+    console.error("Error fetching connection to accept:", fetchError);
+    throw new Error("Connection request not found or already processed");
+  }
+  
+  // Now update it using a properly typed update object
+  const { data, error } = await supabase
+    .from('buddy_connections')
+    .update({ status: 'active' })
+    .eq("id", existingConnection.id)
     .select("*")
     .single();
   
@@ -109,7 +130,11 @@ export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConn
     throw error;
   }
   
-  return data as BuddyConnection;
+  // Return with proper typing
+  return {
+    ...data,
+    status: 'active'
+  } as BuddyConnection;
 };
 
 // Reject a buddy connection request
@@ -120,17 +145,25 @@ export const rejectBuddyRequest = async (requesterId: string): Promise<void> => 
     throw new Error("You must be logged in to reject connection requests");
   }
   
-  type BuddyUpdateType = Database['public']['Tables']['buddy_connections']['Update'];
-  const updateData: BuddyUpdateType = { 
-    status: 'rejected' 
-  };
-  
-  const { error } = await supabase
+  // First, fetch the current record to ensure it exists
+  const { data: existingConnection, error: fetchError } = await supabase
     .from('buddy_connections')
-    .update(updateData)
+    .select("*")
     .eq("user_id", requesterId)
     .eq("buddy_id", userId)
-    .eq("status", 'pending');
+    .eq("status", 'pending')
+    .single();
+    
+  if (fetchError || !existingConnection) {
+    console.error("Error fetching connection to reject:", fetchError);
+    throw new Error("Connection request not found or already processed");
+  }
+  
+  // Now update it using a properly typed update object
+  const { error } = await supabase
+    .from('buddy_connections')
+    .update({ status: 'rejected' })
+    .eq("id", existingConnection.id);
   
   if (error) {
     console.error("Error rejecting buddy request:", error);
@@ -166,7 +199,11 @@ export const updateBuddyNotificationSettings = async (
     throw error;
   }
   
-  return data as BuddyConnection;
+  // Return with proper typing
+  return {
+    ...data,
+    status: data.status || 'active' // Default to 'active' if status doesn't exist
+  } as BuddyConnection;
 };
 
 // Disconnect from a buddy

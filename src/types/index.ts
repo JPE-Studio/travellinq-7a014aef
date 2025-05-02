@@ -42,7 +42,7 @@ export interface BuddyConnection {
   id: string;
   user_id: string;
   buddy_id: string;
-  status?: 'pending' | 'active' | 'rejected'; // Made optional for backward compatibility
+  status: 'pending' | 'active' | 'rejected';
   notify_at_100km: boolean;
   notify_at_50km: boolean;
   notify_at_20km: boolean;
