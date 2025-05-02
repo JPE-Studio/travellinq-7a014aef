@@ -15,7 +15,8 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const { profile } = useAuth();
-  const autoTranslate = profile?.autoTranslate || false;
+  // Always set autoTranslate to false to disable automatic translation
+  const autoTranslate = false;
   
   // Post subscription logic
   const { isSubscribed, loading: subscriptionLoading, handleSubscribe } = usePostSubscription(post.id);
@@ -23,7 +24,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   // Post voting logic
   const { votes, userVote, loading: votingLoading, handleVote } = usePostVoting(post.id, post.votes);
   
-  // Post translation logic - now with auto-translate
+  // Post translation logic - now with auto-translate disabled
   const { isTranslating, translatedText, detectedLanguage, handleTranslate } = usePostTranslation(post.text, autoTranslate);
   
   // Combined loading state
@@ -58,7 +59,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           translatedText={translatedText}
           isTranslating={isTranslating}
           handleTranslate={handleTranslate}
-          showTranslateButton={!autoTranslate || !translatedText}
+          showTranslateButton={true} // Always show the translate button
         />
       </div>
     </div>

@@ -312,6 +312,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auto_translate: boolean
           avatar: string | null
           bio: string | null
           id: string
@@ -324,6 +325,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          auto_translate?: boolean
           avatar?: string | null
           bio?: string | null
           id: string
@@ -336,6 +338,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          auto_translate?: boolean
           avatar?: string | null
           bio?: string | null
           id?: string
