@@ -269,27 +269,36 @@ export type Database = {
           bio: string | null
           id: string
           joined_at: string
+          latitude: number | null
           location: string | null
+          longitude: number | null
           preferred_language: string | null
           pseudonym: string
+          website: string | null
         }
         Insert: {
           avatar?: string | null
           bio?: string | null
           id: string
           joined_at?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           preferred_language?: string | null
           pseudonym: string
+          website?: string | null
         }
         Update: {
           avatar?: string | null
           bio?: string | null
           id?: string
           joined_at?: string
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           preferred_language?: string | null
           pseudonym?: string
+          website?: string | null
         }
         Relationships: []
       }

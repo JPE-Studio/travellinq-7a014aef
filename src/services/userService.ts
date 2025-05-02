@@ -18,8 +18,11 @@ export const fetchUserProfile = async (userId: string): Promise<User> => {
     avatar: data.avatar,
     bio: data.bio,
     location: data.location,
+    joinedAt: new Date(data.joined_at),
     preferredLanguage: data.preferred_language,
-    joinedAt: new Date(data.joined_at)
+    website: data.website,
+    latitude: data.latitude,
+    longitude: data.longitude
   };
 };
 
@@ -38,8 +41,11 @@ export const fetchUserProfiles = async (userIds: string[]): Promise<User[]> => {
     avatar: profile.avatar,
     bio: profile.bio,
     location: profile.location,
+    joinedAt: new Date(profile.joined_at),
     preferredLanguage: profile.preferred_language,
-    joinedAt: new Date(profile.joined_at)
+    website: profile.website,
+    latitude: profile.latitude,
+    longitude: profile.longitude
   }));
 };
 
@@ -65,7 +71,10 @@ export const fetchOtherUsers = async (): Promise<User[]> => {
     avatar: profile.avatar,
     bio: profile.bio,
     location: profile.location,
+    joinedAt: new Date(profile.joined_at),
     preferredLanguage: profile.preferred_language,
-    joinedAt: new Date(profile.joined_at)
+    website: profile.website,
+    latitude: profile.latitude,
+    longitude: profile.longitude
   }));
 };
