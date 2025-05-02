@@ -24,9 +24,10 @@ export const setupRlsPolicies = async () => {
 export const setupRealtimeTables = async () => {
   try {
     // Use our new helper function to enable realtime for messages
-    const { data, error } = await supabase.rpc('enable_realtime_for_table', {
-      table_name: 'messages'
-    });
+    const { data, error } = await supabase.rpc(
+      'enable_realtime_for_table',
+      { table_name: 'messages' }
+    ) as unknown as { data: any, error: any };
     
     if (error) {
       console.error("Error setting up realtime for messages:", error);
@@ -50,9 +51,10 @@ export const enableRowLevelSecurity = async () => {
     for (const table of tables) {
       // Use execute_sql directly rather than through RPC
       try {
-        await supabase.rpc('execute_sql', {
-          sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` 
-        });
+        await supabase.rpc(
+          'execute_sql',
+          { sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` }
+        ) as unknown as { data: any, error: any };
         console.log(`RLS enabled on ${table} table`);
       } catch (error: any) {
         // Ignore "already enabled" errors
@@ -75,7 +77,9 @@ export const enableRowLevelSecurity = async () => {
 export const checkRlsStatus = async () => {
   try {
     // Use our new helper function to check RLS status
-    const { data, error } = await supabase.rpc('check_rls_status');
+    const { data, error } = await supabase.rpc(
+      'check_rls_status'
+    ) as unknown as { data: any, error: any };
     
     if (error) {
       console.error("Error checking RLS status:", error);
