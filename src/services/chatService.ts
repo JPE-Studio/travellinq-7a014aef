@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 // Import individual services
 export * from './conversationService';
 export * from './messageService'; 

@@ -7,6 +7,9 @@ export interface User {
   location?: string;
   joinedAt: Date;
   preferredLanguage?: string;
+  website?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Post {
@@ -33,4 +36,14 @@ export interface Comment {
   parentCommentId?: string;
   votes: number;
   createdAt: Date;
+}
+
+export interface BuddyConnection {
+  id: string;
+  user_id: string;
+  buddy_id: string;
+  notify_at_100km: boolean;
+  notify_at_50km: boolean;
+  notify_at_20km: boolean;
+  created_at: string;
 }
