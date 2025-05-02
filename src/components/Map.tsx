@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -5,6 +6,7 @@ import { Post } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from './ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MapProps {
   posts: Post[];
@@ -29,11 +31,16 @@ const Map: React.FC<MapProps> = ({
   fullscreen = false,
   onToggleFullscreen
 }) => {
+  const isMobile = useIsMobile();
+  
+  // Dynamic height based on state and device
   const mapHeight = fullscreen 
     ? 'h-full' 
-    : expanded 
-      ? 'h-96' 
-      : 'h-48';
+    : (isMobile && expanded)
+      ? 'h-full'
+      : expanded 
+        ? 'h-96' 
+        : 'h-48';
 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -191,8 +198,11 @@ const Map: React.FC<MapProps> = ({
     }
   }, [expanded, fullscreen, mapLoaded]);
 
+  // Calculate z-index based on fullscreen state
+  const zIndex = fullscreen ? 'z-50' : 'z-10';
+
   return (
-    <div className={`relative ${mapHeight} rounded-md overflow-hidden transition-all duration-300 ease-in-out ${fullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
+    <div className={`relative ${mapHeight} rounded-md overflow-hidden transition-all duration-300 ease-in-out w-full ${fullscreen ? `fixed inset-0 ${zIndex} bg-background` : ''}`}>
       {!mapboxToken ? (
         <div className="text-muted-foreground text-center p-4 bg-muted h-full flex items-center justify-center">
           <p>Loading map...</p>

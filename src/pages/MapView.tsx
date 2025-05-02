@@ -8,9 +8,11 @@ import { fetchPosts } from '@/services/postService';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import PageLayout from '@/components/PageLayout';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const MapView: React.FC = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [currentLocation, setCurrentLocation] = useState({ 
     lat: 45.5152, // Portland, OR coordinates as default
     lng: -122.6784 
@@ -91,14 +93,22 @@ const MapView: React.FC = () => {
   // If in fullscreen mode, only show the map
   if (fullscreen) {
     return (
-      <Map 
-        posts={posts}
-        currentLocation={currentLocation}
-        expanded={expanded}
-        onToggleExpand={handleToggleExpand}
-        fullscreen={fullscreen}
-        onToggleFullscreen={handleToggleFullscreen}
-      />
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        <div className="flex-grow relative">
+          <Map 
+            posts={posts}
+            currentLocation={currentLocation}
+            expanded={expanded}
+            onToggleExpand={handleToggleExpand}
+            fullscreen={fullscreen}
+            onToggleFullscreen={handleToggleFullscreen}
+          />
+        </div>
+        {/* Always show bottom navigation in fullscreen mode */}
+        <div className="md:hidden">
+          <div className="h-16"></div> {/* Spacer for the bottom navigation */}
+        </div>
+      </div>
     );
   }
 
@@ -139,8 +149,8 @@ const MapView: React.FC = () => {
           </Button>
         </div>
       ) : (
-        /* Full-sized map */
-        <div className="flex-grow relative mx-4 mb-4">
+        /* Full-sized map with proper mobile handling */
+        <div className={`flex-grow relative mx-4 mb-4 ${isMobile ? 'h-[calc(100vh-180px)]' : ''}`}>
           <Map 
             posts={posts}
             currentLocation={currentLocation}

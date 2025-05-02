@@ -10,8 +10,10 @@ import { toast } from '@/components/ui/use-toast';
 import { fetchPosts } from '@/services/postService';
 import { useAuth } from '@/contexts/AuthContext';
 import PageLayout from '@/components/PageLayout';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index: React.FC = () => {
+  const isMobile = useIsMobile();
   const [mapExpanded, setMapExpanded] = useState(false);
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -120,14 +122,23 @@ const Index: React.FC = () => {
   // If map is in fullscreen mode, only show the map
   if (mapFullscreen) {
     return (
-      <Map 
-        posts={posts}
-        currentLocation={currentLocation}
-        expanded={mapExpanded}
-        onToggleExpand={handleToggleMapExpand}
-        fullscreen={mapFullscreen}
-        onToggleFullscreen={handleToggleMapFullscreen}
-      />
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        <div className="flex-grow relative">
+          <Map 
+            posts={posts}
+            currentLocation={currentLocation}
+            expanded={mapExpanded}
+            onToggleExpand={handleToggleMapExpand}
+            fullscreen={mapFullscreen}
+            onToggleFullscreen={handleToggleMapFullscreen}
+          />
+        </div>
+        {/* Always show bottom navigation in fullscreen mode on mobile */}
+        <div className="md:hidden">
+          <div className="h-16"></div> {/* Spacer for the bottom navigation */}
+        </div>
+        <BottomNavigation />
+      </div>
     );
   }
 
