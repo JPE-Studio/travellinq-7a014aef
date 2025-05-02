@@ -37,6 +37,12 @@ const Chats: React.FC = () => {
   const handleCreateChat = () => {
     navigate('/chats/new');
   };
+  
+  const handleChatClick = (conversationId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    // Add forceHideBadge parameter to clear notification badge
+    navigate(`/chat/${conversationId}?forceHideBadge=true`);
+  };
 
   return (
     <PageLayout>
@@ -52,11 +58,66 @@ const Chats: React.FC = () => {
         ) : (
           <div className="divide-y">
             {conversations.length > 0 ? (
-              <ChatList 
-                conversations={conversations} 
-                onUserProfileClick={handleUserProfileClick} 
-                onDeleteClick={handleDeleteClick} 
-              />
+              <div className="divide-y">
+                {conversations.map(conversation => (
+                  <a 
+                    href={`/chat/${conversation.id}?forceHideBadge=true`} 
+                    key={conversation.id}
+                    onClick={(e) => handleChatClick(conversation.id, e)}
+                    className="flex items-center p-4 hover:bg-muted transition-colors"
+                  >
+                    <div 
+                      className="flex-shrink-0 cursor-pointer"
+                      onClick={(e) => handleUserProfileClick(conversation.otherUser?.id, e)}
+                    >
+                      {/* Avatar component */}
+                      <div className="h-12 w-12 rounded-full overflow-hidden">
+                        {conversation.otherUser.avatar && (
+                          <img 
+                            src={conversation.otherUser.avatar} 
+                            alt={conversation.otherUser.pseudonym}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4 flex-grow overflow-hidden">
+                      <div className="flex justify-between">
+                        <h3 className="font-medium truncate">{conversation.otherUser.pseudonym}</h3>
+                        {conversation.lastMessage && (
+                          <span className="text-xs text-muted-foreground">
+                            {/* Time formatting */}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {conversation.lastMessage ? (
+                        <div className="flex items-center">
+                          <p className={`text-sm truncate ${!conversation.lastMessage.read && !conversation.lastMessage.isFromCurrentUser ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
+                            {conversation.lastMessage.isFromCurrentUser && "You: "}
+                            {conversation.lastMessage.content}
+                          </p>
+                          
+                          {!conversation.lastMessage.read && !conversation.lastMessage.isFromCurrentUser && (
+                            <span className="ml-2 h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No messages yet</p>
+                      )}
+                    </div>
+                    
+                    <button
+                      type="button"
+                      className="ml-2 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => handleDeleteClick(conversation.id, e)}
+                    >
+                      {/* Delete icon */}
+                    </button>
+                  </a>
+                ))}
+              </div>
             ) : (
               <EmptyChats onCreateChat={handleCreateChat} />
             )}
