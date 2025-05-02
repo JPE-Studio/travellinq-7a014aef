@@ -1,99 +1,71 @@
 
 import React from 'react';
 import { Post } from '../types';
-import { ArrowUp, ArrowDown, MessageCircle, MapPin } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
+import { MapPin, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface PostCardProps {
   post: Post;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
-    if (diffInHours < 1) {
-      return `${Math.floor(diffInHours * 60)}m ago`;
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else {
-      return `${Math.floor(diffInHours / 24)}d ago`;
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'campsite': return 'bg-earth text-secondary-foreground';
-      case 'service': return 'bg-sky text-white';
-      case 'question': return 'bg-forest-light text-white';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
   return (
-    <div className="post-card">
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-forest-light flex items-center justify-center">
-            {post.author.avatar ? (
-              <img 
-                src={post.author.avatar} 
-                alt={post.author.pseudonym} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white font-medium">
-                {post.author.pseudonym.charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div className="ml-3">
-            <h3 className="font-medium">{post.author.pseudonym}</h3>
+    <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
+      {/* Post header with user info */}
+      <div className="p-4">
+        <div className="flex items-center mb-3">
+          <Avatar className="h-10 w-10 mr-3">
+            <AvatarImage src={post.author.avatar} />
+            <AvatarFallback>
+              <User className="h-5 w-5" />
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium">{post.author.pseudonym}</p>
             <div className="flex items-center text-xs text-muted-foreground">
-              <span>{formatDate(post.createdAt)}</span>
-              <span className="mx-1">•</span>
-              <span className={`px-2 py-0.5 rounded-full ${getCategoryColor(post.category)}`}>
-                {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
-              </span>
+              <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
+              {post.location && (
+                <>
+                  <span className="mx-1">•</span>
+                  <MapPin size={12} className="mr-1" />
+                  <span>{post.distance.toFixed(1)} miles away</span>
+                </>
+              )}
             </div>
           </div>
         </div>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <MapPin size={14} className="mr-1" />
-          <span>{post.distance} km</span>
-        </div>
-      </div>
-      
-      <p className="mb-3">{post.text}</p>
-      
-      {post.images && post.images.length > 0 && (
-        <div className={`grid gap-2 mb-3 ${post.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {post.images.map((image, index) => (
-            <div key={index} className="rounded-md overflow-hidden aspect-[4/3]">
-              <img 
-                src={image} 
-                alt={`Post by ${post.author.pseudonym}`}
-                className="w-full h-full object-cover"
-              />
+
+        <Link to={`/post/${post.id}`} className="block">
+          <p className="mb-3 text-foreground">{post.text}</p>
+        
+          {/* Post images if available */}
+          {post.images && post.images.length > 0 && (
+            <div className={`grid gap-2 mb-3 ${post.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {post.images.map((image, index) => (
+                <img 
+                  key={index}
+                  src={image} 
+                  alt={`Post by ${post.author.pseudonym}`}
+                  className="w-full h-48 object-cover rounded-md"
+                />
+              ))}
             </div>
-          ))}
+          )}
+        </Link>
+        
+        {/* Post interactions */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+          <div className="flex items-center">
+            <button className="flex items-center hover:text-foreground">
+              ▲ {post.votes}
+            </button>
+          </div>
+          <Link to={`/post/${post.id}`} className="hover:text-foreground">
+            {post.commentCount} comments
+          </Link>
         </div>
-      )}
-      
-      <div className="flex justify-between items-center pt-2 border-t border-border">
-        <div className="flex items-center">
-          <button className="p-1.5 rounded-full hover:bg-muted">
-            <ArrowUp size={18} className="text-forest" />
-          </button>
-          <span className="mx-1 font-medium text-sm">{post.votes}</span>
-          <button className="p-1.5 rounded-full hover:bg-muted">
-            <ArrowDown size={18} className="text-muted-foreground" />
-          </button>
-        </div>
-        <button className="flex items-center text-sm text-muted-foreground hover:text-forest transition-colors">
-          <MessageCircle size={18} className="mr-1.5" />
-          <span>{post.commentCount} comments</span>
-        </button>
       </div>
     </div>
   );
