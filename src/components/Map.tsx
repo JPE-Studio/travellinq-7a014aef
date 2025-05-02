@@ -11,33 +11,58 @@ interface MapProps {
 }
 
 const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExpand }) => {
+  // Calculate OSM tile coordinates based on current location
+  const zoom = 13;
+  const tileX = Math.floor((currentLocation.lng + 180) / 360 * Math.pow(2, zoom));
+  const tileY = Math.floor((1 - Math.log(Math.tan(currentLocation.lat * Math.PI / 180) + 1 / Math.cos(currentLocation.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+  
+  // Build OpenStreetMap URL with the current location
+  const osmUrl = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+
   return (
     <div className={`relative transition-all duration-300 ${expanded ? 'h-[60vh]' : 'h-[30vh]'}`}>
       <div className="absolute top-0 left-0 w-full h-full bg-muted rounded-b-lg overflow-hidden">
-        {/* Placeholder for actual map integration */}
-        <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center">
-          {/* Markers for posts */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <div className="map-marker bg-forest animate-pulse-light" />
-          </div>
-          {posts.map((post) => {
-            // Calculate relative position - simplistic approach for demo
-            const offsetX = (post.location.lng - currentLocation.lng) * 100;
-            const offsetY = (currentLocation.lat - post.location.lat) * 100;
+        {/* OpenStreetMap integration */}
+        <div className="w-full h-full relative bg-sky-50">
+          <div 
+            className="w-full h-full bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url('${osmUrl}')`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: 'cover'
+            }}
+          >
+            {/* Current location marker */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <div className="map-marker bg-forest animate-pulse-light" />
+            </div>
             
-            return (
-              <div 
-                key={post.id}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                style={{ 
-                  top: `calc(50% + ${offsetY}px)`, 
-                  left: `calc(50% + ${offsetX}px)` 
-                }}
-              >
-                <div className={`map-marker ${post.category === 'campsite' ? 'bg-earth' : 'bg-sky'}`} />
-              </div>
-            );
-          })}
+            {/* Post markers */}
+            {posts.map((post) => {
+              // Calculate relative position - simplistic approach for demo
+              const offsetX = (post.location.lng - currentLocation.lng) * 100;
+              const offsetY = (currentLocation.lat - post.location.lat) * 100;
+              
+              return (
+                <div 
+                  key={post.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                  style={{ 
+                    top: `calc(50% + ${offsetY}px)`, 
+                    left: `calc(50% + ${offsetX}px)` 
+                  }}
+                >
+                  <div className={`map-marker ${post.category === 'campsite' ? 'bg-earth' : 'bg-sky'}`} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Map attribution - required for OpenStreetMap usage */}
+        <div className="absolute bottom-8 left-2 text-xs text-slate-700 bg-white/70 px-1 rounded">
+          © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:underline">OpenStreetMap</a> contributors
         </div>
         
         {/* Map controls */}
