@@ -41,7 +41,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </Link>
           <div>
             <Link to={`/user/${post.author.id}`} className="font-medium hover:underline">{post.author.pseudonym}</Link>
-            <div className="flex items-center text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center text-xs text-muted-foreground">
               <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
               {post.location && (
                 <>
