@@ -8,11 +8,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { User, MessageSquare, Link, MapPin, Calendar, Globe, Loader2 } from 'lucide-react';
+import { User, MessageSquare, Link, MapPin, Calendar, Globe, Loader2, Bell } from 'lucide-react';
 import { useProfileData } from '@/hooks/useProfileData';
-import { getBuddyConnection, connectWithBuddy, disconnectBuddy } from '@/services/chatService';
+import { getBuddyConnection, connectWithBuddy, disconnectBuddy, updateBuddyNotificationSettings } from '@/services/chatService';
 import { getOrCreateConversation } from '@/services/participantService';
 import { format } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
 
 const UserDetail: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -22,6 +23,10 @@ const UserDetail: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [notifyAt100km, setNotifyAt100km] = useState(true);
+  const [notifyAt50km, setNotifyAt50km] = useState(true);
+  const [notifyAt20km, setNotifyAt20km] = useState(true);
 
   // Use the existing hook to fetch user profile data
   const { 
@@ -31,6 +36,15 @@ const UserDetail: React.FC = () => {
     approximateDistance,
     setBuddyConnection 
   } = useProfileData(userId, currentUser);
+
+  // Set notification preferences when buddy connection data loads
+  useEffect(() => {
+    if (buddyConnection) {
+      setNotifyAt100km(buddyConnection.notify_at_100km);
+      setNotifyAt50km(buddyConnection.notify_at_50km);
+      setNotifyAt20km(buddyConnection.notify_at_20km);
+    }
+  }, [buddyConnection]);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -51,6 +65,9 @@ const UserDetail: React.FC = () => {
       setIsConnecting(true);
       const connection = await connectWithBuddy(userId);
       setBuddyConnection(connection);
+      setNotifyAt100km(connection.notify_at_100km);
+      setNotifyAt50km(connection.notify_at_50km);
+      setNotifyAt20km(connection.notify_at_20km);
       toast({
         title: "Connected as buddies!",
         description: `You are now connected with ${userData?.pseudonym}`,
@@ -107,6 +124,45 @@ const UserDetail: React.FC = () => {
         description: error instanceof Error ? error.message : "Could not create conversation",
       });
       setIsStartingChat(false);
+    }
+  };
+
+  // Update notification settings
+  const handleNotificationSettingChange = async (settingName: string, value: boolean) => {
+    if (!userId || !user || !buddyConnection) return;
+
+    try {
+      setIsUpdatingSettings(true);
+      
+      const settings: {
+        notify_at_100km?: boolean;
+        notify_at_50km?: boolean;
+        notify_at_20km?: boolean;
+      } = {};
+      
+      settings[settingName as keyof typeof settings] = value;
+      
+      const updatedConnection = await updateBuddyNotificationSettings(userId, settings);
+      setBuddyConnection(updatedConnection);
+      
+      toast({
+        title: "Settings updated",
+        description: "Your proximity notification settings were updated",
+      });
+    } catch (error) {
+      console.error("Error updating notification settings:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to update settings",
+        description: error instanceof Error ? error.message : "Could not update notification settings",
+      });
+      
+      // Revert UI state on error
+      if (settingName === 'notify_at_100km') setNotifyAt100km(!value);
+      if (settingName === 'notify_at_50km') setNotifyAt50km(!value);
+      if (settingName === 'notify_at_20km') setNotifyAt20km(!value);
+    } finally {
+      setIsUpdatingSettings(false);
     }
   };
 
@@ -289,6 +345,69 @@ const UserDetail: React.FC = () => {
                   </Button>
                 </div>
               </div>
+
+              {/* Proximity notification settings - only shown when connected */}
+              {buddyConnection && (
+                <div className="bg-muted/20 rounded-lg p-4 mt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium flex items-center">
+                      <Bell className="h-4 w-4 mr-2" />
+                      Proximity Notifications
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="notify-100km" className="text-sm">
+                        Notify when within 100km
+                      </label>
+                      <Switch 
+                        id="notify-100km"
+                        checked={notifyAt100km}
+                        disabled={isUpdatingSettings}
+                        onCheckedChange={(checked) => {
+                          setNotifyAt100km(checked);
+                          handleNotificationSettingChange('notify_at_100km', checked);
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="notify-50km" className="text-sm">
+                        Notify when within 50km
+                      </label>
+                      <Switch 
+                        id="notify-50km"
+                        checked={notifyAt50km}
+                        disabled={isUpdatingSettings}
+                        onCheckedChange={(checked) => {
+                          setNotifyAt50km(checked);
+                          handleNotificationSettingChange('notify_at_50km', checked);
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="notify-20km" className="text-sm">
+                        Notify when within 20km
+                      </label>
+                      <Switch 
+                        id="notify-20km"
+                        checked={notifyAt20km}
+                        disabled={isUpdatingSettings}
+                        onCheckedChange={(checked) => {
+                          setNotifyAt20km(checked);
+                          handleNotificationSettingChange('notify_at_20km', checked);
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="text-xs text-muted-foreground mt-2">
+                      You'll only receive notifications when both you and your buddy have enabled location sharing.
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
