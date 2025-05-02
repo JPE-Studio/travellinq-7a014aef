@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import { useQueryClient } from '@tanstack/react-query';
 
 const formSchema = z.object({
   text: z.string().min(1, 'Post text is required'),
-  category: z.enum(['campsite', 'service', 'question', 'general']),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -37,7 +35,6 @@ const CreatePostButton: React.FC = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       text: '',
-      category: 'general',
     },
   });
 
@@ -170,10 +167,10 @@ const CreatePostButton: React.FC = () => {
       // Upload images if any
       const imageUrls = await uploadImages();
       
-      // Create the post
+      // Create the post with default category 'general'
       const newPost = await createPost(
         data.text,
-        data.category,
+        'general', // Using 'general' as the default category now
         location,
         imageUrls.length > 0 ? imageUrls : undefined
       );
@@ -250,28 +247,6 @@ const CreatePostButton: React.FC = () => {
                         placeholder="Share your experience, ask questions, or post a recommendation..."
                         {...field}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <FormControl>
-                      <select 
-                        className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background"
-                        {...field}
-                      >
-                        <option value="general">General</option>
-                        <option value="campsite">Campsite</option>
-                        <option value="service">Service</option>
-                        <option value="question">Question</option>
-                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
