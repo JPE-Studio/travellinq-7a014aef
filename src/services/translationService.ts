@@ -8,6 +8,8 @@ export const translateText = async (
   sourceLang?: string
 ): Promise<string> => {
   try {
+    console.log("Starting translation request...");
+    
     // Get the API key from Supabase
     const { data: secrets, error: secretsError } = await supabase
       .functions.invoke("get_secrets", {
@@ -35,8 +37,8 @@ export const translateText = async (
       apiUrl = "https://api.deepl.com/v2/translate";
     }
     
-    // Prepare data as JSON as per DeepL documentation
-    const requestBody = {
+    // Prepare request body according to DeepL API specifications
+    const requestBody: Record<string, any> = {
       text: [text],
       target_lang: targetLang.toUpperCase()
     };
@@ -81,6 +83,8 @@ export const translateText = async (
 // Function to detect language
 export const detectLanguage = async (text: string): Promise<string> => {
   try {
+    console.log("Starting language detection request...");
+    
     // Get the API key from Supabase
     const { data: secrets, error: secretsError } = await supabase
       .functions.invoke("get_secrets", {
@@ -108,10 +112,11 @@ export const detectLanguage = async (text: string): Promise<string> => {
       apiUrl = "https://api.deepl.com/v2/translate";
     }
     
-    // Prepare data as JSON as per DeepL documentation
+    // DeepL doesn't have a dedicated language detection endpoint, 
+    // so we use a translation request to get the detected language
     const requestBody = {
       text: [text],
-      target_lang: "EN" // Doesn't matter for language detection
+      target_lang: "EN" // Target language doesn't matter for detection
     };
     
     console.log("Making DeepL language detection request");
@@ -133,6 +138,11 @@ export const detectLanguage = async (text: string): Promise<string> => {
     
     const data = await response.json();
     console.log("DeepL detection response:", data);
+    
+    if (!data.translations || data.translations.length === 0) {
+      console.error("Invalid response from DeepL API:", data);
+      throw new Error("Invalid response from translation API");
+    }
     
     return data.translations[0].detected_source_language.toLowerCase();
   } catch (error) {

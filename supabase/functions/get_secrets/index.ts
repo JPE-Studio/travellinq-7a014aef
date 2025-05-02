@@ -35,7 +35,9 @@ serve(async (req) => {
     const secrets: Record<string, string> = {};
     
     for (const key of keys) {
-      secrets[key] = Deno.env.get(key) || '';
+      const value = Deno.env.get(key);
+      secrets[key] = value || '';
+      console.log(`Retrieved secret for ${key}: ${value ? 'Value exists' : 'No value found'}`);
     }
     
     console.log(`Retrieved ${Object.keys(secrets).length} secrets`);
