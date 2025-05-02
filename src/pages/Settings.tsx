@@ -1,12 +1,133 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
-import { currentUser } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, ChevronLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { User, ChevronLeft, Loader2 } from 'lucide-react';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Settings: React.FC = () => {
+  const { user, profile, loading, refreshProfile } = useAuth();
+  const navigate = useNavigate();
+  
+  const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
+  const [location, setLocation] = useState('');
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Load profile data when available
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.pseudonym || '');
+      setBio(profile.bio || '');
+      // Location would come from a separate field if we had it in the profile table
+    }
+  }, [profile]);
+  
+  // Handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatar(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  // Upload avatar to storage if needed
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!avatar || !user) return null;
+    
+    try {
+      const fileExt = avatar.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+      
+      // Upload image to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, avatar);
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      return null;
+    }
+  };
+  
+  // Save profile changes
+  const handleSaveChanges = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // Upload avatar if selected
+      let avatarUrl = profile?.avatar;
+      if (avatar) {
+        avatarUrl = await uploadAvatar();
+      }
+      
+      // Update profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          pseudonym: displayName,
+          bio: bio,
+          avatar: avatarUrl
+        })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      // Refresh profile data
+      await refreshProfile();
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
       {/* Full width header */}
@@ -35,39 +156,47 @@ const Settings: React.FC = () => {
               
               <div className="flex items-center mb-6">
                 <Avatar className="h-16 w-16 mr-4">
-                  <AvatarImage src={currentUser.avatar} />
+                  <AvatarImage src={avatarPreview || profile?.avatar} />
                   <AvatarFallback>
                     <User className="h-8 w-8 text-muted-foreground" />
                   </AvatarFallback>
                 </Avatar>
-                <button className="px-4 py-2 border rounded-md text-sm">
+                <label className="px-4 py-2 border rounded-md text-sm cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
                   Change Profile Photo
-                </button>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleImageChange}
+                  />
+                </label>
               </div>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Display Name</label>
-                  <input 
+                  <Label className="block text-sm font-medium mb-1">Display Name</Label>
+                  <Input 
                     type="text" 
-                    className="w-full p-2 border rounded-md"
-                    defaultValue={currentUser.pseudonym} 
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Bio</label>
-                  <textarea 
-                    className="w-full p-2 border rounded-md resize-none"
+                  <Label className="block text-sm font-medium mb-1">Bio</Label>
+                  <Textarea 
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
                     rows={3}
-                    defaultValue={currentUser.bio || ''}
+                    className="resize-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Location</label>
-                  <input 
+                  <Label className="block text-sm font-medium mb-1">Location</Label>
+                  <Input 
                     type="text" 
-                    className="w-full p-2 border rounded-md" 
-                    defaultValue="Portland, OR"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Portland, OR"
                   />
                 </div>
               </div>
@@ -84,7 +213,7 @@ const Settings: React.FC = () => {
                       Enable push notifications
                     </p>
                   </div>
-                  <input type="checkbox" className="toggle" defaultChecked />
+                  <Switch id="notifications" defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
@@ -93,16 +222,32 @@ const Settings: React.FC = () => {
                       Share your location with the community
                     </p>
                   </div>
-                  <input type="checkbox" className="toggle" defaultChecked />
+                  <Switch id="location-sharing" defaultChecked />
                 </div>
               </div>
             </div>
             
             <div className="flex justify-end space-x-4">
-              <button className="px-4 py-2 border rounded-md">Cancel</button>
-              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md">
-                Save Changes
-              </button>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/profile')}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveChanges} 
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
             </div>
           </div>
         </div>
