@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Post } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -215,7 +216,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
       {/* Post header with user info */}
       <div className="p-4">
-        <Link to={`/users/${post.author.id}`} className="flex items-center mb-3">
+        <Link to={`/profile/${post.author.id}`} className="flex items-center mb-3">
           <div className="mr-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={post.author.avatar} className="object-cover" />

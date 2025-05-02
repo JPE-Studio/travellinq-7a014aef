@@ -30,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/map" element={<MapView />} />
             <Route path="/chats" element={<Chats />} />
@@ -37,7 +38,6 @@ const App = () => (
             <Route path="/chat/:userId" element={<ChatScreen />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/users/:userId" element={<UserDetail />} />
-            {/* Route for UserProfile has been removed */}
             <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

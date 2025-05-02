@@ -18,7 +18,7 @@ const UserProfileLink: React.FC<UserProfileLinkProps> = ({
 }) => {
   return (
     <Link 
-      to={`/users/${user.id}`} 
+      to={`/profile/${user.id}`} 
       className={`inline-flex items-center gap-2 hover:underline ${className}`}
     >
       {showAvatar && (
