@@ -14,6 +14,9 @@ interface MapProps {
   onToggleExpand: () => void;
 }
 
+const MAPBOX_TOKEN_KEY = 'mapbox_token';
+const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoianBlLXN0dWRpbyIsImEiOiJjbWE2a2hwcjgwcWRlMmlzNjlsdGhqMWN3In0.DeZp50DLkrA8eI1AQs778w';
+
 const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExpand }) => {
   const mapHeight = expanded ? 'h-96' : 'h-48';
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -21,16 +24,16 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
 
+  // Load token from localStorage or use default
   useEffect(() => {
-    // For demo purposes, we'll use a prompt to get the token
-    // In a production app, this should come from environment variables or Supabase secrets
-    if (!mapboxToken && !map.current) {
-      const token = prompt('Please enter your Mapbox public token:');
-      if (token) {
-        setMapboxToken(token);
-      }
+    // Initialize with the saved token or the provided default
+    const savedToken = localStorage.getItem(MAPBOX_TOKEN_KEY) || DEFAULT_MAPBOX_TOKEN;
+    
+    if (savedToken) {
+      localStorage.setItem(MAPBOX_TOKEN_KEY, savedToken); // Ensure it's saved
+      setMapboxToken(savedToken);
     }
-  }, [mapboxToken]);
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current) return;
@@ -38,53 +41,57 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
     // Initialize map
     mapboxgl.accessToken = mapboxToken;
     
-    const newMap = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [currentLocation.lng, currentLocation.lat],
-      zoom: 12,
-    });
+    try {
+      const newMap = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [currentLocation.lng, currentLocation.lat],
+        zoom: 12,
+      });
 
-    // Add navigation controls
-    newMap.addControl(
-      new mapboxgl.NavigationControl(),
-      'top-right'
-    );
+      // Add navigation controls
+      newMap.addControl(
+        new mapboxgl.NavigationControl(),
+        'top-right'
+      );
 
-    // Add a marker for current location
-    const marker = new mapboxgl.Marker({ color: '#3FB1CE' })
-      .setLngLat([currentLocation.lng, currentLocation.lat])
-      .addTo(newMap);
+      // Add a marker for current location
+      new mapboxgl.Marker({ color: '#3FB1CE' })
+        .setLngLat([currentLocation.lng, currentLocation.lat])
+        .addTo(newMap);
 
-    // Add markers for posts
-    posts.forEach(post => {
-      if (post.location) {
-        // Create a popup with post info
-        const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <h3 class="font-semibold">${post.category}</h3>
-            <p class="text-sm">${post.text.substring(0, 100)}${post.text.length > 100 ? '...' : ''}</p>
-          `);
+      // Add markers for posts
+      posts.forEach(post => {
+        if (post.location) {
+          // Create a popup with post info
+          const popup = new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+              <h3 class="font-semibold">${post.category}</h3>
+              <p class="text-sm">${post.text.substring(0, 100)}${post.text.length > 100 ? '...' : ''}</p>
+            `);
 
-        // Determine marker color based on category
-        let color = '#2E5E4E'; // Default forest green
-        if (post.category === 'campsite') color = '#3A7D44';
-        if (post.category === 'service') color = '#D5A021';
-        if (post.category === 'question') color = '#61A8FF';
+          // Determine marker color based on category
+          let color = '#2E5E4E'; // Default forest green
+          if (post.category === 'campsite') color = '#3A7D44';
+          if (post.category === 'service') color = '#D5A021';
+          if (post.category === 'question') color = '#61A8FF';
 
-        // Add marker for this post
-        new mapboxgl.Marker({ color })
-          .setLngLat([post.location.lng, post.location.lat])
-          .setPopup(popup)
-          .addTo(newMap);
-      }
-    });
+          // Add marker for this post
+          new mapboxgl.Marker({ color })
+            .setLngLat([post.location.lng, post.location.lat])
+            .setPopup(popup)
+            .addTo(newMap);
+        }
+      });
 
-    newMap.on('load', () => {
-      setMapLoaded(true);
-    });
+      newMap.on('load', () => {
+        setMapLoaded(true);
+      });
 
-    map.current = newMap;
+      map.current = newMap;
+    } catch (error) {
+      console.error('Error initializing Mapbox map:', error);
+    }
 
     // Cleanup
     return () => {
@@ -104,7 +111,7 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
     <div className={`relative ${mapHeight} rounded-md overflow-hidden transition-all duration-300 ease-in-out`}>
       {!mapboxToken ? (
         <div className="text-muted-foreground text-center p-4 bg-muted h-full flex items-center justify-center">
-          <p>Please enter your Mapbox token to display the map</p>
+          <p>Loading map...</p>
         </div>
       ) : (
         <div ref={mapContainer} className="h-full w-full" />

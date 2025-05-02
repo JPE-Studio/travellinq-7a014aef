@@ -6,20 +6,30 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPosts } from '@/services/postService';
+import { useToast } from '@/components/ui/use-toast';
 
 const MapView: React.FC = () => {
+  const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState({ 
     lat: 45.5152, // Portland, OR coordinates
     lng: -122.6784 
   });
 
   // Query for posts
-  const { data: posts = [] } = useQuery({
+  const { data: posts = [], isLoading, error } = useQuery({
     queryKey: ['posts', currentLocation],
     queryFn: () => fetchPosts(
       currentLocation.lat,
       currentLocation.lng
-    )
+    ),
+    onError: (err) => {
+      toast({
+        title: "Error loading map data",
+        description: "Failed to load posts for the map view.",
+        variant: "destructive",
+      });
+      console.error(err);
+    }
   });
 
   return (
@@ -44,15 +54,28 @@ const MapView: React.FC = () => {
             <h1 className="text-xl font-bold mb-4">Explore Locations</h1>
           </div>
           
-          {/* Full-sized map */}
-          <div className="flex-grow relative mx-4 mb-4">
-            <Map 
-              posts={posts}
-              currentLocation={currentLocation}
-              expanded={true}
-              onToggleExpand={() => {}}
-            />
-          </div>
+          {isLoading ? (
+            <div className="flex-grow flex items-center justify-center">
+              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : error ? (
+            <div className="flex-grow flex items-center justify-center">
+              <div className="text-destructive text-center">
+                <p>Error loading map data</p>
+                <p className="text-sm">Please try again later</p>
+              </div>
+            </div>
+          ) : (
+            /* Full-sized map */
+            <div className="flex-grow relative mx-4 mb-4">
+              <Map 
+                posts={posts}
+                currentLocation={currentLocation}
+                expanded={true}
+                onToggleExpand={() => {}}
+              />
+            </div>
+          )}
         </div>
         
         {/* Right sidebar space (for ads) */}
