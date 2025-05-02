@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPosts } from '@/services/postService';
 import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
 
 const MapView: React.FC = () => {
   const { toast } = useToast();
@@ -34,7 +36,7 @@ const MapView: React.FC = () => {
   }, []);
 
   // Query for posts
-  const { data: posts = [], isLoading, error } = useQuery({
+  const { data: posts = [], isLoading, error, refetch } = useQuery({
     queryKey: ['posts', currentLocation],
     queryFn: () => fetchPosts(
       currentLocation.lat,
@@ -85,11 +87,15 @@ const MapView: React.FC = () => {
               <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
             </div>
           ) : error ? (
-            <div className="flex-grow flex items-center justify-center">
-              <div className="text-destructive text-center">
-                <p>Error loading map data</p>
+            <div className="flex-grow flex flex-col items-center justify-center p-4">
+              <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+              <div className="text-destructive text-center mb-4">
+                <p className="font-semibold mb-1">Error loading map data</p>
                 <p className="text-sm">Please try again later</p>
               </div>
+              <Button onClick={() => refetch()} variant="outline">
+                Retry
+              </Button>
             </div>
           ) : (
             /* Full-sized map */

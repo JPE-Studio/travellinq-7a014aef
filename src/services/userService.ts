@@ -28,6 +28,8 @@ export const fetchUserProfile = async (userId: string): Promise<User> => {
 
 // Fetch multiple user profiles by IDs
 export const fetchUserProfiles = async (userIds: string[]): Promise<User[]> => {
+  if (!userIds.length) return [];
+  
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
