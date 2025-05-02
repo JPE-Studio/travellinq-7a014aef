@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Map from '@/components/Map';
@@ -100,7 +101,7 @@ const Index: React.FC = () => {
 
   const handleCompleteOnboarding = () => {
     setShowOnboarding(false);
-    // Removed the welcome toast from here as it's now shown in the OnboardingModal after profile creation
+    // Welcome toast is now shown in the OnboardingModal component after successful profile creation
   };
 
   const handleToggleMapExpand = () => {

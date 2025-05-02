@@ -69,7 +69,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       setLocationPermission(true);
       setStep(3);
       
-      // Save location data in Supabase (optional)
+      // Save location data in Supabase
       await supabase
         .from('profiles')
         .update({
