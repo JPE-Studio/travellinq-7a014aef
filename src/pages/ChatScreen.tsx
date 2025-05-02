@@ -1,17 +1,19 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, ArrowLeft, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import BottomNavigation from '@/components/BottomNavigation';
 import { fetchConversation } from '@/services/conversationService';
 import { sendMessage } from '@/services/messageService';
-import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Import custom components
+import ChatHeader from '@/components/chat/ChatHeader';
+import MessageList from '@/components/chat/MessageList';
+import MessageInput from '@/components/chat/MessageInput';
+import ChatSkeleton from '@/components/chat/ChatSkeleton';
+import ChatError from '@/components/chat/ChatError';
 
 interface Message {
   id: string;
@@ -23,13 +25,11 @@ interface Message {
 
 const ChatScreen: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [otherUser, setOtherUser] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -100,18 +100,11 @@ const ChatScreen: React.FC = () => {
     };
   }, [userId, navigate, user, currentUserId]);
 
-  // Scroll to bottom whenever messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!message.trim() || !userId) return;
+  const handleSendMessage = async (message: string) => {
+    if (!userId) return;
     
     try {
-      const newMessage = await sendMessage(userId, message.trim());
+      const newMessage = await sendMessage(userId, message);
       
       // Add the message to the local state
       setMessages(prevMessages => [
@@ -124,8 +117,6 @@ const ChatScreen: React.FC = () => {
           read: newMessage.read
         }
       ]);
-      
-      setMessage('');
     } catch (err) {
       console.error('Error sending message:', err);
       toast({
@@ -143,151 +134,24 @@ const ChatScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
-        {/* Chat header skeleton */}
-        <div className="bg-background border-b sticky top-0 z-10 flex items-center px-4 py-2">
-          <Link to="/chats" className="mr-2">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div className="flex items-center flex-1">
-            <Skeleton className="h-8 w-8 rounded-full mr-2" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
-        
-        {/* Message skeletons */}
-        <div className="flex-grow p-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={`flex mb-4 ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-              <Skeleton className={`h-10 w-48 rounded-xl ${i % 2 === 0 ? 'ml-12' : 'mr-12'}`} />
-            </div>
-          ))}
-        </div>
-        
-        {/* Input skeleton */}
-        <div className="bg-background border-t sticky bottom-0 left-0 right-0 p-4 flex items-center gap-2 mb-16 md:mb-0">
-          <Skeleton className="h-10 flex-grow" />
-          <Skeleton className="h-10 w-10 rounded-full" />
-        </div>
-        
-        <BottomNavigation />
-      </div>
-    );
+    return <ChatSkeleton />;
   }
 
   if (error || !otherUser) {
-    return (
-      <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0">
-        <div className="bg-background border-b sticky top-0 z-10 flex items-center px-4 py-2">
-          <Link to="/chats" className="mr-2">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div className="flex-1">
-            <p className="font-medium">Error</p>
-          </div>
-        </div>
-        <div className="flex-grow flex justify-center items-center">
-          <div className="text-center">
-            <h1 className="text-xl font-bold mb-4">Conversation Not Found</h1>
-            <p className="text-muted-foreground mb-4">{error || "This conversation could not be loaded."}</p>
-            <Link to="/chats" className="text-primary hover:underline">
-              Return to Messages
-            </Link>
-          </div>
-        </div>
-        <BottomNavigation />
-      </div>
-    );
+    return <ChatError error={error} />;
   }
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
-      {/* Custom chat header */}
-      <div className="bg-background border-b sticky top-0 z-10 flex items-center px-4 py-2">
-        <Link to="/chats" className="mr-2">
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <div 
-          className="flex items-center flex-1 cursor-pointer" 
-          onClick={handleUserProfileClick}
-        >
-          <Avatar className="h-8 w-8 mr-2">
-            <AvatarImage src={otherUser.avatar} alt={otherUser.pseudonym} className="object-cover" />
-            <AvatarFallback>
-              <User className="h-4 w-4 text-muted-foreground" />
-            </AvatarFallback>
-          </Avatar>
-          <p className="font-medium">{otherUser.pseudonym}</p>
-        </div>
-      </div>
+      <ChatHeader otherUser={otherUser} onUserProfileClick={handleUserProfileClick} />
       
-      {/* Chat messages */}
-      <div className="flex-grow overflow-y-auto scrollbar-hide p-4 pb-20 md:pb-4">
-        {messages.length === 0 && (
-          <div className="flex justify-center items-center h-32">
-            <p className="text-muted-foreground">No messages yet. Say hello!</p>
-          </div>
-        )}
-        
-        {messages.map(msg => {
-          const isSentByMe = msg.senderId === currentUserId;
-          
-          return (
-            <div 
-              key={msg.id} 
-              className={`flex mb-4 ${isSentByMe ? 'justify-end' : 'justify-start'}`}
-            >
-              {!isSentByMe && (
-                <Avatar className="h-8 w-8 mr-2 self-end">
-                  <AvatarImage src={otherUser.avatar} alt={otherUser.pseudonym} className="object-cover" />
-                  <AvatarFallback>
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              
-              <div
-                className={`max-w-[75%] rounded-xl px-4 py-2 ${
-                  isSentByMe 
-                    ? 'bg-primary text-primary-foreground rounded-br-none' 
-                    : 'bg-muted rounded-bl-none'
-                }`}
-              >
-                <p>{msg.text}</p>
-                <p className={`text-xs mt-1 ${isSentByMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-              
-              {isSentByMe && (
-                <Avatar className="h-8 w-8 ml-2 self-end">
-                  <AvatarFallback>
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+      <MessageList 
+        messages={messages} 
+        currentUserId={currentUserId} 
+        otherUser={otherUser} 
+      />
       
-      {/* Message input */}
-      <form 
-        onSubmit={handleSendMessage} 
-        className="bg-background border-t sticky bottom-0 left-0 right-0 p-4 flex items-center gap-2 pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-4 mb-16 md:mb-0"
-      >
-        <Input
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-grow"
-        />
-        <Button type="submit" size="icon" variant={message.trim() ? "default" : "ghost"} disabled={!message.trim()}>
-          <Send className="h-5 w-5" />
-        </Button>
-      </form>
+      <MessageInput onSendMessage={handleSendMessage} />
       
       <BottomNavigation />
     </div>
