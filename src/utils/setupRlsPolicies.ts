@@ -5,7 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 export const setupRlsPolicies = async () => {
   try {
     // Call the setup_chat_policies function we created in SQL
-    const { data, error } = await supabase.rpc('setup_chat_policies');
+    // Use type assertion to bypass TypeScript's restricted types
+    const { data, error } = await supabase.rpc('setup_chat_policies') as unknown as {
+      data: any;
+      error: any;
+    };
     
     if (error) {
       console.error("Error setting up RLS policies:", error);
@@ -23,9 +27,13 @@ export const setupRlsPolicies = async () => {
 export const setupRealtimeTables = async () => {
   try {
     // This will enable realtime for the messages table
+    // Use type assertion to bypass TypeScript's restricted types
     const { error } = await supabase.rpc('add_table_to_publication', {
       table_name: 'messages'
-    });
+    }) as unknown as {
+      data: any;
+      error: any;
+    };
     
     if (error) {
       console.error("Error setting up realtime for messages:", error);
