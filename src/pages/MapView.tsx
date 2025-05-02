@@ -21,19 +21,20 @@ const MapView: React.FC = () => {
     queryFn: () => fetchPosts(
       currentLocation.lat,
       currentLocation.lng
-    ),
-    // Using onSettled instead of onError in TanStack Query v5+
-    onSettled: (data, error) => {
-      if (error) {
-        toast({
-          title: "Error loading map data",
-          description: "Failed to load posts for the map view.",
-          variant: "destructive",
-        });
-        console.error(error);
-      }
-    }
+    )
   });
+
+  // Handle error separately with useEffect
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error loading map data",
+        description: "Failed to load posts for the map view.",
+        variant: "destructive",
+      });
+      console.error(error);
+    }
+  }, [error, toast]);
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
