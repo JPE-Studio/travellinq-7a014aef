@@ -43,8 +43,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   });
 
   useEffect(() => {
-    if (profile?.pseudonym && profile.pseudonym !== '') {
-      // If user already has a pseudonym, skip onboarding
+    // Only skip if user has completed onboarding (has valid pseudonym)
+    if (profile?.pseudonym && profile.pseudonym.length >= 3 && !profile.pseudonym.startsWith('user_')) {
       onComplete();
     }
   }, [profile, onComplete]);
@@ -52,7 +52,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   if (!isOpen || !user) return null;
   
   const handleNextStep = () => {
-    if (step === 4) {
+    if (step === 3) {
       handleOnboardingComplete();
     } else {
       setStep(step + 1);
@@ -66,7 +66,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       });
       
       setLocationPermission(true);
-      setStep(3);
+      setStep(2); // Move to username step
       
       // Save location data in Supabase
       await supabase
@@ -78,7 +78,9 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
         })
         .eq('id', user.id);
     } catch (error) {
-      console.error('Standortabfrage fehlgeschlagen:', error);
+      console.error('Location request failed:', error);
+      // Continue to next step even if location fails
+      setStep(2);
     }
   };
 
@@ -107,6 +109,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     const pseudonym = form.getValues('pseudonym');
     
     if (pseudonym.length < 3) {
+      form.setError('pseudonym', {
+        type: 'manual',
+        message: 'Username must be at least 3 characters'
+      });
       return;
     }
 
@@ -151,7 +157,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       
       onComplete();
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Profils:', error);
+      console.error('Error updating profile:', error);
     } finally {
       setIsUploading(false);
     }
@@ -167,43 +173,24 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                 <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4">
                   <MapPin size={32} />
                 </div>
-                <h2 className="text-2xl font-bold mb-4">Willkommen bei Travellinq</h2>
+                <h2 className="text-2xl font-bold mb-4">Welcome to Travellinq</h2>
                 <p className="text-muted-foreground mb-6">
-                  Verbinde dich mit Vanlifern in der Nähe, teile Tipps und entdecke versteckte Orte auf deiner Reise.
+                  Connect with fellow travelers, share tips and discover hidden places on your journey.
                 </p>
-                <Button onClick={() => setStep(2)} className="w-full">
-                  Los geht's
+                <Button onClick={handleLocationPermission} className="w-full mb-4">
+                  Allow Location Access
+                </Button>
+                <Button onClick={() => setStep(2)} variant="outline" className="w-full">
+                  Skip Location Access
                 </Button>
               </div>
             )}
             
             {step === 2 && (
               <div>
-                <h2 className="text-2xl font-bold mb-4">Standortzugriff</h2>
+                <h2 className="text-2xl font-bold mb-4">Choose a Username</h2>
                 <p className="text-muted-foreground mb-6">
-                  Travellinq benötigt deinen Standort, um dir relevante Beiträge und Vanlifer in der Nähe anzuzeigen.
-                </p>
-                <div className="flex items-center p-4 bg-muted rounded-lg mb-6">
-                  <MapPin size={24} className="text-primary mr-3" />
-                  <div>
-                    <p className="font-medium">Standortzugriff erlauben</p>
-                    <p className="text-sm text-muted-foreground">Wird für die Funktionalität der App benötigt</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleLocationPermission}
-                  className="w-full"
-                >
-                  Standortzugriff erlauben
-                </Button>
-              </div>
-            )}
-            
-            {step === 3 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-4">Wähle einen Pseudonym</h2>
-                <p className="text-muted-foreground mb-6">
-                  Erstelle einen einzigartigen Nickname, der dich in der Travellinq-Community repräsentiert.
+                  Create a unique username that represents you in the Travellinq community.
                 </p>
                 <Form {...form}>
                   <div className="space-y-4 mb-6">
@@ -212,16 +199,16 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                       name="pseudonym"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Pseudonym</FormLabel>
+                          <FormLabel>Username</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="z.B. BergNomade"
+                              placeholder="e.g. MountainNomad"
                               {...field}
                             />
                           </FormControl>
                           <FormMessage />
                           <p className="text-xs text-muted-foreground">
-                            Wähle mit Bedacht! Du kannst deinen Pseudonym nur alle 30 Tage ändern.
+                            Choose carefully! You can only change your username every 30 days.
                           </p>
                         </FormItem>
                       )}
@@ -229,20 +216,20 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   </div>
                 </Form>
                 <Button 
-                  onClick={() => setStep(4)}
+                  onClick={() => setStep(3)}
                   disabled={form.getValues('pseudonym').length < 3}
                   className="w-full"
                 >
-                  Weiter
+                  Continue
                 </Button>
               </div>
             )}
 
-            {step === 4 && (
+            {step === 3 && (
               <div>
-                <h2 className="text-2xl font-bold mb-4">Profilbild hinzufügen</h2>
+                <h2 className="text-2xl font-bold mb-4">Add a Profile Picture</h2>
                 <p className="text-muted-foreground mb-6">
-                  Lade ein Profilbild hoch, damit andere Vanlifer dich leichter erkennen können.
+                  Upload a profile picture to help other travelers recognize you.
                 </p>
                 
                 <div className="flex flex-col items-center space-y-6">
@@ -271,7 +258,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                     <Label htmlFor="avatar" className="cursor-pointer">
                       <div className="flex items-center justify-center gap-2 p-2 border border-input bg-background hover:bg-accent text-center rounded-md">
                         <Upload size={16} />
-                        <span>{avatarPreview ? 'Anderes Bild auswählen' : 'Bild auswählen'}</span>
+                        <span>{avatarPreview ? 'Change Picture' : 'Select Picture'}</span>
                       </div>
                       <input 
                         id="avatar" 
@@ -282,7 +269,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                       />
                     </Label>
                     <p className="text-xs text-muted-foreground text-center mt-2">
-                      Optional: Du kannst diesen Schritt auch überspringen.
+                      Optional: You can skip this step.
                     </p>
                   </div>
                 </div>
@@ -292,7 +279,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   className="w-full mt-8"
                   disabled={isUploading}
                 >
-                  {isUploading ? 'Wird gespeichert...' : 'Travellinq beitreten'}
+                  {isUploading ? 'Saving...' : 'Join Travellinq'}
                 </Button>
               </div>
             )}
@@ -304,7 +291,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                 onClick={() => setStep(step - 1)} 
                 className="text-sm text-muted-foreground hover:text-foreground w-full text-center"
               >
-                Zurück
+                Back
               </button>
             </div>
           )}

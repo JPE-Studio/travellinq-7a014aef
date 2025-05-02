@@ -19,6 +19,7 @@ import UserDetail from "./pages/UserDetail";
 import Notifications from "./pages/Notifications";
 import { useEffect } from "react";
 import { setupRlsPolicies } from "./utils/setupRlsPolicies";
+import OnboardingCheck from "./components/OnboardingCheck";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +45,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <RLSSetup /> {/* Add the RLS setup component */}
+        <RLSSetup />
+        <OnboardingCheck /> {/* Add the onboarding check component */}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />

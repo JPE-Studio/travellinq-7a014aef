@@ -7,10 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, User, Upload, X } from 'lucide-react';
-import { MapPin } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from '@/integrations/supabase/client';
+import { Eye, EyeOff, User, MapPin } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const { user, loading, signIn, signUp } = useAuth();
@@ -18,11 +15,8 @@ const Auth: React.FC = () => {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // If already authenticated, redirect to home
   if (user && !loading) {
@@ -46,34 +40,13 @@ const Auth: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Pass the username as metadata for profile creation
-      await signUp(email, password, username, avatarFile);
+      // Only pass the necessary information for signup
+      await signUp(email, password);
     } catch (error) {
       console.error('Sign up error:', error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setAvatarPreview(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeAvatar = () => {
-    setAvatarFile(null);
-    setAvatarPreview(null);
   };
 
   const togglePasswordVisibility = () => {
@@ -152,61 +125,6 @@ const Auth: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username">Username</Label>
-                  <Input
-                    id="signup-username"
-                    type="text"
-                    placeholder="YourUsername"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    minLength={3}
-                    maxLength={30}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Profile Picture</Label>
-                  <div className="flex flex-col items-center space-y-4">
-                    {avatarPreview ? (
-                      <div className="relative">
-                        <Avatar className="w-24 h-24 border-2 border-primary">
-                          <AvatarImage src={avatarPreview} alt="Avatar preview" />
-                          <AvatarFallback>
-                            <User className="h-12 w-12" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <button 
-                          type="button"
-                          onClick={removeAvatar}
-                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground">
-                        <User size={32} className="text-muted-foreground" />
-                      </div>
-                    )}
-                    
-                    <Label htmlFor="avatar" className="cursor-pointer w-full">
-                      <div className="flex items-center justify-center gap-2 p-2 border border-input bg-background hover:bg-accent text-center rounded-md">
-                        <Upload size={16} />
-                        <span>{avatarPreview ? 'Change Picture' : 'Upload Picture'}</span>
-                      </div>
-                      <input 
-                        id="avatar" 
-                        type="file" 
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden" 
-                      />
-                    </Label>
-                  </div>
                 </div>
                 
                 <div className="space-y-2">

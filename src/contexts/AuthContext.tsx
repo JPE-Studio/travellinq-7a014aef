@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   profile: AppUser | null;
-  signUp: (email: string, password: string, username?: string, avatarFile?: File | null) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -91,60 +92,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Helper function to upload avatar image
-  const uploadAvatar = async (userId: string, file: File) => {
+  // Simplified signUp function - we don't set username or upload avatar here
+  const signUp = async (email: string, password: string) => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      // Upload the file to Supabase storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-        
-      return publicUrl;
-    } catch (error) {
-      console.error("Error uploading avatar:", error);
-      throw error;
-    }
-  };
-
-  const signUp = async (email: string, password: string, username?: string, avatarFile?: File | null) => {
-    try {
-      const { error, data } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email, password });
       
       if (error) throw error;
       
-      if (data.user && username) {
-        let avatarUrl = null;
-        
-        // If avatar file is provided, upload it
-        if (avatarFile) {
-          avatarUrl = await uploadAvatar(data.user.id, avatarFile);
-        }
-        
-        // Create or update the user's profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            pseudonym: username,
-            avatar: avatarUrl,
-            joined_at: new Date().toISOString()
-          });
-          
-        if (profileError) {
-          console.error("Error creating user profile:", profileError);
-        }
-      }
+      // We don't need to create a profile here as it will be created by a database trigger
+      // The onboarding flow will prompt the user to complete their profile
     } catch (error: any) {
       console.error("Sign up failed:", error.message);
       throw error;
