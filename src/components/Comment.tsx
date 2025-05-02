@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -10,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import CommentReplyForm from './CommentReplyForm';
 import { voteComment } from '@/services/commentService';
 import { supabase } from '@/integrations/supabase/client';
+import UserProfileLink from './UserProfileLink';
 
 interface CommentProps {
   comment: CommentType;
@@ -113,7 +113,7 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, nested = false }) =>
   return (
     <div className={`${nested ? 'pl-6 border-l ml-4' : 'border-t'} pt-4`}>
       <div className="flex">
-        <Link to={`/user/${comment.author.id}`} className="mr-3">
+        <Link to={`/profile/${comment.author.id}`} className="mr-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={comment.author.avatar} className="object-cover" />
             <AvatarFallback>
@@ -123,9 +123,7 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, nested = false }) =>
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <Link to={`/user/${comment.author.id}`} className="font-medium text-sm hover:underline">
-              {comment.author.pseudonym}
-            </Link>
+            <UserProfileLink user={comment.author} showAvatar={false} className="font-medium text-sm" />
             <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
             </span>
