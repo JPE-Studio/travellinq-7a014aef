@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { fetchConversation } from '@/services/conversationService';
 import { sendMessage } from '@/services/messageService';
-import { supabase } from '@/integrations/supabase/client';
+import { setupChatSubscription } from '@/services/chatService';
 import { useAuth } from '@/contexts/AuthContext';
 import PageLayout from '@/components/PageLayout';
 
@@ -11,7 +12,7 @@ import PageLayout from '@/components/PageLayout';
 import ChatHeader from '@/components/chat/ChatHeader';
 import MessageList from '@/components/chat/MessageList';
 import MessageTextarea from '@/components/chat/MessageTextarea';
-import ChatSkeleton from '@/components/chat/ChatError';
+import ChatSkeleton from '@/components/chat/ChatSkeleton';
 import ChatError from '@/components/chat/ChatError';
 
 interface Message {
@@ -23,7 +24,7 @@ interface Message {
 }
 
 const ChatScreen: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { conversationId } = useParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +35,7 @@ const ChatScreen: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!userId) {
+    if (!conversationId) {
       setError("No conversation ID provided");
       setLoading(false);
       return;
@@ -50,8 +51,8 @@ const ChatScreen: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        console.log("Loading conversation:", userId);
-        const data = await fetchConversation(userId);
+        console.log("Loading conversation:", conversationId);
+        const data = await fetchConversation(conversationId);
         console.log("Conversation loaded:", data);
         
         setMessages(data.messages);
@@ -59,7 +60,7 @@ const ChatScreen: React.FC = () => {
         setCurrentUserId(data.currentUserId);
         
         // Set up real-time subscription for new messages
-        const unsubscribe = setupChatSubscription(userId, (newMessage) => {
+        const unsubscribe = setupChatSubscription(conversationId, (newMessage) => {
           console.log("Real-time message received:", newMessage);
           const formattedMessage = {
             id: newMessage.id,
@@ -97,14 +98,14 @@ const ChatScreen: React.FC = () => {
     };
 
     loadConversation();
-  }, [userId, navigate, user, toast]);
+  }, [conversationId, navigate, user, toast]);
 
   const handleSendMessage = async (message: string): Promise<void> => {
-    if (!userId || !message.trim()) return;
+    if (!conversationId || !message.trim()) return;
     
     try {
-      console.log("Sending message to conversation:", userId);
-      await sendMessage(userId, message);
+      console.log("Sending message to conversation:", conversationId);
+      await sendMessage(conversationId, message);
       // Message will be added via the subscription
     } catch (err) {
       console.error('Error sending message:', err);
@@ -119,7 +120,7 @@ const ChatScreen: React.FC = () => {
   
   const handleUserProfileClick = () => {
     if (otherUser?.id) {
-      navigate(`/user/${otherUser.id}`);
+      navigate(`/users/${otherUser.id}`);
     }
   };
 
@@ -144,26 +145,6 @@ const ChatScreen: React.FC = () => {
       <MessageTextarea onSendMessage={handleSendMessage} />
     </PageLayout>
   );
-};
-
-// Helper function for setting up chat subscriptions
-const setupChatSubscription = (conversationId: string, onNewMessage: (message: any) => void) => {
-  const channel = supabase
-    .channel('messages-channel-' + conversationId)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `conversation_id=eq.${conversationId}`
-    }, (payload) => {
-      console.log("New message received:", payload);
-      onNewMessage(payload.new);
-    })
-    .subscribe();
-    
-  return () => {
-    supabase.removeChannel(channel);
-  };
 };
 
 export default ChatScreen;

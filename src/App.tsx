@@ -35,7 +35,7 @@ const App = () => (
             <Route path="/map" element={<MapView />} />
             <Route path="/chats" element={<Chats />} />
             <Route path="/chats/new" element={<NewChat />} />
-            <Route path="/chat/:userId" element={<ChatScreen />} />
+            <Route path="/chat/:conversationId" element={<ChatScreen />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/users/:userId" element={<UserDetail />} />
             <Route path="/auth" element={<Auth />} />
