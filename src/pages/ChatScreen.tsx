@@ -50,7 +50,9 @@ const ChatScreen: React.FC = () => {
         setLoading(true);
         setError(null);
         
+        console.log("Loading conversation:", userId);
         const data = await fetchConversation(userId);
+        console.log("Conversation loaded:", data);
         
         setMessages(data.messages);
         setOtherUser(data.otherUser);
@@ -80,10 +82,14 @@ const ChatScreen: React.FC = () => {
         filter: `conversation_id=eq.${userId}`
       }, (payload) => {
         const newMessage = payload.new as any;
+        console.log("New message received:", newMessage);
         
-        // Only add the message if it's not from the current user (to avoid duplicates)
-        if (newMessage.sender_id !== currentUserId) {
-          setMessages(prevMessages => [
+        // Avoid duplicates by checking if we already have this message
+        setMessages(prevMessages => {
+          const messageExists = prevMessages.some(msg => msg.id === newMessage.id);
+          if (messageExists) return prevMessages;
+          
+          return [
             ...prevMessages, 
             {
               id: newMessage.id,
@@ -92,9 +98,11 @@ const ChatScreen: React.FC = () => {
               timestamp: new Date(newMessage.created_at),
               read: newMessage.read
             }
-          ]);
+          ];
+        });
 
-          // Mark the message as read
+        // Mark the message as read if it's not from the current user
+        if (newMessage.sender_id !== currentUserId) {
           supabase
             .from('messages')
             .update({ read: true })
@@ -106,7 +114,9 @@ const ChatScreen: React.FC = () => {
       })
       .subscribe();
 
+    // Clean up subscription on component unmount
     return () => {
+      console.log("Cleaning up message subscription");
       supabase.removeChannel(messageSubscription);
     };
   }, [userId, navigate, user, currentUserId]);
@@ -115,19 +125,12 @@ const ChatScreen: React.FC = () => {
     if (!userId || !message.trim()) return;
     
     try {
+      console.log("Sending message to conversation:", userId);
       const newMessage = await sendMessage(userId, message);
+      console.log("Message sent successfully:", newMessage);
       
-      // Add the message to the local state
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          id: newMessage.id,
-          senderId: newMessage.sender_id,
-          text: newMessage.content,
-          timestamp: new Date(newMessage.created_at),
-          read: newMessage.read
-        }
-      ]);
+      // Don't add the message to local state as it will come back via the subscription
+      // This prevents duplicates
     } catch (err) {
       console.error('Error sending message:', err);
       toast({
@@ -135,6 +138,8 @@ const ChatScreen: React.FC = () => {
         title: "Failed to send message",
         description: "Your message couldn't be sent. Please try again.",
       });
+      // Re-throw the error so the MessageTextarea can handle it
+      throw err;
     }
   };
   

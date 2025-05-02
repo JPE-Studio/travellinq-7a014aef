@@ -7,6 +7,10 @@ export const sendMessage = async (conversationId: string, content: string) => {
   if (sessionError || !userSession.session) throw new Error("User not authenticated");
   
   try {
+    console.log("Sending message to conversation:", conversationId);
+    console.log("Content:", content);
+    console.log("Sender:", userSession.session.user.id);
+
     const { data, error } = await supabase
       .from("messages")
       .insert({
@@ -22,6 +26,7 @@ export const sendMessage = async (conversationId: string, content: string) => {
       throw error;
     }
     
+    console.log("Message sent successfully:", data);
     return data;
   } catch (error) {
     console.error("Exception in sendMessage:", error);

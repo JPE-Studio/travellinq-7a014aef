@@ -24,6 +24,7 @@ const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const [userData, setUserData] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [messagingLoading, setMessagingLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -72,8 +73,9 @@ const UserProfile: React.FC = () => {
     if (!userData) return;
     
     try {
-      setLoading(true);
+      setMessagingLoading(true); // Use a separate loading state for the messaging action
       const conversationId = await getOrCreateConversation(userData.id);
+      console.log("Conversation created/found:", conversationId);
       navigate(`/chat/${conversationId}`);
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -83,7 +85,7 @@ const UserProfile: React.FC = () => {
         description: error instanceof Error ? error.message : "Failed to create conversation. Please try again.",
       });
     } finally {
-      setLoading(false);
+      setMessagingLoading(false);
     }
   };
 
@@ -135,7 +137,8 @@ const UserProfile: React.FC = () => {
                 )}
               </div>
             </div>
-            <Button onClick={handleMessageUser} disabled={loading}>
+            <Button onClick={handleMessageUser} disabled={messagingLoading}>
+              {messagingLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Message
             </Button>
           </div>

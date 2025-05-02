@@ -22,6 +22,7 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
       
     if (existingError) {
       console.error("Error searching for existing conversation:", existingError);
+      throw existingError;
     }
     
     // If we found an existing conversation, return it
