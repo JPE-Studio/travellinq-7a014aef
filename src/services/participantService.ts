@@ -37,7 +37,7 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     console.log("No existing conversation found, creating new one");
     
-    // Start a transaction-like flow
+    // Create a new conversation and add participants in separate steps
     // Step 1: Create a new conversation
     const { data: newConversation, error: createError } = await supabase
       .from("conversations")
@@ -63,7 +63,7 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     if (currentUserPartError) {
       console.error("Error adding current user to conversation:", currentUserPartError);
-      // If this fails, we should try to clean up the conversation we just created
+      // If this fails, clean up the conversation we just created
       await supabase.from("conversations").delete().eq("id", conversationId);
       throw new Error("Failed to add you to conversation: " + currentUserPartError.message);
     }
