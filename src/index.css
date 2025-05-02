@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -156,6 +157,11 @@
 /* Fix content padding for bottom navigation on mobile */
 @media (max-width: 768px) {
   .pb-safe {
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+    padding-bottom: 5rem !important; /* Increased padding to prevent content being hidden behind tab bar */
+  }
+  
+  .create-post-button {
+    bottom: 5rem !important; /* Position the create button above the tab bar */
   }
 }
+

@@ -41,7 +41,8 @@ const CreatePostButton: React.FC = () => {
   return (
     <>
       <button 
-        className="fixed bottom-16 md:bottom-6 right-6 bg-secondary text-secondary-foreground w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-secondary/90 transition-colors z-10"
+        className="fixed create-post-button right-6 bg-secondary text-secondary-foreground w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-secondary/90 transition-colors z-10"
+        style={{ bottom: '5rem' }}
         onClick={() => setIsOpen(true)}
       >
         <Plus className="h-6 w-6" />
