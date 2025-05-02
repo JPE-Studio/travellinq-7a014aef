@@ -1,10 +1,10 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { Plus, X, MapPin, Image, Loader2 } from 'lucide-react';
+import { Plus, X, Image, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -30,6 +30,7 @@ const CreatePostButton: React.FC = () => {
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormData>({
@@ -40,33 +41,40 @@ const CreatePostButton: React.FC = () => {
     },
   });
 
+  // Get user's location when the drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      getUserLocation();
+    }
+  }, [isOpen]);
+
   // Get user's location
   const getUserLocation = () => {
     if (navigator.geolocation) {
+      setIsLocating(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
-          toast({
-            title: "Location added",
-            description: "Your current location has been added to the post.",
-          });
+          setIsLocating(false);
         },
         (err) => {
           console.error("Error getting location:", err);
           toast({
-            title: "Location error",
-            description: "Could not get your location. Please try again.",
+            title: "Location permission required",
+            description: "We need your location to post. Please enable location services.",
             variant: "destructive",
           });
-        }
+          setIsLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
     } else {
       toast({
         title: "Location not supported",
-        description: "Your browser doesn't support geolocation.",
+        description: "Your browser doesn't support geolocation which is required for posting.",
         variant: "destructive",
       });
     }
@@ -149,9 +157,10 @@ const CreatePostButton: React.FC = () => {
     if (!location) {
       toast({
         title: "Location required",
-        description: "Please add your location to the post",
+        description: "Waiting for your location. Please allow location access.",
         variant: "destructive",
       });
+      getUserLocation();
       return;
     }
     
@@ -269,27 +278,31 @@ const CreatePostButton: React.FC = () => {
                 )}
               />
 
-              {/* Location picker */}
+              {/* Location status indicator */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <FormLabel>Location</FormLabel>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={getUserLocation}
-                    className="flex items-center gap-1"
-                    disabled={!!location}
-                  >
-                    <MapPin className="h-4 w-4" />
-                    {location ? "Location Added" : "Add Current Location"}
-                  </Button>
-                </div>
-                {location && (
-                  <div className="text-sm text-muted-foreground">
-                    Location added: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                  <div className="text-sm">
+                    {isLocating ? (
+                      <span className="flex items-center text-muted-foreground">
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Getting your location...
+                      </span>
+                    ) : location ? (
+                      <span className="text-primary">Location ready</span>
+                    ) : (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={getUserLocation}
+                        className="text-xs"
+                      >
+                        Enable location
+                      </Button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Image upload */}
@@ -364,6 +377,11 @@ const CreatePostButton: React.FC = () => {
                     'Publish'
                   )}
                 </Button>
+                {!location && !isLocating && (
+                  <p className="text-xs text-destructive text-center mt-2">
+                    Location access is required to create a post
+                  </p>
+                )}
               </div>
             </form>
           </Form>
