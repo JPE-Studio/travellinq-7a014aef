@@ -1,13 +1,37 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Map from '@/components/Map';
-import { mockPosts } from '@/data/mockData';
+import { useQuery } from '@tanstack/react-query';
+import { fetchPosts } from '@/services/postService';
 import { Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 
 const MapView: React.FC = () => {
-  const [currentLocation] = useState({ lat: 45.5152, lng: -122.6784 });
+  const [currentLocation, setCurrentLocation] = useState({ lat: 45.5152, lng: -122.6784 });
+
+  // Get user's current location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (err) => {
+          console.error("Error getting location:", err);
+          // Keep default location
+        }
+      );
+    }
+  }, []);
+  
+  // Fetch posts from API
+  const { data: posts = [] } = useQuery({
+    queryKey: ['posts', currentLocation],
+    queryFn: () => fetchPosts(currentLocation.lat, currentLocation.lng, 50)
+  });
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
@@ -34,7 +58,7 @@ const MapView: React.FC = () => {
           {/* Full sized map */}
           <div className="flex-grow relative">
             <Map 
-              posts={mockPosts}
+              posts={posts}
               currentLocation={currentLocation}
               expanded={true}
               onToggleExpand={() => {}}

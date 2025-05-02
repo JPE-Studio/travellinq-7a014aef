@@ -16,6 +16,7 @@ import UserProfile from "./pages/UserProfile";
 import ChatScreen from "./pages/ChatScreen";
 import Auth from "./pages/Auth";
 import BottomNavigation from "./components/BottomNavigation";
+import NewChat from "./pages/NewChat";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/map" element={<MapView />} />
             <Route path="/chats" element={<Chats />} />
+            <Route path="/chats/new" element={<NewChat />} />
             <Route path="/chat/:userId" element={<ChatScreen />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/user/:userId" element={<UserProfile />} />

@@ -3,24 +3,27 @@ import React, { useState, useEffect } from 'react';
 import { Post } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { MapPin, User, ThumbsUp, ThumbsDown, Bell, BellOff } from 'lucide-react';
+import { MapPin, User, ThumbsUp, ThumbsDown, Bell, BellOff, Languages } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { votePost } from '@/services/postService';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface PostCardProps {
   post: Post;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [votes, setVotes] = useState(post.votes);
   const [userVote, setUserVote] = useState<1 | -1 | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
 
   // Check if user is already subscribed to this post
   useEffect(() => {
@@ -178,6 +181,35 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       setLoading(false);
     }
   };
+  
+  const handleTranslate = async () => {
+    // We would typically use a translation API here
+    // For now we'll just simulate translation
+    setIsTranslating(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simple mock translation - in a real app, use a translation API
+      const targetLang = profile?.preferredLanguage || 'en';
+      setTranslatedText(`[Translated to ${languages.find(l => l.value === targetLang)?.label || 'your language'}] ${post.text}`);
+      
+      toast({
+        title: "Post translated",
+        description: `Post has been translated to ${languages.find(l => l.value === targetLang)?.label || 'your language'}.`,
+      });
+    } catch (error) {
+      console.error("Error translating post:", error);
+      toast({
+        title: "Translation failed",
+        description: "We couldn't translate this post. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   return (
     <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
@@ -221,7 +253,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         </div>
 
         <Link to={`/post/${post.id}`} className="block">
-          <p className="mb-3 text-foreground">{post.text}</p>
+          <p className="mb-3 text-foreground">{translatedText || post.text}</p>
         
           {/* Post images if available */}
           {post.images && post.images.length > 0 && (
@@ -237,6 +269,20 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             </div>
           )}
         </Link>
+        
+        {/* Translate button */}
+        {!translatedText && user && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleTranslate}
+            disabled={isTranslating}
+            className="mb-2 text-xs flex items-center gap-1"
+          >
+            <Languages className="h-3 w-3 mr-1" />
+            {isTranslating ? 'Translating...' : 'Translate to my language'}
+          </Button>
+        )}
         
         {/* Post interactions */}
         <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
@@ -263,15 +309,15 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               onClick={handleSubscribe}
               disabled={loading}
             >
-              {isSubscribed ? (
+              {!isSubscribed ? (
                 <>
-                  <Bell className="h-4 w-4 mr-1 fill-primary" />
-                  <span>Subscribed</span>
+                  <Bell className="h-4 w-4 mr-1" />
+                  <span>Subscribe</span>
                 </>
               ) : (
                 <>
                   <BellOff className="h-4 w-4 mr-1" />
-                  <span>Subscribe</span>
+                  <span>Unsubscribe</span>
                 </>
               )}
             </button>
@@ -284,5 +330,19 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     </div>
   );
 };
+
+// Language options array for reference
+const languages = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'it', label: 'Italian' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'zh', label: 'Chinese' },
+];
 
 export default PostCard;

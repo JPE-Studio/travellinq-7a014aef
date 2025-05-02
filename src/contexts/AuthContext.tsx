@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           avatar: data.avatar,
           bio: data.bio,
           location: data.location,
+          preferredLanguage: data.preferred_language,
           joinedAt: new Date(data.joined_at)
         });
       }

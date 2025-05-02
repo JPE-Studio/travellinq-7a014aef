@@ -240,6 +240,7 @@ export type Database = {
           id: string
           joined_at: string
           location: string | null
+          preferred_language: string | null
           pseudonym: string
         }
         Insert: {
@@ -248,6 +249,7 @@ export type Database = {
           id: string
           joined_at?: string
           location?: string | null
+          preferred_language?: string | null
           pseudonym: string
         }
         Update: {
@@ -256,6 +258,7 @@ export type Database = {
           id?: string
           joined_at?: string
           location?: string | null
+          preferred_language?: string | null
           pseudonym?: string
         }
         Relationships: []

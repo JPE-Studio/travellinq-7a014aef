@@ -12,6 +12,26 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const languages = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'it', label: 'Italian' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'zh', label: 'Chinese' },
+];
 
 const Settings: React.FC = () => {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -20,6 +40,7 @@ const Settings: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -30,6 +51,7 @@ const Settings: React.FC = () => {
       setDisplayName(profile.pseudonym || '');
       setBio(profile.bio || '');
       setLocation(profile.location || '');
+      setPreferredLanguage(profile.preferredLanguage || 'en');
     }
   }, [profile]);
   
@@ -93,7 +115,8 @@ const Settings: React.FC = () => {
           pseudonym: displayName,
           bio: bio,
           avatar: avatarUrl,
-          location: location
+          location: location,
+          preferred_language: preferredLanguage
         })
         .eq('id', user.id);
       
@@ -201,6 +224,27 @@ const Settings: React.FC = () => {
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Your location will be stored and used to show nearby posts
+                  </p>
+                </div>
+                <div>
+                  <Label className="block text-sm font-medium mb-1">Preferred Language</Label>
+                  <Select
+                    value={preferredLanguage}
+                    onValueChange={setPreferredLanguage}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languages.map((language) => (
+                        <SelectItem key={language.value} value={language.value}>
+                          {language.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your preferred language for content translation
                   </p>
                 </div>
               </div>

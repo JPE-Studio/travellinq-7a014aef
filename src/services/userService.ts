@@ -18,6 +18,7 @@ export const fetchUserProfile = async (userId: string): Promise<User> => {
     avatar: data.avatar,
     bio: data.bio,
     location: data.location,
+    preferredLanguage: data.preferred_language,
     joinedAt: new Date(data.joined_at)
   };
 };
@@ -37,6 +38,7 @@ export const fetchUserProfiles = async (userIds: string[]): Promise<User[]> => {
     avatar: profile.avatar,
     bio: profile.bio,
     location: profile.location,
+    preferredLanguage: profile.preferred_language,
     joinedAt: new Date(profile.joined_at)
   }));
 };
@@ -63,6 +65,7 @@ export const fetchOtherUsers = async (): Promise<User[]> => {
     avatar: profile.avatar,
     bio: profile.bio,
     location: profile.location,
+    preferredLanguage: profile.preferred_language,
     joinedAt: new Date(profile.joined_at)
   }));
 };

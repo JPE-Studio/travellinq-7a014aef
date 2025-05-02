@@ -6,6 +6,7 @@ export interface User {
   bio?: string;
   location?: string;
   joinedAt: Date;
+  preferredLanguage?: string;
 }
 
 export interface Post {
