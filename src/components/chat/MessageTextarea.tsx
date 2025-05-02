@@ -1,9 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Loader2, Send } from 'lucide-react';
 
 interface MessageTextareaProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -12,82 +11,68 @@ interface MessageTextareaProps {
 const MessageTextarea: React.FC<MessageTextareaProps> = ({ onSendMessage }) => {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { toast } = useToast();
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Focus the textarea when component mounts
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || sending) return;
+    const trimmedMessage = message.trim();
+    
+    if (!trimmedMessage || sending) return;
     
     try {
       setSending(true);
-      await onSendMessage(message.trim());
+      await onSendMessage(trimmedMessage);
       setMessage('');
-      
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        variant: "destructive",
-        title: "Failed to send message",
-        description: "Please try again later."
-      });
     } finally {
       setSending(false);
+      // Re-focus the textarea after sending
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
     }
   };
-  
-  // Handle textarea auto-resize
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    
-    const adjustHeight = () => {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
-    };
-    
-    textarea.addEventListener('input', adjustHeight);
-    adjustHeight();
-    
-    return () => {
-      textarea.removeEventListener('input', adjustHeight);
-    };
-  }, []);
 
-  // Handle Ctrl+Enter or Cmd+Enter to submit
+  // Handle Enter key to submit (Shift+Enter for new line)
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSubmit(e);
     }
   };
 
   return (
-    <form 
-      onSubmit={handleSubmit} 
-      className="bg-background border-t sticky bottom-0 left-0 right-0 p-4 flex items-end gap-2 pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-4 mb-16 md:mb-0"
-    >
-      <Textarea
-        ref={textareaRef}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Type a message..."
-        className="flex-grow min-h-[40px] max-h-[150px] resize-none py-2"
-        disabled={sending}
-      />
-      <Button 
-        type="submit" 
-        size="icon" 
-        className="h-10 w-10"
-        variant={message.trim() ? "default" : "ghost"} 
-        disabled={!message.trim() || sending}
-      >
-        <Send className="h-5 w-5" />
-      </Button>
+    <form onSubmit={handleSubmit} className="border-t p-3 sticky bottom-16 md:bottom-0 bg-background">
+      <div className="flex items-end space-x-2">
+        <Textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message..."
+          className="min-h-[60px] resize-none"
+          maxLength={1000}
+        />
+        <Button 
+          type="submit" 
+          size="icon" 
+          disabled={sending || !message.trim()}
+        >
+          {sending ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
     </form>
   );
 };

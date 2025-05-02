@@ -332,7 +332,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      find_conversation_between_users: {
+        Args: { current_user_id: string; other_user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       post_category: "campsite" | "service" | "question" | "general"
