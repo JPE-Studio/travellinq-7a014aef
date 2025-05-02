@@ -45,7 +45,7 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
   }
 };
 
-// Connect with a buddy
+// Connect with a buddy (now sends a pending request rather than directly connecting)
 export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection> => {
   const userId = await getCurrentUserId();
   
@@ -62,6 +62,7 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
     .insert({
       user_id: userId,
       buddy_id: buddyId,
+      status: 'pending',
       notify_at_100km: true,
       notify_at_50km: true,
       notify_at_20km: true
@@ -75,6 +76,52 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
   }
   
   return data as BuddyConnection;
+};
+
+// Accept a buddy connection request
+export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConnection> => {
+  const userId = await getCurrentUserId();
+  
+  if (!userId) {
+    throw new Error("You must be logged in to accept connection requests");
+  }
+  
+  const { data, error } = await supabase
+    .from('buddy_connections')
+    .update({ status: 'active' })
+    .eq("user_id", requesterId)
+    .eq("buddy_id", userId)
+    .eq("status", 'pending')
+    .select("*")
+    .single();
+  
+  if (error) {
+    console.error("Error accepting buddy request:", error);
+    throw error;
+  }
+  
+  return data as BuddyConnection;
+};
+
+// Reject a buddy connection request
+export const rejectBuddyRequest = async (requesterId: string): Promise<void> => {
+  const userId = await getCurrentUserId();
+  
+  if (!userId) {
+    throw new Error("You must be logged in to reject connection requests");
+  }
+  
+  const { error } = await supabase
+    .from('buddy_connections')
+    .update({ status: 'rejected' })
+    .eq("user_id", requesterId)
+    .eq("buddy_id", userId)
+    .eq("status", 'pending');
+  
+  if (error) {
+    console.error("Error rejecting buddy request:", error);
+    throw error;
+  }
 };
 
 // Update buddy connection notification settings

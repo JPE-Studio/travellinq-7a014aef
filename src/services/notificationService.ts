@@ -4,6 +4,7 @@ import { Notification } from "@/components/notifications/NotificationItem";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
 import { fetchUserProfile } from "./userService";
+import { acceptBuddyRequest, rejectBuddyRequest } from "./chatService";
 
 /**
  * Fetches all notifications for the current user
@@ -16,6 +17,7 @@ export const fetchNotifications = async (): Promise<Notification[]> => {
     const { data: notifications, error } = await supabase
       .from("notifications")
       .select("*")
+      .eq("user_id", session.session.user.id)
       .order("created_at", { ascending: false });
       
     if (error) throw error;
@@ -43,7 +45,7 @@ export const fetchNotifications = async (): Promise<Notification[]> => {
     // Transform the database notifications to application notifications
     return notifications.map(n => ({
       id: n.id,
-      type: n.type as "mention" | "reply" | "vote" | "subscription" | "nearby",
+      type: n.type as "mention" | "reply" | "vote" | "subscription" | "nearby" | "buddy_request" | "comment_on_same_post",
       message: n.message,
       createdAt: new Date(n.created_at),
       read: n.read,
@@ -101,6 +103,46 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
 };
 
 /**
+ * Handle a buddy connection request notification
+ * @param requesterId ID of the user who sent the request
+ * @param action 'accept' or 'reject'
+ * @param notificationId ID of the notification to mark as read
+ */
+export const handleBuddyRequest = async (
+  requesterId: string,
+  action: 'accept' | 'reject',
+  notificationId: string
+): Promise<void> => {
+  try {
+    if (action === 'accept') {
+      await acceptBuddyRequest(requesterId);
+      toast({
+        title: "Connection accepted",
+        description: "You are now connected as buddies.",
+      });
+    } else {
+      await rejectBuddyRequest(requesterId);
+      toast({
+        title: "Connection rejected",
+        description: "The buddy request has been declined."
+      });
+    }
+    
+    // Mark the notification as read
+    await markNotificationAsRead(notificationId);
+    
+  } catch (error) {
+    console.error(`Error ${action}ing buddy request:`, error);
+    toast({
+      variant: "destructive",
+      title: `Failed to ${action} connection`,
+      description: error instanceof Error ? error.message : "An error occurred",
+    });
+    throw error;
+  }
+};
+
+/**
  * Sets up a real-time subscription for new notifications
  * @param callback Function to call when a new notification is received
  */
@@ -135,7 +177,7 @@ export const subscribeToNotifications = (
           // Convert to application notification
           const appNotification: Notification = {
             id: notification.id,
-            type: notification.type as "mention" | "reply" | "vote" | "subscription" | "nearby",
+            type: notification.type as "mention" | "reply" | "vote" | "subscription" | "nearby" | "buddy_request" | "comment_on_same_post",
             message: notification.message,
             createdAt: new Date(notification.created_at),
             read: notification.read,

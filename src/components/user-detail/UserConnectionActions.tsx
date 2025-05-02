@@ -38,8 +38,8 @@ const UserConnectionActions: React.FC<ConnectionActionsProps> = ({
       const connection = await connectWithBuddy(userId);
       setBuddyConnection(connection);
       toast({
-        title: "Connected as buddies!",
-        description: `You are now connected with ${userData.pseudonym}`,
+        title: "Connection request sent!",
+        description: `Request sent to ${userData.pseudonym}. You'll get a notification when they respond.`,
       });
     } catch (error) {
       console.error("Error connecting with buddy:", error);
@@ -100,9 +100,15 @@ const UserConnectionActions: React.FC<ConnectionActionsProps> = ({
     <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
       <div>
         {buddyConnection ? (
-          <p className="text-sm font-medium text-green-600 dark:text-green-500">
-            Connected as buddies
-          </p>
+          buddyConnection.status === 'pending' ? (
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-500">
+              Connection request pending
+            </p>
+          ) : (
+            <p className="text-sm font-medium text-green-600 dark:text-green-500">
+              Connected as buddies
+            </p>
+          )
         ) : (
           <p className="text-sm font-medium text-muted-foreground">
             Not connected as buddies
@@ -135,7 +141,7 @@ const UserConnectionActions: React.FC<ConnectionActionsProps> = ({
         )}
 
         <Button 
-          variant={buddyConnection ? "default" : "outline"}
+          variant={buddyConnection?.status === 'active' ? "default" : "outline"}
           onClick={handleStartChat}
           disabled={isStartingChat}
         >
