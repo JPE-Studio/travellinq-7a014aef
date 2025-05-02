@@ -48,11 +48,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                   <span className="mx-1">•</span>
                   <MapPin size={12} className="mr-1" />
                   <span className="flex items-center">
-                    <span className={post.distance <= 10 ? "text-forest font-medium" : ""}>
-                      {post.distance.toFixed(1)} miles away
-                    </span>
-                    {post.distance <= 5 && (
-                      <span className="ml-1 bg-forest/20 text-forest px-1 rounded text-[10px]">Near you</span>
+                    {post.distance !== undefined ? (
+                      <>
+                        <span className={post.distance <= 10 ? "text-forest font-medium" : ""}>
+                          {post.distance.toFixed(1)} miles away
+                        </span>
+                        {post.distance <= 5 && (
+                          <span className="ml-1 bg-forest/20 text-forest px-1 rounded text-[10px]">Near you</span>
+                        )}
+                      </>
+                    ) : (
+                      <span>Distance unknown</span>
                     )}
                   </span>
                 </>
