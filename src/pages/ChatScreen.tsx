@@ -1,120 +1,195 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User, ArrowLeft, Send } from 'lucide-react';
-import { mockUsers } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 import BottomNavigation from '@/components/BottomNavigation';
+import { fetchConversation, sendMessage } from '@/services/chatService';
+import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
-// Interface for a chat message
 interface Message {
   id: string;
   senderId: string;
-  receiverId: string;
   text: string;
   timestamp: Date;
+  read: boolean;
 }
 
 const ChatScreen: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [otherUser, setOtherUser] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // Find the user from mock data
-  const user = mockUsers.find(user => user.id === userId);
-  const currentUser = mockUsers.find(user => user.id === 'user-1');
-  
-  // Generate some mock messages
+
   useEffect(() => {
-    if (!user) return;
-    
-    // Create mock conversation
-    const mockConversation: Message[] = [
-      {
-        id: '1',
-        senderId: userId as string,
-        receiverId: 'user-1',
-        text: "Hey there! How's your trip going?",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) // 1 day ago
-      },
-      {
-        id: '2',
-        senderId: 'user-1',
-        receiverId: userId as string,
-        text: "Pretty good! Just arrived in Portland. Any recommendations?",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12) // 12 hours ago
-      },
-      {
-        id: '3',
-        senderId: userId as string,
-        receiverId: 'user-1',
-        text: "Definitely check out Forest Park and Powell's Books!",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) // 3 hours ago
-      }
-    ];
-    
-    // For user-2, add one more message
-    if (userId === 'user-2') {
-      mockConversation.push({
-        id: '4',
-        senderId: userId,
-        receiverId: 'user-1',
-        text: "Thanks for the recommendation! I'll check it out.",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) // 2 hours ago
-      });
+    if (!userId) return;
+    if (!user) {
+      navigate('/auth');
+      return;
     }
-    
-    setMessages(mockConversation);
-  }, [userId]);
+
+    const loadConversation = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchConversation(userId);
+        setMessages(data.messages);
+        setOtherUser(data.otherUser);
+        setCurrentUserId(data.currentUserId);
+      } catch (err) {
+        console.error('Error loading conversation:', err);
+        setError('Failed to load conversation. Please try again.');
+        toast({
+          variant: "destructive",
+          title: "Error loading conversation",
+          description: "We couldn't load this conversation. Please try again later.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadConversation();
+
+    // Set up real-time subscription for new messages
+    const channel = supabase
+      .channel('public:messages')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${userId}`
+      }, (payload) => {
+        const newMessage = payload.new as any;
+        // Only add the message if it's not from the current user (to avoid duplicates)
+        if (newMessage.sender_id !== currentUserId) {
+          setMessages(prevMessages => [
+            ...prevMessages, 
+            {
+              id: newMessage.id,
+              senderId: newMessage.sender_id,
+              text: newMessage.content,
+              timestamp: new Date(newMessage.created_at),
+              read: newMessage.read
+            }
+          ]);
+
+          // Mark the message as read
+          supabase
+            .from('messages')
+            .update({ read: true })
+            .eq('id', newMessage.id)
+            .then();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, navigate, user, currentUserId]);
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!message.trim() || !user) return;
+    if (!message.trim() || !userId) return;
     
-    // Create a new message
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: 'user-1',
-      receiverId: userId as string,
-      text: message,
-      timestamp: new Date()
-    };
-    
-    setMessages([...messages, newMessage]);
-    setMessage('');
-    
-    // Show toast for demo purposes
-    toast({
-      title: "Message sent",
-      description: `Your message to ${user.pseudonym} has been sent.`,
-    });
+    try {
+      const newMessage = await sendMessage(userId, message.trim());
+      
+      // Add the message to the local state
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          id: newMessage.id,
+          senderId: newMessage.sender_id,
+          text: newMessage.content,
+          timestamp: new Date(newMessage.created_at),
+          read: newMessage.read
+        }
+      ]);
+      
+      setMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      toast({
+        variant: "destructive",
+        title: "Failed to send message",
+        description: "Your message couldn't be sent. Please try again.",
+      });
+    }
   };
   
   const handleUserProfileClick = () => {
-    if (userId) {
-      navigate(`/user/${userId}`);
+    if (otherUser?.id) {
+      navigate(`/user/${otherUser.id}`);
     }
   };
 
-  if (!user || !currentUser) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
+        {/* Chat header skeleton */}
+        <div className="bg-background border-b sticky top-0 z-10 flex items-center px-4 py-2">
+          <Link to="/chats" className="mr-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div className="flex items-center flex-1">
+            <Skeleton className="h-8 w-8 rounded-full mr-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        
+        {/* Message skeletons */}
+        <div className="flex-grow p-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={`flex mb-4 ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+              <Skeleton className={`h-10 w-48 rounded-xl ${i % 2 === 0 ? 'ml-12' : 'mr-12'}`} />
+            </div>
+          ))}
+        </div>
+        
+        {/* Input skeleton */}
+        <div className="bg-background border-t sticky bottom-0 left-0 right-0 p-4 flex items-center gap-2 mb-16 md:mb-0">
+          <Skeleton className="h-10 flex-grow" />
+          <Skeleton className="h-10 w-10 rounded-full" />
+        </div>
+        
+        <BottomNavigation />
+      </div>
+    );
+  }
+
+  if (error || !otherUser) {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0">
-        <Header />
+        <div className="bg-background border-b sticky top-0 z-10 flex items-center px-4 py-2">
+          <Link to="/chats" className="mr-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div className="flex-1">
+            <p className="font-medium">Error</p>
+          </div>
+        </div>
         <div className="flex-grow flex justify-center items-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">User Not Found</h1>
+            <h1 className="text-xl font-bold mb-4">Conversation Not Found</h1>
+            <p className="text-muted-foreground mb-4">{error || "This conversation could not be loaded."}</p>
             <Link to="/chats" className="text-primary hover:underline">
               Return to Messages
             </Link>
@@ -137,19 +212,25 @@ const ChatScreen: React.FC = () => {
           onClick={handleUserProfileClick}
         >
           <Avatar className="h-8 w-8 mr-2">
-            <AvatarImage src={user.avatar} alt={user.pseudonym} className="object-cover" />
+            <AvatarImage src={otherUser.avatar} alt={otherUser.pseudonym} className="object-cover" />
             <AvatarFallback>
               <User className="h-4 w-4 text-muted-foreground" />
             </AvatarFallback>
           </Avatar>
-          <p className="font-medium">{user.pseudonym}</p>
+          <p className="font-medium">{otherUser.pseudonym}</p>
         </div>
       </div>
       
       {/* Chat messages */}
       <div className="flex-grow overflow-y-auto scrollbar-hide p-4 pb-20 md:pb-4">
+        {messages.length === 0 && (
+          <div className="flex justify-center items-center h-32">
+            <p className="text-muted-foreground">No messages yet. Say hello!</p>
+          </div>
+        )}
+        
         {messages.map(msg => {
-          const isSentByMe = msg.senderId === 'user-1';
+          const isSentByMe = msg.senderId === currentUserId;
           
           return (
             <div 
@@ -158,7 +239,7 @@ const ChatScreen: React.FC = () => {
             >
               {!isSentByMe && (
                 <Avatar className="h-8 w-8 mr-2 self-end">
-                  <AvatarImage src={user.avatar} alt={user.pseudonym} className="object-cover" />
+                  <AvatarImage src={otherUser.avatar} alt={otherUser.pseudonym} className="object-cover" />
                   <AvatarFallback>
                     <User className="h-4 w-4 text-muted-foreground" />
                   </AvatarFallback>
@@ -168,19 +249,18 @@ const ChatScreen: React.FC = () => {
               <div
                 className={`max-w-[75%] rounded-xl px-4 py-2 ${
                   isSentByMe 
-                    ? 'bg-forest text-white rounded-br-none' 
+                    ? 'bg-primary text-primary-foreground rounded-br-none' 
                     : 'bg-muted rounded-bl-none'
                 }`}
               >
                 <p>{msg.text}</p>
-                <p className={`text-xs mt-1 ${isSentByMe ? 'text-white/70' : 'text-muted-foreground'}`}>
+                <p className={`text-xs mt-1 ${isSentByMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
               
               {isSentByMe && (
                 <Avatar className="h-8 w-8 ml-2 self-end">
-                  <AvatarImage src={currentUser.avatar} alt="You" className="object-cover" />
                   <AvatarFallback>
                     <User className="h-4 w-4 text-muted-foreground" />
                   </AvatarFallback>
@@ -203,7 +283,7 @@ const ChatScreen: React.FC = () => {
           placeholder="Type a message..."
           className="flex-grow"
         />
-        <Button type="submit" size="icon" variant="ghost">
+        <Button type="submit" size="icon" variant={message.trim() ? "default" : "ghost"} disabled={!message.trim()}>
           <Send className="h-5 w-5" />
         </Button>
       </form>
