@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -53,6 +54,36 @@ const PostDetail: React.FC = () => {
     }
   }, [post]);
   
+  // Listen for real-time comment updates
+  useEffect(() => {
+    if (!id) return;
+    
+    const channel = supabase
+      .channel('comment-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'comments',
+          filter: `post_id=eq.${id}`
+        }, 
+        (payload) => {
+          // Refresh comments when a new one is added
+          queryClient.invalidateQueries({ queryKey: ['comments', id] });
+          
+          toast({
+            title: "New comment",
+            description: "Someone just commented on this post.",
+          });
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, queryClient]);
+  
   // Check if user is already subscribed to this post
   useEffect(() => {
     if (!user || !id) return;
@@ -96,37 +127,57 @@ const PostDetail: React.FC = () => {
     checkUserVote();
   }, [id, user]);
   
-  // Organize comments into a tree structure with parent/child relationships
+  // Organize comments into a nested tree structure
   const organizedComments = React.useMemo(() => {
-    const commentMap: Record<string, typeof commentsData[0] & { replies?: typeof commentsData }> = {};
-    const topLevelComments: (typeof commentsData[0] & { replies?: typeof commentsData })[] = [];
+    const commentMap: Record<string, any> = {};
+    const rootComments: any[] = [];
     
-    // First pass: create a map of all comments
+    // First, create a map of all comments by id
     commentsData.forEach(comment => {
-      commentMap[comment.id] = { ...comment, replies: [] };
+      commentMap[comment.id] = {
+        ...comment,
+        children: [],
+      };
     });
     
-    // Second pass: organize into parent/child relationships
+    // Then, build the hierarchy by adding each comment to its parent's children array
     commentsData.forEach(comment => {
       if (comment.parentCommentId) {
-        // This is a reply, add to parent's replies array
-        if (commentMap[comment.parentCommentId]) {
-          if (!commentMap[comment.parentCommentId].replies) {
-            commentMap[comment.parentCommentId].replies = [];
-          }
-          commentMap[comment.parentCommentId].replies?.push(commentMap[comment.id]);
+        // This is a child comment, add it to its parent
+        const parentComment = commentMap[comment.parentCommentId];
+        if (parentComment) {
+          parentComment.children.push(commentMap[comment.id]);
         } else {
-          // Parent comment not found, treat as top-level
-          topLevelComments.push(commentMap[comment.id]);
+          // Parent comment not found, treat as root comment
+          rootComments.push(commentMap[comment.id]);
         }
       } else {
-        // This is a top-level comment
-        topLevelComments.push(commentMap[comment.id]);
+        // This is a root comment
+        rootComments.push(commentMap[comment.id]);
       }
     });
     
-    return topLevelComments;
+    // Sort root comments by creation date (newest first)
+    return rootComments.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }, [commentsData]);
+  
+  // Render a comment and its nested children recursively
+  const renderCommentWithReplies = (comment: any, depth = 0) => {
+    return (
+      <React.Fragment key={comment.id}>
+        <Comment 
+          comment={comment} 
+          postId={id as string}
+          depth={depth}
+        />
+        {comment.children.map((childComment: any) => 
+          renderCommentWithReplies(childComment, depth + 1)
+        )}
+      </React.Fragment>
+    );
+  };
   
   // Mutation for adding comments
   const addCommentMutation = useMutation({
@@ -434,7 +485,7 @@ const PostDetail: React.FC = () => {
             </div>
             
             <div className="bg-card rounded-lg shadow p-4">
-              <h2 className="font-semibold mb-4">Comments ({organizedComments.length})</h2>
+              <h2 className="font-semibold mb-4">Comments ({commentsData.length})</h2>
               <form className="flex mb-4" onSubmit={handleSubmitComment}>
                 <Avatar className="h-8 w-8 mr-3">
                   <AvatarImage src={profile?.avatar} />
@@ -481,19 +532,7 @@ const PostDetail: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {organizedComments.map(comment => (
-                    <React.Fragment key={comment.id}>
-                      <Comment comment={comment} postId={id as string} />
-                      {comment.replies?.map(reply => (
-                        <Comment 
-                          key={reply.id} 
-                          comment={reply} 
-                          postId={id as string}
-                          nested={true} 
-                        />
-                      ))}
-                    </React.Fragment>
-                  ))}
+                  {organizedComments.map(comment => renderCommentWithReplies(comment))}
                 </div>
               )}
             </div>

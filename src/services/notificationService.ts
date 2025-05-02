@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Notification } from "@/components/notifications/NotificationItem";
 import { formatDistanceToNow } from "date-fns";
@@ -162,6 +161,12 @@ export const subscribeToNotifications = (
         async (payload) => {
           const notification = payload.new as any;
           
+          // Check if this notification is for the current user
+          const { data: session } = await supabase.auth.getSession();
+          if (!session.session || notification.user_id !== session.session.user.id) {
+            return;
+          }
+          
           // If this notification has a related user, fetch their profile
           let userName, userAvatar;
           if (notification.related_user_id) {
@@ -191,10 +196,18 @@ export const subscribeToNotifications = (
           // Call the callback
           callback(appNotification);
           
-          // Show toast notification
+          // Show toast notification with specific messages based on type
+          let toastTitle = "New notification";
+          let toastDescription = notification.message;
+          
+          if (notification.type === 'reply') {
+            toastTitle = "New Reply";
+            // Keep the default description which includes who replied
+          }
+          
           toast({
-            title: "New notification",
-            description: notification.message,
+            title: toastTitle,
+            description: toastDescription,
           });
         }
       )

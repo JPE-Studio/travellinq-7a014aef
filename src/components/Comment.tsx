@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { User, ThumbsUp, ThumbsDown, CornerDownRight, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Comment as CommentType } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -12,17 +13,22 @@ import { supabase } from '@/integrations/supabase/client';
 import UserProfileLink from './UserProfileLink';
 
 interface CommentProps {
-  comment: CommentType;
+  comment: CommentType & { children?: any[] };
   postId: string;
-  nested?: boolean;
+  depth?: number;
 }
 
-const Comment: React.FC<CommentProps> = ({ comment, postId, nested = false }) => {
+const MAX_NESTING_DEPTH = 5; // Maximum visual nesting depth
+
+const Comment: React.FC<CommentProps> = ({ comment, postId, depth = 0 }) => {
   const { user } = useAuth();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [userVote, setUserVote] = useState<1 | -1 | null>(null);
   const [votes, setVotes] = useState(comment.votes);
   const [loading, setLoading] = useState(false);
+  
+  const isNestedDeep = depth > 0;
+  const isMaxNestingDepth = depth >= MAX_NESTING_DEPTH;
   
   React.useEffect(() => {
     if (!user) return;
@@ -111,7 +117,21 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, nested = false }) =>
   };
   
   return (
-    <div className={`${nested ? 'pl-6 border-l ml-4' : 'border-t'} pt-4`}>
+    <div 
+      className={`
+        ${isNestedDeep ? `pl-${Math.min(depth * 4, 12)} border-l ml-4` : 'border-t'} 
+        pt-4 relative
+      `}
+      style={{
+        paddingLeft: isNestedDeep ? `${Math.min(depth * 16, 64)}px` : undefined
+      }}
+    >
+      {isNestedDeep && (
+        <div className="absolute left-2 top-4">
+          <CornerDownRight size={12} className="text-muted-foreground" />
+        </div>
+      )}
+      
       <div className="flex">
         <Link to={`/profile/${comment.author.id}`} className="mr-3">
           <Avatar className="h-8 w-8">
@@ -127,6 +147,12 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, nested = false }) =>
             <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
             </span>
+            {comment.parentCommentId && depth === 0 && (
+              <span className="text-xs text-muted-foreground flex items-center">
+                <MessageSquare size={12} className="mr-1" />
+                reply to another comment
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm">{comment.text}</p>
           <div className="flex items-center mt-2 text-xs text-muted-foreground">
@@ -145,13 +171,16 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, nested = false }) =>
             >
               <ThumbsDown className="h-3 w-3" />
             </button>
-            <button 
-              className="hover:text-foreground"
-              onClick={() => setShowReplyForm(!showReplyForm)}
-              disabled={loading}
-            >
-              Reply
-            </button>
+            {!isMaxNestingDepth && (
+              <button 
+                className="hover:text-foreground flex items-center"
+                onClick={() => setShowReplyForm(!showReplyForm)}
+                disabled={loading}
+              >
+                <MessageSquare size={12} className="mr-1" />
+                Reply
+              </button>
+            )}
           </div>
           {showReplyForm && (
             <CommentReplyForm 
