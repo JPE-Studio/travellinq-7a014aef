@@ -15,16 +15,21 @@ export const usePostSubscription = (postId: string) => {
     
     const checkSubscription = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('post_subscriptions')
           .select('id')
           .eq('post_id', postId)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
+        
+        if (error) {
+          console.error("Error checking subscription:", error);
+          return;
+        }
           
         setIsSubscribed(!!data);
       } catch (error) {
-        // No subscription found
+        console.error("Error in subscription check:", error);
         setIsSubscribed(false);
       }
     };
@@ -46,11 +51,16 @@ export const usePostSubscription = (postId: string) => {
     try {
       if (isSubscribed) {
         // Unsubscribe
-        await supabase
+        const { error } = await supabase
           .from('post_subscriptions')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
+        
+        if (error) {
+          console.error("Error unsubscribing:", error);
+          throw error;
+        }
         
         setIsSubscribed(false);
         toast({
@@ -59,12 +69,17 @@ export const usePostSubscription = (postId: string) => {
         });
       } else {
         // Subscribe
-        await supabase
+        const { error } = await supabase
           .from('post_subscriptions')
           .insert({
             post_id: postId,
             user_id: user.id
           });
+        
+        if (error) {
+          console.error("Error subscribing:", error);
+          throw error;
+        }
           
         setIsSubscribed(true);
         toast({

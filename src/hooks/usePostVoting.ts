@@ -17,18 +17,23 @@ export const usePostVoting = (postId: string, initialVotes: number) => {
     
     const checkUserVote = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('user_post_votes')
           .select('vote_type')
           .eq('post_id', postId)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
           
+        if (error) {
+          console.error("Error checking user vote:", error);
+          return;
+        }
+        
         if (data) {
           setUserVote(data.vote_type as 1 | -1);
         }
       } catch (error) {
-        // No vote found
+        console.error("Error in vote check:", error);
         setUserVote(null);
       }
     };
@@ -53,11 +58,16 @@ export const usePostVoting = (postId: string, initialVotes: number) => {
       // If user already voted the same way, treat as removing vote
       if (userVote === voteType) {
         // Remove vote
-        await supabase
+        const { error } = await supabase
           .from('user_post_votes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
+          
+        if (error) {
+          console.error("Error removing vote:", error);
+          throw error;
+        }
           
         setVotes(prev => prev - voteType); // Adjust the vote count
         setUserVote(null);
@@ -68,7 +78,12 @@ export const usePostVoting = (postId: string, initialVotes: number) => {
         });
       } else {
         // Add or change vote
-        await votePost(postId, voteType);
+        const { error } = await votePost(postId, voteType);
+        
+        if (error) {
+          console.error("Error voting:", error);
+          throw error;
+        }
 
         // If changing vote, need to adjust by 2 (remove old vote and add new one)
         if (userVote !== null) {
