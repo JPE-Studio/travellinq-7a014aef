@@ -17,7 +17,6 @@ const Index: React.FC = () => {
   const [filters, setFilters] = useState({
     radius: 50,
     autoRadius: true,
-    categories: ['general', 'campsite', 'service', 'question'],
   });
   const [isLocating, setIsLocating] = useState(false);
 
@@ -56,7 +55,7 @@ const Index: React.FC = () => {
       currentLocation.lat,
       currentLocation.lng,
       filters.autoRadius ? undefined : filters.radius,
-      filters.categories
+      ['general', 'campsite', 'service', 'question'] // Include all categories by default
     )
   });
 
@@ -88,7 +87,10 @@ const Index: React.FC = () => {
     autoRadius: boolean;
     categories: string[];
   }) => {
-    setFilters(newFilters);
+    setFilters({
+      radius: newFilters.radius,
+      autoRadius: newFilters.autoRadius,
+    });
     toast({
       title: "Filters Applied",
       description: `Showing posts within ${newFilters.autoRadius ? 'automatic' : newFilters.radius + ' miles'} radius.`,

@@ -16,6 +16,7 @@ import ChatScreen from "./pages/ChatScreen";
 import Auth from "./pages/Auth";
 import NewChat from "./pages/NewChat";
 import UserDetail from "./pages/UserDetail";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/users/:userId" element={<UserDetail />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/notifications" element={<Notifications />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

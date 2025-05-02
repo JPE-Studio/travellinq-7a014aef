@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Post } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,6 +28,7 @@ const formatDistance = (miles: number): string => {
     return `${Math.round(miles)} miles away`;
   }
 };
+
 const PostCard: React.FC<PostCardProps> = ({
   post
 }) => {
@@ -73,6 +75,7 @@ const PostCard: React.FC<PostCardProps> = ({
     checkSubscription();
     checkUserVote();
   }, [post.id, user]);
+
   const handleSubscribe = async () => {
     if (!user) {
       toast({
@@ -115,6 +118,7 @@ const PostCard: React.FC<PostCardProps> = ({
       setLoading(false);
     }
   };
+
   const handleVote = async (direction: 'up' | 'down') => {
     if (!user) {
       toast({
@@ -165,6 +169,7 @@ const PostCard: React.FC<PostCardProps> = ({
       setLoading(false);
     }
   };
+
   const handleTranslate = async () => {
     // We would typically use a translation API here
     // For now we'll just simulate translation
@@ -191,6 +196,7 @@ const PostCard: React.FC<PostCardProps> = ({
       setIsTranslating(false);
     }
   };
+  
   return <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
       {/* Post header with user info and subscribe button */}
       <div className="p-4">
@@ -306,4 +312,5 @@ const languages = [{
   value: 'zh',
   label: 'Chinese'
 }];
+
 export default PostCard;

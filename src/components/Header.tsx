@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ProfileButton from './ProfileButton';
 import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NotificationCenter from './notifications/NotificationCenter';
 
 const Header: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +21,8 @@ const Header: React.FC = () => {
         </Link>
         
         <div className="flex items-center gap-4">
+          {user && <NotificationCenter />}
+          
           {user ? (
             <ProfileButton />
           ) : (
