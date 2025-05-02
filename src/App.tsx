@@ -17,8 +17,26 @@ import Auth from "./pages/Auth";
 import NewChat from "./pages/NewChat";
 import UserDetail from "./pages/UserDetail";
 import Notifications from "./pages/Notifications";
+import { useEffect } from "react";
+import { setupRlsPolicies } from "./utils/setupRlsPolicies";
 
 const queryClient = new QueryClient();
+
+// This component is responsible for setting up RLS policies
+const RLSSetup = () => {
+  useEffect(() => {
+    // Only run this in a production or development environment, not in preview
+    if (!window.location.host.includes('lovable.dev')) {
+      setupRlsPolicies().then(() => {
+        console.log("RLS policies setup complete");
+      }).catch(err => {
+        console.error("RLS setup error:", err);
+      });
+    }
+  }, []);
+  
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -26,6 +44,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <RLSSetup /> {/* Add the RLS setup component */}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
