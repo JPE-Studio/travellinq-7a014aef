@@ -4,10 +4,11 @@ import Header from '@/components/Header';
 import { currentUser } from '@/data/mockData';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MapPin, Settings, User } from 'lucide-react';
+import BottomNavigation from '@/components/BottomNavigation';
 
 const Profile: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
+    <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0">
       {/* Full width header */}
       <Header />
       
@@ -24,7 +25,7 @@ const Profile: React.FC = () => {
           <div className="max-w-3xl mx-auto px-4 py-4 w-full">
             <div className="flex flex-col items-center space-y-4 mb-8">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={currentUser.avatar} alt={currentUser.pseudonym} />
+                <AvatarImage src={currentUser.avatar} alt={currentUser.pseudonym} className="object-cover" />
                 <AvatarFallback>
                   <User className="h-12 w-12 text-muted-foreground" />
                 </AvatarFallback>
@@ -61,6 +62,8 @@ const Profile: React.FC = () => {
           {/* Ad space */}
         </div>
       </div>
+      
+      <BottomNavigation />
     </div>
   );
 };

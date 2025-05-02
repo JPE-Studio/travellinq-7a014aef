@@ -12,6 +12,7 @@ import MapView from "./pages/MapView";
 import Chats from "./pages/Chats";
 import Settings from "./pages/Settings";
 import UserProfile from "./pages/UserProfile";
+import ChatScreen from "./pages/ChatScreen";
 import BottomNavigation from "./components/BottomNavigation";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/post/:id" element={<PostDetail />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/chats" element={<Chats />} />
+          <Route path="/chat/:userId" element={<ChatScreen />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/user/:userId" element={<UserProfile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -136,3 +136,15 @@
   background-color: hsl(var(--forest) / 0.2);
   color: hsl(var(--forest));
 }
+
+/* Ensure avatar images use object-fit: cover by default */
+[class*="AvatarImage"] {
+  @apply object-cover;
+}
+
+/* Fix content padding for bottom navigation on mobile */
+@media (max-width: 768px) {
+  .pb-safe {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+  }
+}
