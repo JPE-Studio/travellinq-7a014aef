@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -190,60 +191,60 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       <DialogContent className="sm:max-w-md md:max-w-lg p-0 gap-0 overflow-hidden">
         <div className="bg-card h-full flex flex-col">
           <div className="p-6 flex-1 overflow-y-auto">
-            {step === 1 && (
-              <div className="text-center space-y-6">
-                <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto">
-                  <MapPin size={32} />
-                </div>
-                
-                <div>
-                  <DialogTitle className="text-2xl font-bold mb-2">Welcome to Travellinq</DialogTitle>
-                  <p className="text-muted-foreground">
-                    Connect with fellow travelers, share tips and discover hidden places on your journey.
-                  </p>
-                </div>
-                
-                <div className="pt-4">
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Where are you now?</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g. Vienna, Austria"
-                            {...field}
-                            autoComplete="off"
-                          />
-                        </FormControl>
-                        <p className="text-xs text-muted-foreground">
-                          Let others know where you're currently traveling
-                        </p>
-                      </FormItem>
-                    )}
-                  />
+            <Form {...form}>
+              {step === 1 && (
+                <div className="text-center space-y-6">
+                  <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto">
+                    <MapPin size={32} />
+                  </div>
                   
-                  <Button 
-                    onClick={() => setStep(2)} 
-                    className="w-full mt-4"
-                  >
-                    Continue
-                  </Button>
+                  <div>
+                    <DialogTitle className="text-2xl font-bold mb-2">Welcome to Travellinq</DialogTitle>
+                    <p className="text-muted-foreground">
+                      Connect with fellow travelers, share tips and discover hidden places on your journey.
+                    </p>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Where are you now?</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g. Vienna, Austria"
+                              {...field}
+                              autoComplete="off"
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            Let others know where you're currently traveling
+                          </p>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button 
+                      onClick={() => setStep(2)} 
+                      className="w-full mt-4"
+                    >
+                      Continue
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            {step === 2 && (
-              <div className="space-y-6">
-                <div>
-                  <DialogTitle className="text-2xl font-bold mb-2">Create Your Profile</DialogTitle>
-                  <p className="text-muted-foreground">
-                    Set up your profile to connect with other travelers.
-                  </p>
-                </div>
-                
-                <Form {...form}>
+              )}
+              
+              {step === 2 && (
+                <div className="space-y-6">
+                  <div>
+                    <DialogTitle className="text-2xl font-bold mb-2">Create Your Profile</DialogTitle>
+                    <p className="text-muted-foreground">
+                      Set up your profile to connect with other travelers.
+                    </p>
+                  </div>
+                  
                   <div className="space-y-6">
                     <FormField
                       control={form.control}
@@ -291,81 +292,81 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                       )}
                     />
                   </div>
-                </Form>
-                
-                <div className="pt-4 flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={handlePrevStep}
-                  >
-                    Back
-                  </Button>
-                  <Button 
-                    className="flex-1"
-                    onClick={handleNextStep}
-                    disabled={!form.getValues('pseudonym') || form.getValues('pseudonym').length < 3}
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-6">
-                <div>
-                  <DialogTitle className="text-2xl font-bold mb-2">Add Profile Picture</DialogTitle>
-                  <p className="text-muted-foreground">
-                    Upload a profile picture to help other travelers recognize you.
-                  </p>
-                </div>
-                
-                <div className="flex flex-col items-center space-y-6">
-                  {avatarPreview ? (
-                    <div className="relative">
-                      <Avatar className="w-32 h-32 border-2 border-primary">
-                        <AvatarImage src={avatarPreview} alt="Avatar preview" />
-                        <AvatarFallback>
-                          <User className="h-16 w-16" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <button 
-                        onClick={removeAvatar}
-                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
-                        type="button"
-                        aria-label="Remove avatar"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground">
-                      <Camera size={32} className="text-muted-foreground" />
-                    </div>
-                  )}
                   
-                  <div className="w-full">
-                    <Label htmlFor="avatar" className="cursor-pointer">
-                      <div className="flex items-center justify-center gap-2 p-3 border border-input bg-background hover:bg-accent text-center rounded-md">
-                        <Upload size={16} />
-                        <span>{avatarPreview ? 'Change Picture' : 'Select Picture'}</span>
-                      </div>
-                      <input 
-                        id="avatar" 
-                        type="file" 
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden" 
-                      />
-                    </Label>
-                    <p className="text-xs text-muted-foreground text-center mt-2">
-                      Optional: JPG or PNG, max 5MB
-                    </p>
+                  <div className="pt-4 flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={handlePrevStep}
+                    >
+                      Back
+                    </Button>
+                    <Button 
+                      className="flex-1"
+                      onClick={handleNextStep}
+                      disabled={!form.getValues('pseudonym') || form.getValues('pseudonym').length < 3}
+                    >
+                      Continue
+                    </Button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {step === 3 && (
+                <div className="space-y-6">
+                  <div>
+                    <DialogTitle className="text-2xl font-bold mb-2">Add Profile Picture</DialogTitle>
+                    <p className="text-muted-foreground">
+                      Upload a profile picture to help other travelers recognize you.
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-center space-y-6">
+                    {avatarPreview ? (
+                      <div className="relative">
+                        <Avatar className="w-32 h-32 border-2 border-primary">
+                          <AvatarImage src={avatarPreview} alt="Avatar preview" />
+                          <AvatarFallback>
+                            <User className="h-16 w-16" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <button 
+                          onClick={removeAvatar}
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                          type="button"
+                          aria-label="Remove avatar"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground">
+                        <Camera size={32} className="text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    <div className="w-full">
+                      <Label htmlFor="avatar" className="cursor-pointer">
+                        <div className="flex items-center justify-center gap-2 p-3 border border-input bg-background hover:bg-accent text-center rounded-md">
+                          <Upload size={16} />
+                          <span>{avatarPreview ? 'Change Picture' : 'Select Picture'}</span>
+                        </div>
+                        <input 
+                          id="avatar" 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleAvatarChange}
+                          className="hidden" 
+                        />
+                      </Label>
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Optional: JPG or PNG, max 5MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Form>
           </div>
 
           {step === 3 && (
