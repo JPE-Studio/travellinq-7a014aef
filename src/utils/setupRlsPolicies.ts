@@ -27,13 +27,10 @@ export const setupRlsPolicies = async () => {
 export const setupRealtimeTables = async () => {
   try {
     // This will enable realtime for the messages table
-    // Using a more general approach with type assertion since the function isn't in the type definitions
-    const { error } = await supabase.rpc('add_table_to_publication', {
+    // Using a direct function call with type assertion to bypass TypeScript's type checking
+    const { error } = await (supabase.rpc as any)('add_table_to_publication', {
       table_name: 'messages'
-    }) as unknown as {
-      data: any;
-      error: any;
-    };
+    });
     
     if (error) {
       console.error("Error setting up realtime for messages:", error);
