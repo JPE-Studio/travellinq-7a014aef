@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
@@ -14,6 +13,7 @@ import { useProfileData } from '@/hooks/useProfileData';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import BuddyConnectionSection from '@/components/profile/BuddyConnectionSection';
 import ProfileDetails from '@/components/profile/ProfileDetails';
+import { User as AppUser, BuddyConnection } from '@/types';
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -23,13 +23,22 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
+  // Convert auth user to app user if available
+  const currentUser = user ? {
+    id: user.id,
+    pseudonym: user.email?.split('@')[0] || 'User',
+    joinedAt: new Date(),
+    // Add other properties that might be available from your auth context
+    // These are placeholders as we don't have access to all user fields here
+  } as AppUser : null;
+  
   const {
     userData,
     loading,
     buddyConnection,
     approximateDistance,
     setBuddyConnection
-  } = useProfileData(userId, user);
+  } = useProfileData(userId, currentUser);
 
   const handleMessageUser = async () => {
     if (!userData) return;
