@@ -114,7 +114,19 @@ const Chats: React.FC = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conversation => 
+  // Sort conversations by most recent message first
+  const sortedConversations = [...conversations].sort((a, b) => {
+    // If a conversation doesn't have a last message, consider it older
+    if (!a.lastMessage && !b.lastMessage) return 0;
+    if (!a.lastMessage) return 1;
+    if (!b.lastMessage) return -1;
+    
+    // Sort by timestamp (newer first)
+    return b.lastMessage.timestamp.getTime() - a.lastMessage.timestamp.getTime();
+  });
+
+  // Then apply the search filter
+  const filteredConversations = sortedConversations.filter(conversation => 
     conversation.otherUser.pseudonym.toLowerCase().includes(searchQuery.toLowerCase())
   );
   

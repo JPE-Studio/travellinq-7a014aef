@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { fetchUserProfile } from "./userService";
 
@@ -113,7 +114,8 @@ export const fetchUserConversations = async () => {
           created_at
         )
       `)
-      .eq("user_id", userSession.session.user.id);
+      .eq("user_id", userSession.session.user.id)
+      .order("conversations(created_at)", { ascending: false });  // Order by conversation created_at
     
     if (partError) {
       console.error("Error fetching conversations:", partError);
@@ -157,18 +159,20 @@ export const fetchUserConversations = async () => {
         
         // Get other user profile
         let otherUserInfo = { 
-          id: otherParticipant.user_id,
+          id: otherParticipant?.user_id,
           pseudonym: "Unknown User",
           avatar: undefined
         };
         
         try {
-          const otherUserProfile = await fetchUserProfile(otherParticipant.user_id);
-          otherUserInfo = {
-            id: otherParticipant.user_id,
-            pseudonym: otherUserProfile.pseudonym || "Unknown User",
-            avatar: otherUserProfile.avatar
-          };
+          if (otherParticipant) {
+            const otherUserProfile = await fetchUserProfile(otherParticipant.user_id);
+            otherUserInfo = {
+              id: otherParticipant.user_id,
+              pseudonym: otherUserProfile.pseudonym || "Unknown User",
+              avatar: otherUserProfile.avatar
+            };
+          }
         } catch (err) {
           console.error("Error fetching other user profile:", err);
         }
@@ -187,7 +191,20 @@ export const fetchUserConversations = async () => {
     );
     
     // Remove any null values from failed conversation processing
-    return conversationsWithDetails.filter(Boolean);
+    const validConversations = conversationsWithDetails.filter(Boolean);
+    
+    // Sort by last message timestamp (newest first)
+    return validConversations.sort((a, b) => {
+      // If a conversation doesn't have a last message, consider it older
+      if (!a.lastMessage && !b.lastMessage) {
+        return 0;
+      }
+      if (!a.lastMessage) return 1;
+      if (!b.lastMessage) return -1;
+      
+      // Sort by timestamp (newer first)
+      return b.lastMessage.timestamp.getTime() - a.lastMessage.timestamp.getTime();
+    });
   } catch (error) {
     console.error("Error in fetchUserConversations:", error);
     return [];
