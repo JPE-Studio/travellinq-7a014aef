@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +30,6 @@ interface OnboardingModalProps {
 
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete }) => {
   const [step, setStep] = useState(1);
-  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -41,6 +39,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     defaultValues: {
       pseudonym: profile?.pseudonym || '',
       bio: profile?.bio || '',
+      location: profile?.location || '',
     },
   });
 
@@ -55,41 +54,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   const handlePrevStep = () => {
     if (step > 1) {
       setStep(step - 1);
-    }
-  };
-
-  const handleLocationPermission = async () => {
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
-        });
-      });
-      
-      setLocationPermission('granted');
-
-      if (user) {
-        // Save location data in Supabase
-        await supabase
-          .from('profiles')
-          .update({
-            location: `${position.coords.latitude},${position.coords.longitude}`,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          })
-          .eq('id', user.id);
-      }
-      
-      // Proceed to next step
-      setStep(2);
-      
-    } catch (error) {
-      console.error('Location request failed:', error);
-      setLocationPermission('denied');
-      // Still proceed to next step
-      setStep(2);
     }
   };
 
@@ -138,6 +102,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   const handleSubmitOnboarding = async () => {
     const pseudonym = form.getValues('pseudonym');
     const bio = form.getValues('bio');
+    const location = form.getValues('location');
     
     // Validate username (required, min 3 chars)
     if (!pseudonym || pseudonym.length < 3) {
@@ -180,6 +145,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       const updateData: Record<string, any> = {
         pseudonym,
         bio: bio || null,
+        location: location || null
       };
 
       // Only include avatar if we have a new one
@@ -238,22 +204,31 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                 </div>
                 
                 <div className="pt-4">
-                  <Button 
-                    onClick={handleLocationPermission} 
-                    className="w-full mb-4"
-                    disabled={locationPermission === 'granted' || isUploading}
-                  >
-                    {locationPermission === 'granted' 
-                      ? 'Location Access Granted' 
-                      : 'Allow Location Access'}
-                  </Button>
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Where are you now?</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g. Vienna, Austria"
+                            {...field}
+                            autoComplete="off"
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Let others know where you're currently traveling
+                        </p>
+                      </FormItem>
+                    )}
+                  />
                   
                   <Button 
                     onClick={() => setStep(2)} 
-                    variant="outline" 
-                    className="w-full"
+                    className="w-full mt-4"
                   >
-                    Skip Location Access
+                    Continue
                   </Button>
                 </div>
               </div>
