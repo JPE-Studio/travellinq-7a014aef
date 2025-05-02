@@ -17,6 +17,10 @@ export const usePostTranslation = (postText: string, autoTranslate: boolean = fa
     const checkTranslation = async () => {
       const available = await isTranslationAvailable();
       setTranslationAvailable(available);
+      
+      if (!available) {
+        console.log("Translation service is unavailable");
+      }
     };
     checkTranslation();
   }, []);
@@ -87,7 +91,7 @@ export const usePostTranslation = (postText: string, autoTranslate: boolean = fa
     if (!translationAvailable) {
       toast({
         title: "Translation unavailable",
-        description: "Translation service is now available with the provided DeepL API key.",
+        description: "Translation service is currently unavailable.",
         variant: "default"
       });
       return;

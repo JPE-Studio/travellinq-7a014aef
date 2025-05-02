@@ -80,14 +80,13 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
           </Button>
         )}
         
-        {showTranslateButton && (
+        {showTranslateButton && translationAvailable && (
           <Button 
             variant="ghost" 
             size="sm" 
-            className={`text-muted-foreground ${!translationAvailable ? 'opacity-50' : ''}`}
+            className="text-muted-foreground"
             onClick={handleTranslate}
             disabled={isTranslating || loading}
-            title={!translationAvailable ? "Translation service is available" : undefined}
           >
             {isTranslating ? (
               <>
@@ -100,6 +99,19 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
                 {translatedText ? 'Show Original' : 'Translate'}
               </>
             )}
+          </Button>
+        )}
+        
+        {showTranslateButton && !translationAvailable && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground opacity-50 cursor-not-allowed"
+            disabled={true}
+            title="Translation service is currently unavailable"
+          >
+            <Languages className="h-4 w-4 mr-1" />
+            Translate
           </Button>
         )}
       </div>

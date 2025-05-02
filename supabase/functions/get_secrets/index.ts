@@ -40,12 +40,10 @@ serve(async (req) => {
     const secrets: Record<string, string> = {};
     
     for (const key of keys) {
-      // For DeepL API key, use the hardcoded value if the environment variable isn't set
+      // For DeepL API key, we're now handling it directly in the translate edge function
       if (key === 'DEEPL_API_KEY') {
-        const envValue = Deno.env.get(key);
-        // Use the hardcoded key if no environment variable is set
-        secrets[key] = envValue || '0773e26f-7418-427d-ad2a-c150f9c1910e:fx';
-        console.log(`Retrieved secret for ${key}: Value exists`);
+        secrets[key] = 'MANAGED_BY_TRANSLATE_EDGE_FUNCTION';
+        console.log(`DEEPL_API_KEY is now managed by the translate edge function`);
       } else {
         const value = Deno.env.get(key);
         secrets[key] = value || '';
