@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { votePost } from '@/services/postService';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import UserProfileLink from './UserProfileLink';
 
 interface PostCardProps {
   post: Post;
@@ -214,17 +215,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
       {/* Post header with user info */}
       <div className="p-4">
-        <div className="flex items-center mb-3">
-          <Link to={`/user/${post.author.id}`} className="mr-3">
+        <Link to={`/users/${post.author.id}`} className="flex items-center mb-3">
+          <div className="mr-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={post.author.avatar} className="object-cover" />
               <AvatarFallback>
                 <User className="h-5 w-5" />
               </AvatarFallback>
             </Avatar>
-          </Link>
+          </div>
           <div>
-            <Link to={`/user/${post.author.id}`} className="font-medium hover:underline">{post.author.pseudonym}</Link>
+            <div className="font-medium hover:underline">{post.author.pseudonym}</div>
             <div className="flex flex-wrap items-center text-xs text-muted-foreground">
               <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
               {post.location && (
@@ -249,7 +250,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               )}
             </div>
           </div>
-        </div>
+        </Link>
 
         <Link to={`/post/${post.id}`} className="block">
           <p className="mb-3 text-foreground">{translatedText || post.text}</p>
