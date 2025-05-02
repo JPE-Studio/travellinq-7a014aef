@@ -78,11 +78,11 @@ export const usePostVoting = (postId: string, initialVotes: number) => {
         });
       } else {
         // Add or change vote
-        const { error } = await votePost(postId, voteType);
+        const result = await votePost(postId, voteType);
         
-        if (error) {
-          console.error("Error voting:", error);
-          throw error;
+        if (result && result.error) {
+          console.error("Error voting:", result.error);
+          throw result.error;
         }
 
         // If changing vote, need to adjust by 2 (remove old vote and add new one)
