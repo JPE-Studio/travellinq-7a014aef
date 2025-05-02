@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { votePost } from '@/services/postService';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import UserProfileLink from './UserProfileLink';
 
 interface PostCardProps {
   post: Post;
@@ -215,16 +216,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       {/* Post header with user info */}
       <div className="p-4">
         <div className="flex items-center mb-3">
-          <Link to={`/user/${post.author.id}`} className="mr-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={post.author.avatar} className="object-cover" />
-              <AvatarFallback>
-                <User className="h-5 w-5" />
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          <UserProfileLink user={post.author} className="mr-3" />
           <div>
-            <Link to={`/user/${post.author.id}`} className="font-medium hover:underline">{post.author.pseudonym}</Link>
+            <UserProfileLink user={post.author} showAvatar={false} className="font-medium" />
             <div className="flex flex-wrap items-center text-xs text-muted-foreground">
               <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
               {post.location && (
@@ -269,7 +263,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           )}
         </Link>
         
-        {/* Translate button - updated to be smaller with gray outline */}
+        {/* Translate button */}
         {!translatedText && user && (
           <Button 
             variant="outline" 
