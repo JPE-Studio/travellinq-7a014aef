@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
@@ -8,16 +9,19 @@ import CreatePostButton from '@/components/CreatePostButton';
 import OnboardingModal from '@/components/OnboardingModal';
 import { toast } from '@/components/ui/use-toast';
 import { fetchPosts } from '@/services/postService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index: React.FC = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentLocation, setCurrentLocation] = useState({ lat: 45.5152, lng: -122.6784 });
   const [filters, setFilters] = useState({
     radius: 50,
     autoRadius: true,
     categories: ['general', 'campsite', 'service', 'question'],
   });
+
+  const { user, profile } = useAuth();
 
   // Query for posts with filters
   const { 
@@ -36,9 +40,11 @@ const Index: React.FC = () => {
   });
 
   useEffect(() => {
-    // Check if user has completed onboarding
-    const hasCompletedOnboarding = localStorage.getItem('travellinq-onboarding-completed');
-    if (hasCompletedOnboarding === 'true') {
+    // Nur das Onboarding-Modal anzeigen, wenn der Benutzer angemeldet ist,
+    // aber noch keinen Pseudonym hat (nach Registrierung)
+    if (user && (!profile || !profile.pseudonym || profile.pseudonym === '')) {
+      setShowOnboarding(true);
+    } else {
       setShowOnboarding(false);
     }
     
@@ -55,7 +61,7 @@ const Index: React.FC = () => {
     }, 10000);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [user, profile]);
 
   const handleFilterChange = (newFilters: {
     radius: number;
@@ -71,10 +77,9 @@ const Index: React.FC = () => {
 
   const handleCompleteOnboarding = () => {
     setShowOnboarding(false);
-    localStorage.setItem('travellinq-onboarding-completed', 'true');
     toast({
-      title: "Welcome to Travellinq!",
-      description: "Your account has been created successfully.",
+      title: "Willkommen bei Travellinq!",
+      description: "Dein Profil wurde erfolgreich erstellt.",
     });
   };
 
