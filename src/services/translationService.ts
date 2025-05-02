@@ -22,12 +22,20 @@ export const translateText = async (
         body: { keys: ["DEEPL_API_KEY"] }
       });
 
-    if (secretsError || !secrets?.DEEPL_API_KEY) {
+    if (secretsError) {
       console.error("Failed to get DeepL API key:", secretsError);
       throw new Error("Translation API key not available");
     }
+    
+    const apiKey = secrets?.DEEPL_API_KEY;
+    
+    // Check if we have a valid API key
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+      console.error("DeepL API key is missing or invalid");
+      throw new Error("Translation API key not configured");
+    }
 
-    const apiKey = formatDeepLApiKey(secrets.DEEPL_API_KEY);
+    const formattedKey = formatDeepLApiKey(apiKey);
     const apiUrl = "https://api-free.deepl.com/v2/translate";
     
     const formData = new FormData();
@@ -41,7 +49,7 @@ export const translateText = async (
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Authorization": `DeepL-Auth-Key ${apiKey}`
+        "Authorization": `DeepL-Auth-Key ${formattedKey}`
       },
       body: formData
     });
@@ -69,12 +77,20 @@ export const detectLanguage = async (text: string): Promise<string> => {
         body: { keys: ["DEEPL_API_KEY"] }
       });
 
-    if (secretsError || !secrets?.DEEPL_API_KEY) {
+    if (secretsError) {
       console.error("Failed to get DeepL API key:", secretsError);
       throw new Error("Translation API key not available");
     }
+    
+    const apiKey = secrets?.DEEPL_API_KEY;
+    
+    // Check if we have a valid API key
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+      console.error("DeepL API key is missing or invalid");
+      throw new Error("Translation API key not configured");
+    }
 
-    const apiKey = formatDeepLApiKey(secrets.DEEPL_API_KEY);
+    const formattedKey = formatDeepLApiKey(apiKey);
     const apiUrl = "https://api-free.deepl.com/v2/translate";
     
     const formData = new FormData();
@@ -84,7 +100,7 @@ export const detectLanguage = async (text: string): Promise<string> => {
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Authorization": `DeepL-Auth-Key ${apiKey}`
+        "Authorization": `DeepL-Auth-Key ${formattedKey}`
       },
       body: formData
     });

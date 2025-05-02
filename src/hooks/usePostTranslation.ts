@@ -56,7 +56,7 @@ export const usePostTranslation = (postText: string, autoTranslate: boolean = fa
       if (!autoTranslate) {
         toast({
           title: "Translation failed",
-          description: "We couldn't translate this post. Please try again.",
+          description: "We couldn't translate this post. Please try again later.",
           variant: "destructive"
         });
       }
@@ -73,6 +73,12 @@ export const usePostTranslation = (postText: string, autoTranslate: boolean = fa
   }, [postText, profile?.preferredLanguage, autoTranslate]);
 
   const handleTranslate = async () => {
+    // If we already have a translation, toggle back to original text
+    if (translatedText) {
+      setTranslatedText(null);
+      return;
+    }
+    
     await performTranslation();
   };
 
