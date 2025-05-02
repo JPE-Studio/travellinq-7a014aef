@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -58,7 +59,7 @@ const NewChat: React.FC = () => {
     try {
       setCreatingConversation(otherUserId);
       
-      // Use the utility function from participantService
+      // Use the updated utility function from participantService
       const conversationId = await getOrCreateConversation(otherUserId);
       
       // Navigate to the conversation

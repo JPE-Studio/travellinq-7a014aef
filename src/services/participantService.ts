@@ -10,6 +10,8 @@ export const getOrCreateConversation = async (otherUserId: string) => {
   
   try {
     // Step 1: First check if the users already have a conversation - using two separate queries
+    // to avoid the recursion issues with RLS
+    
     // Get all conversations the current user is part of
     const { data: myConversations, error: myConversationsError } = await supabase
       .from("conversation_participants")
@@ -45,13 +47,15 @@ export const getOrCreateConversation = async (otherUserId: string) => {
     
     if (createError) throw createError;
     
-    // Step 3: Add participants one at a time to avoid the RLS recursion issue
+    // Step 3: Add participants - do each insertion separately to avoid recursive RLS issues
+    // First add the current user
     const { error: currentUserParticipantError } = await supabase
       .from("conversation_participants")
       .insert({ conversation_id: newConversation.id, user_id: currentUserId });
     
     if (currentUserParticipantError) throw currentUserParticipantError;
     
+    // Then add the other user
     const { error: otherUserParticipantError } = await supabase
       .from("conversation_participants")
       .insert({ conversation_id: newConversation.id, user_id: otherUserId });
