@@ -12,9 +12,13 @@ import BottomNavigation from '@/components/BottomNavigation';
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const [isConnected, setIsConnected] = useState(false);
+  const [isLocationShared, setIsLocationShared] = useState(true); // For demo purpose, default to true
   
   // Find the user from mock data
   const user = mockUsers.find(user => user.id === userId);
+  
+  // Mock user distance - in a real app this would be calculated based on user's location
+  const distance = Math.floor(Math.random() * 50) + 1; // Random distance between 1-50 miles
   
   const handleConnect = () => {
     setIsConnected(!isConnected);
@@ -32,6 +36,13 @@ const UserProfile: React.FC = () => {
       description: `Opening chat with ${user?.pseudonym}.`,
     });
     // In a real app, we would navigate to the chat page
+  };
+
+  const toggleNotification = () => {
+    toast({
+      title: "Proximity Alert Set",
+      description: `You'll be notified when ${user?.pseudonym} is nearby.`,
+    });
   };
 
   if (!user) {
@@ -76,9 +87,18 @@ const UserProfile: React.FC = () => {
               </Avatar>
               <h1 className="text-2xl font-bold">{user.pseudonym}</h1>
               {user.bio && <p className="text-muted-foreground text-center">{user.bio}</p>}
-              <div className="flex items-center text-sm text-muted-foreground">
-                <MapPin size={16} className="mr-1" />
-                <span>Portland, OR</span>
+              <div className="flex flex-col items-center text-sm text-muted-foreground space-y-1">
+                <div className="flex items-center">
+                  <MapPin size={16} className="mr-1" />
+                  <span>Portland, OR</span>
+                </div>
+                
+                {/* Show approximate distance if location is shared */}
+                {isLocationShared && (
+                  <span className="text-sm bg-muted px-2 py-0.5 rounded-full">
+                    Approximately {distance} miles away
+                  </span>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 Joined {user.joinedAt.toLocaleDateString()}
@@ -102,6 +122,15 @@ const UserProfile: React.FC = () => {
                 <MessageCircle className="h-4 w-4" />
                 Message
               </Button>
+
+              {isConnected && (
+                <Button
+                  variant="outline"
+                  onClick={toggleNotification}
+                >
+                  Set Proximity Alert
+                </Button>
+              )}
             </div>
             
             <div className="border-t pt-8">
