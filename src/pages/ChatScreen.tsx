@@ -39,21 +39,21 @@ const ChatScreen: React.FC = () => {
         id: '1',
         senderId: userId as string,
         receiverId: 'user-1',
-        text: 'Hey there! How's your trip going?',
+        text: "Hey there! How's your trip going?",
         timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) // 1 day ago
       },
       {
         id: '2',
         senderId: 'user-1',
         receiverId: userId as string,
-        text: 'Pretty good! Just arrived in Portland. Any recommendations?',
+        text: "Pretty good! Just arrived in Portland. Any recommendations?",
         timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12) // 12 hours ago
       },
       {
         id: '3',
         senderId: userId as string,
         receiverId: 'user-1',
-        text: 'Definitely check out Forest Park and Powell\'s Books!',
+        text: "Definitely check out Forest Park and Powell's Books!",
         timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) // 3 hours ago
       }
     ];
@@ -64,7 +64,7 @@ const ChatScreen: React.FC = () => {
         id: '4',
         senderId: userId,
         receiverId: 'user-1',
-        text: 'Thanks for the recommendation! I\'ll check it out.',
+        text: "Thanks for the recommendation! I'll check it out.",
         timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) // 2 hours ago
       });
     }
