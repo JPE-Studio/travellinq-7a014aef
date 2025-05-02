@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin } from 'lucide-react';
+import { MapPin, Camera, User, Upload, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -31,6 +32,9 @@ interface OnboardingModalProps {
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete }) => {
   const [step, setStep] = useState(1);
   const [locationPermission, setLocationPermission] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { user, profile, refreshProfile } = useAuth();
   
   const form = useForm({
@@ -41,7 +45,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
 
   useEffect(() => {
     if (profile?.pseudonym && profile.pseudonym !== '') {
-      // Wenn der Benutzer bereits einen Pseudonym hat, überspringen wir das Onboarding
+      // If user already has a pseudonym, skip onboarding
       onComplete();
     }
   }, [profile, onComplete]);
@@ -49,7 +53,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   if (!isOpen || !user) return null;
   
   const handleNextStep = () => {
-    if (step === 3) {
+    if (step === 4) {
       handleOnboardingComplete();
     } else {
       setStep(step + 1);
@@ -65,11 +69,13 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       setLocationPermission(true);
       setStep(3);
       
-      // Speichere die Standortdaten in Supabase (optional)
+      // Save location data in Supabase (optional)
       await supabase
         .from('profiles')
         .update({
-          location: `${position.coords.latitude},${position.coords.longitude}`
+          location: `${position.coords.latitude},${position.coords.longitude}`,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
         })
         .eq('id', user.id);
         
@@ -87,6 +93,27 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     }
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
+      
+      // Create a preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setAvatarPreview(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
   const handleOnboardingComplete = async () => {
     const pseudonym = form.getValues('pseudonym');
     
@@ -100,15 +127,42 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     }
 
     try {
-      // Speichere den Pseudonym in Supabase
+      setIsUploading(true);
+      let avatarUrl = null;
+
+      // Upload avatar if one was selected
+      if (avatarFile && user) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        // Upload the file to Supabase storage
+        const { error: uploadError, data } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, avatarFile);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        // Get the public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        avatarUrl = publicUrl;
+      }
+
+      // Save the pseudonym and avatar URL in Supabase
       await supabase
         .from('profiles')
         .update({
-          pseudonym: pseudonym
+          pseudonym: pseudonym,
+          ...(avatarUrl ? { avatar: avatarUrl } : {})
         })
         .eq('id', user.id);
       
-      // Aktualisiere das lokale Profil
+      // Update the local profile
       await refreshProfile();
       
       // The welcome toast is now only shown here after successful profile creation
@@ -125,6 +179,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
         description: "Dein Profil konnte nicht gespeichert werden. Bitte versuche es später erneut.",
         variant: "destructive",
       });
+    } finally {
+      setIsUploading(false);
     }
   };
   
@@ -200,11 +256,70 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   </div>
                 </Form>
                 <Button 
-                  onClick={handleOnboardingComplete}
+                  onClick={() => setStep(4)}
                   disabled={form.getValues('pseudonym').length < 3}
                   className="w-full"
                 >
-                  Travellinq beitreten
+                  Weiter
+                </Button>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4">Profilbild hinzufügen</h2>
+                <p className="text-muted-foreground mb-6">
+                  Lade ein Profilbild hoch, damit andere Vanlifer dich leichter erkennen können.
+                </p>
+                
+                <div className="flex flex-col items-center space-y-6">
+                  {avatarPreview ? (
+                    <div className="relative">
+                      <Avatar className="w-32 h-32 border-2 border-primary">
+                        <AvatarImage src={avatarPreview} alt="Avatar preview" />
+                        <AvatarFallback>
+                          <User className="h-16 w-16" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <button 
+                        onClick={removeAvatar}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground">
+                      <Camera size={32} className="text-muted-foreground" />
+                    </div>
+                  )}
+                  
+                  <div className="w-full">
+                    <Label htmlFor="avatar" className="cursor-pointer">
+                      <div className="flex items-center justify-center gap-2 p-2 border border-input bg-background hover:bg-accent text-center rounded-md">
+                        <Upload size={16} />
+                        <span>{avatarPreview ? 'Anderes Bild auswählen' : 'Bild auswählen'}</span>
+                      </div>
+                      <input 
+                        id="avatar" 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden" 
+                      />
+                    </Label>
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Optional: Du kannst diesen Schritt auch überspringen.
+                    </p>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleOnboardingComplete}
+                  className="w-full mt-8"
+                  disabled={isUploading}
+                >
+                  {isUploading ? 'Wird gespeichert...' : 'Travellinq beitreten'}
                 </Button>
               </div>
             )}
