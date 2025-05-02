@@ -218,7 +218,6 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="flex items-center mb-3">
           <UserProfileLink user={post.author} className="mr-3" />
           <div>
-            <UserProfileLink user={post.author} showAvatar={false} className="font-medium" />
             <div className="flex flex-wrap items-center text-xs text-muted-foreground">
               <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
               {post.location && (

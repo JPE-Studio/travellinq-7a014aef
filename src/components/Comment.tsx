@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -117,7 +116,6 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, nested = false }) =>
         <UserProfileLink user={comment.author} className="mr-3" />
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <UserProfileLink user={comment.author} showAvatar={false} className="font-medium text-sm" />
             <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
             </span>
