@@ -31,8 +31,11 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     // If we found an existing conversation, return it
     if (existingConversation) {
+      console.log("Found existing conversation:", existingConversation);
       return existingConversation;
     }
+    
+    console.log("No existing conversation found, creating new one");
     
     // Create a new conversation
     const { data: newConversation, error: createError } = await supabase
@@ -45,6 +48,8 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
       console.error("Error creating conversation:", createError);
       throw createError;
     }
+    
+    console.log("Created new conversation:", newConversation.id);
     
     // Add current user to conversation
     const { error: currentUserPartError } = await supabase
