@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 // Import custom components
 import ChatHeader from '@/components/chat/ChatHeader';
 import MessageList from '@/components/chat/MessageList';
-import MessageInput from '@/components/chat/MessageInput';
+import MessageTextarea from '@/components/chat/MessageTextarea';
 import ChatSkeleton from '@/components/chat/ChatSkeleton';
 import ChatError from '@/components/chat/ChatError';
 
@@ -34,26 +34,34 @@ const ChatScreen: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setError("No conversation ID provided");
+      setLoading(false);
+      return;
+    }
+    
     if (!user) {
-      navigate('/auth');
+      navigate('/auth', { replace: true });
       return;
     }
 
     const loadConversation = async () => {
       try {
         setLoading(true);
+        setError(null);
+        console.log("Loading conversation:", userId);
         const data = await fetchConversation(userId);
+        console.log("Conversation loaded:", data);
         setMessages(data.messages);
         setOtherUser(data.otherUser);
         setCurrentUserId(data.currentUserId);
       } catch (err) {
         console.error('Error loading conversation:', err);
-        setError('Failed to load conversation. Please try again.');
+        setError(err instanceof Error ? err.message : 'Failed to load conversation');
         toast({
           variant: "destructive",
           title: "Error loading conversation",
-          description: "We couldn't load this conversation. Please try again later.",
+          description: err instanceof Error ? err.message : "We couldn't load this conversation. Please try again later.",
         });
       } finally {
         setLoading(false);
@@ -72,6 +80,8 @@ const ChatScreen: React.FC = () => {
         filter: `conversation_id=eq.${userId}`
       }, (payload) => {
         const newMessage = payload.new as any;
+        console.log("Real-time message received:", newMessage);
+        
         // Only add the message if it's not from the current user (to avoid duplicates)
         if (newMessage.sender_id !== currentUserId) {
           setMessages(prevMessages => [
@@ -90,7 +100,9 @@ const ChatScreen: React.FC = () => {
             .from('messages')
             .update({ read: true })
             .eq('id', newMessage.id)
-            .then();
+            .then(({ error }) => {
+              if (error) console.error("Error marking message as read:", error);
+            });
         }
       })
       .subscribe();
@@ -101,10 +113,12 @@ const ChatScreen: React.FC = () => {
   }, [userId, navigate, user, currentUserId]);
 
   const handleSendMessage = async (message: string) => {
-    if (!userId) return;
+    if (!userId || !message.trim()) return;
     
     try {
+      console.log("Sending message:", message);
       const newMessage = await sendMessage(userId, message);
+      console.log("Message sent:", newMessage);
       
       // Add the message to the local state
       setMessages(prevMessages => [
@@ -117,6 +131,8 @@ const ChatScreen: React.FC = () => {
           read: newMessage.read
         }
       ]);
+      
+      return newMessage;
     } catch (err) {
       console.error('Error sending message:', err);
       toast({
@@ -124,6 +140,7 @@ const ChatScreen: React.FC = () => {
         title: "Failed to send message",
         description: "Your message couldn't be sent. Please try again.",
       });
+      throw err;
     }
   };
   
@@ -138,7 +155,7 @@ const ChatScreen: React.FC = () => {
   }
 
   if (error || !otherUser) {
-    return <ChatError error={error} />;
+    return <ChatError error={error || "Could not find conversation"} />;
   }
 
   return (
@@ -151,7 +168,7 @@ const ChatScreen: React.FC = () => {
         otherUser={otherUser} 
       />
       
-      <MessageInput onSendMessage={handleSendMessage} />
+      <MessageTextarea onSendMessage={handleSendMessage} />
       
       <BottomNavigation />
     </div>

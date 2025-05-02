@@ -1,70 +1,103 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Create a new conversation or get existing one
+// Get or create a conversation between the current user and another user
 export const getOrCreateConversation = async (otherUserId: string) => {
-  const { data: userSession } = await supabase.auth.getSession();
-  if (!userSession.session) throw new Error("User not authenticated");
+  const { data: userSession, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !userSession.session) throw new Error("User not authenticated");
   
   const currentUserId = userSession.session.user.id;
   
+  if (currentUserId === otherUserId) {
+    throw new Error("Cannot create a conversation with yourself");
+  }
+  
   try {
-    // Step 1: First check if the users already have a conversation - using two separate queries
-    // to avoid the recursion issues with RLS
+    console.log("Finding or creating conversation between", currentUserId, "and", otherUserId);
     
+    // First check if a conversation already exists between these users
     // Get all conversations the current user is part of
-    const { data: myConversations, error: myConversationsError } = await supabase
+    const { data: userConversations, error: userConvError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
       .eq("user_id", currentUserId);
     
-    if (myConversationsError) throw myConversationsError;
+    if (userConvError) {
+      console.error("Error fetching user conversations:", userConvError);
+      throw userConvError;
+    }
     
-    if (myConversations && myConversations.length > 0) {
-      const myConversationIds = myConversations.map(p => p.conversation_id);
-      
-      // Check if the other user is part of any of these conversations
-      const { data: sharedConversations, error: sharedConversationsError } = await supabase
+    if (userConversations && userConversations.length > 0) {
+      // Get all conversations the other user is part of
+      const { data: otherUserConversations, error: otherUserConvError } = await supabase
         .from("conversation_participants")
         .select("conversation_id")
-        .eq("user_id", otherUserId)
-        .in("conversation_id", myConversationIds);
+        .eq("user_id", otherUserId);
       
-      if (sharedConversationsError) throw sharedConversationsError;
+      if (otherUserConvError) {
+        console.error("Error fetching other user conversations:", otherUserConvError);
+        throw otherUserConvError;
+      }
       
-      if (sharedConversations && sharedConversations.length > 0) {
-        // Found an existing conversation
-        return sharedConversations[0].conversation_id;
+      // Find common conversations
+      if (otherUserConversations && otherUserConversations.length > 0) {
+        const userConvIds = userConversations.map(c => c.conversation_id);
+        const otherUserConvIds = otherUserConversations.map(c => c.conversation_id);
+        
+        const commonConversations = userConvIds.filter(id => otherUserConvIds.includes(id));
+        
+        if (commonConversations.length > 0) {
+          console.log("Found existing conversation:", commonConversations[0]);
+          return commonConversations[0];
+        }
       }
     }
     
-    // Step 2: No existing conversation found, create a new one
+    // No existing conversation found, create a new one
+    console.log("Creating new conversation");
     const { data: newConversation, error: createError } = await supabase
       .from("conversations")
       .insert({})
       .select()
       .single();
     
-    if (createError) throw createError;
+    if (createError) {
+      console.error("Error creating conversation:", createError);
+      throw createError;
+    }
     
-    // Step 3: Add participants - do each insertion separately to avoid recursive RLS issues
-    // First add the current user
-    const { error: currentUserParticipantError } = await supabase
+    console.log("New conversation created:", newConversation.id);
+    
+    // Add current user to conversation
+    const { error: currentUserPartError } = await supabase
       .from("conversation_participants")
-      .insert({ conversation_id: newConversation.id, user_id: currentUserId });
+      .insert({
+        conversation_id: newConversation.id,
+        user_id: currentUserId
+      });
     
-    if (currentUserParticipantError) throw currentUserParticipantError;
+    if (currentUserPartError) {
+      console.error("Error adding current user to conversation:", currentUserPartError);
+      throw currentUserPartError;
+    }
     
-    // Then add the other user
-    const { error: otherUserParticipantError } = await supabase
+    // Add other user to conversation
+    const { error: otherUserPartError } = await supabase
       .from("conversation_participants")
-      .insert({ conversation_id: newConversation.id, user_id: otherUserId });
+      .insert({
+        conversation_id: newConversation.id,
+        user_id: otherUserId
+      });
     
-    if (otherUserParticipantError) throw otherUserParticipantError;
+    if (otherUserPartError) {
+      console.error("Error adding other user to conversation:", otherUserPartError);
+      throw otherUserPartError;
+    }
     
+    console.log("Both users added to conversation");
     return newConversation.id;
   } catch (error) {
-    console.error("Error in getOrCreateConversation:", error);
+    console.error("Exception in getOrCreateConversation:", error);
     throw error;
   }
 };

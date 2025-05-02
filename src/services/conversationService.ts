@@ -4,11 +4,13 @@ import { fetchUserProfile } from "./userService";
 
 // Fetch all conversations for the current user
 export const fetchUserConversations = async () => {
-  const { data: userSession } = await supabase.auth.getSession();
-  if (!userSession.session) throw new Error("User not authenticated");
+  const { data: userSession, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !userSession.session) throw new Error("User not authenticated");
   
   try {
-    // First, find the conversations the user is part of without nesting queries
+    console.log("Fetching conversations for user:", userSession.session.user.id);
+    
+    // Find the conversations the user is part of
     const { data: participations, error: participationsError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
@@ -20,11 +22,12 @@ export const fetchUserConversations = async () => {
     }
     
     if (!participations || participations.length === 0) {
-      // No conversations found, return empty array without error
+      console.log("No conversations found");
       return [];
     }
     
     const conversationIds = participations.map(p => p.conversation_id);
+    console.log("Found conversation IDs:", conversationIds);
     
     // Fetch basic conversation data
     const { data: conversations, error: convoError } = await supabase
@@ -37,8 +40,10 @@ export const fetchUserConversations = async () => {
       return [];
     }
     
-    // For each conversation, get the other participants separately
-    const conversationsWithMessages = await Promise.all(
+    console.log("Processing", conversations.length, "conversations");
+    
+    // Process each conversation
+    const conversationsWithDetails = await Promise.all(
       conversations.map(async (convo) => {
         // Get the last message
         const { data: messages, error: msgError } = await supabase
@@ -49,19 +54,19 @@ export const fetchUserConversations = async () => {
           .limit(1);
         
         if (msgError) {
-          console.error("Error fetching messages:", msgError);
+          console.error("Error fetching messages for conversation", convo.id, ":", msgError);
           return null;
         }
         
-        // Get other participants in a separate query
+        // Get other participants
         const { data: otherParticipants, error: participantError } = await supabase
           .from("conversation_participants")
           .select("user_id")
           .eq("conversation_id", convo.id)
-          .neq("user_id", userSession.session?.user.id);
+          .neq("user_id", userSession.session.user.id);
           
         if (participantError) {
-          console.error("Error fetching other participants:", participantError);
+          console.error("Error fetching participants for conversation", convo.id, ":", participantError);
           return null;
         }
         
@@ -79,17 +84,15 @@ export const fetchUserConversations = async () => {
             const otherUserProfile = await fetchUserProfile(otherParticipantUserId);
             otherUserInfo = {
               id: otherParticipantUserId,
-              pseudonym: otherUserProfile.pseudonym,
+              pseudonym: otherUserProfile.pseudonym || "Unknown User",
               avatar: otherUserProfile.avatar
             };
           } catch (err) {
-            console.error("Error fetching other user profile:", err);
+            console.error("Error fetching profile for user", otherParticipantUserId, ":", err);
           }
         }
         
-        const lastMessage = messages && messages.length > 0 
-          ? messages[0] 
-          : null;
+        const lastMessage = messages && messages.length > 0 ? messages[0] : null;
         
         return {
           id: convo.id,
@@ -97,7 +100,7 @@ export const fetchUserConversations = async () => {
           lastMessage: lastMessage ? {
             content: lastMessage.content,
             timestamp: new Date(lastMessage.created_at),
-            isFromCurrentUser: lastMessage.sender_id === userSession.session?.user.id,
+            isFromCurrentUser: lastMessage.sender_id === userSession.session.user.id,
             read: lastMessage.read
           } : null
         };
@@ -105,80 +108,114 @@ export const fetchUserConversations = async () => {
     );
     
     // Filter out any null values from failed conversation processing
-    return conversationsWithMessages.filter(Boolean);
+    return conversationsWithDetails.filter(Boolean);
   } catch (error) {
     console.error("Error in fetchUserConversations:", error);
-    return []; // Return empty array instead of throwing to prevent UI errors
+    return [];
   }
 };
 
 // Fetch a single conversation with all messages
 export const fetchConversation = async (conversationId: string) => {
-  const { data: userSession } = await supabase.auth.getSession();
-  if (!userSession.session) throw new Error("User not authenticated");
+  const { data: userSession, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !userSession.session) throw new Error("User not authenticated");
   
-  // Get basic conversation details
-  const { data: conversation, error: convoError } = await supabase
-    .from("conversations")
-    .select("id, created_at")
-    .eq("id", conversationId)
-    .single();
-  
-  if (convoError) throw convoError;
-  
-  // Get participants separately
-  const { data: participants, error: participantsError } = await supabase
-    .from("conversation_participants")
-    .select("user_id")
-    .eq("conversation_id", conversationId);
-  
-  if (participantsError) throw participantsError;
-  
-  // Get all messages
-  const { data: messages, error: messagesError } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
-  
-  if (messagesError) throw messagesError;
-  
-  // Find the other participant
-  const otherParticipantId = participants.find(
-    p => p.user_id !== userSession.session?.user.id
-  )?.user_id;
-  
-  let otherUser = null;
-  if (otherParticipantId) {
-    try {
-      otherUser = await fetchUserProfile(otherParticipantId);
-    } catch (err) {
-      console.error("Error fetching other user profile:", err);
+  try {
+    console.log("Fetching conversation:", conversationId);
+    
+    // Check if the user is a participant in this conversation
+    const { data: userParticipation, error: partError } = await supabase
+      .from("conversation_participants")
+      .select("user_id")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userSession.session.user.id)
+      .maybeSingle();
+    
+    if (partError) {
+      console.error("Error checking participation:", partError);
+      throw new Error("Failed to verify conversation access");
     }
-  }
-  
-  // Mark unread messages as read
-  const unreadMessages = messages.filter(
-    msg => !msg.read && msg.sender_id !== userSession.session?.user.id
-  );
-  
-  if (unreadMessages.length > 0) {
-    await supabase
+    
+    if (!userParticipation) {
+      console.error("User is not a participant in this conversation");
+      throw new Error("You don't have access to this conversation");
+    }
+    
+    // Get basic conversation details
+    const { data: conversation, error: convoError } = await supabase
+      .from("conversations")
+      .select("id, created_at")
+      .eq("id", conversationId)
+      .single();
+    
+    if (convoError) {
+      console.error("Error fetching conversation:", convoError);
+      throw convoError;
+    }
+    
+    // Get participants
+    const { data: participants, error: participantsError } = await supabase
+      .from("conversation_participants")
+      .select("user_id")
+      .eq("conversation_id", conversationId);
+    
+    if (participantsError) {
+      console.error("Error fetching participants:", participantsError);
+      throw participantsError;
+    }
+    
+    // Get all messages
+    const { data: messages, error: messagesError } = await supabase
       .from("messages")
-      .update({ read: true })
-      .in("id", unreadMessages.map(msg => msg.id));
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+    
+    if (messagesError) {
+      console.error("Error fetching messages:", messagesError);
+      throw messagesError;
+    }
+    
+    // Find the other participant
+    const otherParticipantId = participants.find(
+      p => p.user_id !== userSession.session.user.id
+    )?.user_id;
+    
+    let otherUser = null;
+    if (otherParticipantId) {
+      try {
+        otherUser = await fetchUserProfile(otherParticipantId);
+      } catch (err) {
+        console.error("Error fetching other user profile:", err);
+      }
+    }
+    
+    // Mark unread messages as read
+    const unreadMessages = messages.filter(
+      msg => !msg.read && msg.sender_id !== userSession.session.user.id
+    );
+    
+    if (unreadMessages.length > 0) {
+      await supabase
+        .from("messages")
+        .update({ read: true })
+        .in("id", unreadMessages.map(msg => msg.id));
+    }
+    
+    return {
+      conversation,
+      otherUser,
+      currentUserId: userSession.session.user.id,
+      messages: messages.map(msg => ({
+        id: msg.id,
+        senderId: msg.sender_id,
+        text: msg.content,
+        timestamp: new Date(msg.created_at),
+        read: msg.read
+      }))
+    };
+  } catch (error) {
+    console.error("Error in fetchConversation:", error);
+    throw error;
   }
-  
-  return {
-    conversation,
-    otherUser,
-    currentUserId: userSession.session.user.id,
-    messages: messages.map(msg => ({
-      id: msg.id,
-      senderId: msg.sender_id,
-      text: msg.content,
-      timestamp: new Date(msg.created_at),
-      read: msg.read
-    }))
-  };
 };

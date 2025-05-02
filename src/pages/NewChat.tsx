@@ -22,6 +22,11 @@ const NewChat: React.FC = () => {
   const [creatingConversation, setCreatingConversation] = useState<string | null>(null);
   
   useEffect(() => {
+    if (!user) {
+      navigate('/auth', { replace: true });
+      return;
+    }
+
     const loadUsers = async () => {
       try {
         setLoading(true);
@@ -40,7 +45,7 @@ const NewChat: React.FC = () => {
     };
     
     loadUsers();
-  }, [toast]);
+  }, [toast, navigate, user]);
   
   const filteredUsers = users.filter(user => 
     user.pseudonym.toLowerCase().includes(searchQuery.toLowerCase())
@@ -58,9 +63,11 @@ const NewChat: React.FC = () => {
 
     try {
       setCreatingConversation(otherUserId);
+      console.log("Creating conversation with user:", otherUserId);
       
-      // Use the updated utility function from participantService
+      // Use the utility function from participantService
       const conversationId = await getOrCreateConversation(otherUserId);
+      console.log("Conversation created/found:", conversationId);
       
       // Navigate to the conversation
       navigate(`/chat/${conversationId}`);
@@ -70,7 +77,7 @@ const NewChat: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create conversation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create conversation. Please try again.",
       });
     } finally {
       setCreatingConversation(null);
