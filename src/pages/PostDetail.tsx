@@ -64,7 +64,7 @@ const PostDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
+    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
       {/* Full width header */}
       <Header />
       
@@ -76,9 +76,9 @@ const PostDetail: React.FC = () => {
         </div>
         
         {/* Main content */}
-        <div className="flex-grow flex flex-col">
+        <div className="flex-grow flex flex-col overflow-x-hidden">
           {/* Page specific content here */}
-          <div className="max-w-3xl mx-auto px-4 py-4 w-full">
+          <div className="max-w-3xl mx-auto px-4 py-4 w-full scrollbar-hide">
             <Link to="/" className="flex items-center text-sm text-muted-foreground mb-4 hover:text-foreground">
               <ChevronLeft size={16} className="mr-1" />
               Back to feed

@@ -119,7 +119,7 @@ const ChatScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
+    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
       {/* Custom chat header */}
       <div className="bg-background border-b sticky top-0 z-10 flex items-center px-4 py-2">
         <Link to="/chats" className="mr-2">
@@ -137,7 +137,7 @@ const ChatScreen: React.FC = () => {
       </div>
       
       {/* Chat messages */}
-      <div className="flex-grow overflow-y-auto p-4 pb-20 md:pb-4">
+      <div className="flex-grow overflow-y-auto scrollbar-hide p-4 pb-20 md:pb-4">
         {messages.map(msg => {
           const isSentByMe = msg.senderId === 'user-1';
           

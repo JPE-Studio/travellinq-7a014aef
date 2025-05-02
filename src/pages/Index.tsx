@@ -88,7 +88,7 @@ const Index: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background">
+    <div className="min-h-screen flex flex-col w-full bg-background overflow-x-hidden">
       {/* Full width header */}
       <Header />
       
@@ -100,7 +100,7 @@ const Index: React.FC = () => {
         </div>
         
         {/* Main content */}
-        <div className="flex-grow flex flex-col">
+        <div className="flex-grow flex flex-col overflow-x-hidden">
           <Map 
             posts={filteredPosts}
             currentLocation={currentLocation}
