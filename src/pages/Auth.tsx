@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, EyeOff, User, MapPin } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const Auth: React.FC = () => {
   const { user, loading, signIn, signUp } = useAuth();
@@ -42,8 +43,21 @@ const Auth: React.FC = () => {
     try {
       // Only pass the necessary information for signup
       await signUp(email, password);
-    } catch (error) {
+      
+      // Show confirmation email toast
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox and click the confirmation link to complete your registration.",
+        duration: 6000
+      });
+      
+    } catch (error: any) {
       console.error('Sign up error:', error);
+      toast({
+        title: "Sign up failed",
+        description: error?.message || "There was an error creating your account",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -155,6 +169,10 @@ const Auth: React.FC = () => {
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Creating Account..." : "Sign Up"}
                 </Button>
+                
+                <div className="text-xs text-center text-muted-foreground mt-2">
+                  After signing up, you'll receive an email to verify your account.
+                </div>
               </form>
             </TabsContent>
           </CardContent>
