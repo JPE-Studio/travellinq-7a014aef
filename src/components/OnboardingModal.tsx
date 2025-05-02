@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { MapPin, Camera, User, Upload, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 import {
   Sheet,
   SheetContent,
@@ -78,18 +77,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
           longitude: position.coords.longitude
         })
         .eq('id', user.id);
-        
-      toast({
-        title: "Standort gespeichert",
-        description: "Dein Standort wurde erfolgreich gespeichert.",
-      });
     } catch (error) {
       console.error('Standortabfrage fehlgeschlagen:', error);
-      toast({
-        title: "Standortabfrage fehlgeschlagen",
-        description: "Bitte aktiviere den Standortzugriff in deinem Browser und versuche es erneut.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -118,11 +107,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     const pseudonym = form.getValues('pseudonym');
     
     if (pseudonym.length < 3) {
-      toast({
-        title: "Ungültiger Pseudonym",
-        description: "Dein Pseudonym muss mindestens 3 Zeichen enthalten.",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -165,20 +149,9 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       // Update the local profile
       await refreshProfile();
       
-      // The welcome toast is now only shown here after successful profile creation
-      toast({
-        title: "Willkommen bei Travellinq!",
-        description: "Dein Profil wurde erfolgreich erstellt.",
-      });
-      
       onComplete();
     } catch (error) {
       console.error('Fehler beim Aktualisieren des Profils:', error);
-      toast({
-        title: "Fehler beim Speichern",
-        description: "Dein Profil konnte nicht gespeichert werden. Bitte versuche es später erneut.",
-        variant: "destructive",
-      });
     } finally {
       setIsUploading(false);
     }
