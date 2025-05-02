@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
@@ -14,8 +13,8 @@ const MapView: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [currentLocation, setCurrentLocation] = useState({ 
-    lat: 45.5152, // Portland, OR coordinates as default
-    lng: -122.6784 
+    lat: 48.2082, // Vienna, Austria coordinates as default
+    lng: 16.3719 
   });
   const [expanded, setExpanded] = useState(true);
   const [isLocating, setIsLocating] = useState(false);

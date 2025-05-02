@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Map from '@/components/Map';
@@ -17,7 +16,7 @@ const Index: React.FC = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState({ lat: 45.5152, lng: -122.6784 });
+  const [currentLocation, setCurrentLocation] = useState({ lat: 48.2082, lng: 16.3719 }); // Vienna, Austria
   const [filters, setFilters] = useState({
     radius: 50,
     autoRadius: true,
@@ -137,7 +136,6 @@ const Index: React.FC = () => {
         <div className="md:hidden">
           <div className="h-16"></div> {/* Spacer for the bottom navigation */}
         </div>
-        <BottomNavigation />
       </div>
     );
   }

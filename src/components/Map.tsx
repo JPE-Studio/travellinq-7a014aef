@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -80,7 +79,7 @@ const Map: React.FC<MapProps> = ({
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [currentLocation.lng, currentLocation.lat],
+        center: [currentLocation.lng, currentLocation.lat], // Will use Vienna coordinates from props
         zoom: 12,
       });
 
