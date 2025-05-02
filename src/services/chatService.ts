@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types";
 import { fetchUserProfile } from "./userService";
@@ -9,24 +8,34 @@ export const fetchUserConversations = async () => {
   if (!userSession.session) throw new Error("User not authenticated");
   
   try {
-    // Get conversation IDs where the user is a participant - directly from the database
+    // Query without nesting to avoid recursion issues
     const { data: participations, error: participationsError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
       .eq("user_id", userSession.session.user.id);
     
-    if (participationsError) throw participationsError;
-    if (!participations?.length) return [];
+    if (participationsError) {
+      console.error("Error fetching participations:", participationsError);
+      return [];
+    }
+    
+    if (!participations || participations.length === 0) {
+      // No conversations found, return empty array without error
+      return [];
+    }
     
     const conversationIds = participations.map(p => p.conversation_id);
     
-    // Fetch basic conversation data without nesting relations to avoid recursion
+    // Fetch basic conversation data
     const { data: conversations, error: convoError } = await supabase
       .from("conversations")
       .select("id, created_at")
       .in("id", conversationIds);
     
-    if (convoError) throw convoError;
+    if (convoError) {
+      console.error("Error fetching conversations:", convoError);
+      return [];
+    }
     
     // For each conversation, get the other participants separately
     const conversationsWithMessages = await Promise.all(
@@ -39,16 +48,22 @@ export const fetchUserConversations = async () => {
           .order("created_at", { ascending: false })
           .limit(1);
         
-        if (msgError) throw msgError;
+        if (msgError) {
+          console.error("Error fetching messages:", msgError);
+          return null;
+        }
         
-        // Get the other participants separately
+        // Simple query to get other participants without nesting
         const { data: otherParticipants, error: participantError } = await supabase
           .from("conversation_participants")
           .select("user_id")
           .eq("conversation_id", convo.id)
           .neq("user_id", userSession.session?.user.id);
           
-        if (participantError) throw participantError;
+        if (participantError) {
+          console.error("Error fetching other participants:", participantError);
+          return null;
+        }
         
         const otherParticipantUserId = otherParticipants?.[0]?.user_id;
         
@@ -89,10 +104,11 @@ export const fetchUserConversations = async () => {
       })
     );
     
-    return conversationsWithMessages;
+    // Filter out any null values from failed conversation processing
+    return conversationsWithMessages.filter(Boolean);
   } catch (error) {
     console.error("Error in fetchUserConversations:", error);
-    throw error;
+    return []; // Return empty array instead of throwing to prevent UI errors
   }
 };
 

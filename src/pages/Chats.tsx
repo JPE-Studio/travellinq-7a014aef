@@ -39,16 +39,20 @@ const Chats: React.FC = () => {
     const loadConversations = async () => {
       try {
         setLoading(true);
+        setError(null);
         const conversationsData = await fetchUserConversations();
-        setConversations(conversationsData);
+        setConversations(conversationsData || []);
       } catch (err) {
         console.error('Error loading conversations:', err);
-        setError('Failed to load conversations. Please try again.');
-        toast({
-          variant: "destructive",
-          title: "Error loading messages",
-          description: "We couldn't load your conversations. Please try again later.",
-        });
+        setError('Unable to load conversations');
+        // Use toast only for unexpected errors, not for empty state
+        if (err instanceof Error && err.message !== 'No conversations found') {
+          toast({
+            variant: "destructive",
+            title: "Error loading messages",
+            description: "We couldn't load your conversations. Please try again later.",
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -122,51 +126,51 @@ const Chats: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y">
-              {filteredConversations.map(conversation => (
-                <Link 
-                  to={`/chat/${conversation.id}`} 
-                  key={conversation.id} 
-                  className="py-3 flex items-center space-x-3 hover:bg-muted/30 cursor-pointer rounded-lg px-2"
-                >
-                  <div onClick={(e) => handleUserProfileClick(conversation.otherUser.id, e)}>
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={conversation.otherUser.avatar} alt={conversation.otherUser.pseudonym} className="object-cover" />
-                      <AvatarFallback>
-                        <User className="h-6 w-6 text-muted-foreground" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <p className="font-medium">{conversation.otherUser.pseudonym}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {conversation.lastMessage 
-                        ? (conversation.lastMessage.isFromCurrentUser ? 'You: ' : '') + conversation.lastMessage.content
-                        : 'No messages yet'}
-                    </p>
-                  </div>
-                  <div className="text-xs text-muted-foreground shrink-0">
-                    {conversation.lastMessage
-                      ? formatDistanceToNow(conversation.lastMessage.timestamp, { addSuffix: false })
-                      : ''}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          
-          {!loading && !error && conversations.length === 0 && (
-            <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
-              <p className="mb-2">No messages yet</p>
-              <p className="text-sm mb-4">Start a conversation with another traveler</p>
-              <Button onClick={handleCreateChat} className="flex items-center gap-2">
-                <Plus size={18} />
-                New Conversation
-              </Button>
+              {filteredConversations.length > 0 ? (
+                filteredConversations.map(conversation => (
+                  <Link 
+                    to={`/chat/${conversation.id}`} 
+                    key={conversation.id} 
+                    className="py-3 flex items-center space-x-3 hover:bg-muted/30 cursor-pointer rounded-lg px-2"
+                  >
+                    <div onClick={(e) => handleUserProfileClick(conversation.otherUser.id, e)}>
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={conversation.otherUser.avatar} alt={conversation.otherUser.pseudonym} className="object-cover" />
+                        <AvatarFallback>
+                          <User className="h-6 w-6 text-muted-foreground" />
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <p className="font-medium">{conversation.otherUser.pseudonym}</p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {conversation.lastMessage 
+                          ? (conversation.lastMessage.isFromCurrentUser ? 'You: ' : '') + conversation.lastMessage.content
+                          : 'No messages yet'}
+                      </p>
+                    </div>
+                    <div className="text-xs text-muted-foreground shrink-0">
+                      {conversation.lastMessage
+                        ? formatDistanceToNow(conversation.lastMessage.timestamp, { addSuffix: false })
+                        : ''}
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
+                  <p className="mb-2">No messages yet</p>
+                  <p className="text-sm mb-4">Start a conversation with another traveler</p>
+                  <Button onClick={handleCreateChat} className="flex items-center gap-2">
+                    <Plus size={18} />
+                    New Conversation
+                  </Button>
+                </div>
+              )}
             </div>
           )}
           
           {/* Floating create chat button for when there are messages but user wants to create a new one */}
-          {!loading && !error && conversations.length > 0 && (
+          {!loading && !error && filteredConversations.length > 0 && (
             <div className="fixed bottom-20 md:bottom-8 right-6">
               <Button 
                 onClick={handleCreateChat} 
