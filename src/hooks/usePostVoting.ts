@@ -78,26 +78,28 @@ export const usePostVoting = (postId: string, initialVotes: number) => {
         });
       } else {
         // Add or change vote
-        const result = await votePost(postId, voteType);
-        
-        if (result && result.error) {
-          console.error("Error voting:", result.error);
-          throw result.error;
+        try {
+          // The votePost function returns void, so we just call it
+          // and handle errors with try/catch instead of checking a return value
+          await votePost(postId, voteType);
+          
+          // If changing vote, need to adjust by 2 (remove old vote and add new one)
+          if (userVote !== null) {
+            setVotes(prev => prev - userVote + voteType);
+          } else {
+            setVotes(prev => prev + voteType);
+          }
+          
+          setUserVote(voteType);
+          
+          toast({
+            title: direction === 'up' ? "Upvoted" : "Downvoted",
+            description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`
+          });
+        } catch (error) {
+          console.error("Error voting:", error);
+          throw error;
         }
-
-        // If changing vote, need to adjust by 2 (remove old vote and add new one)
-        if (userVote !== null) {
-          setVotes(prev => prev - userVote + voteType);
-        } else {
-          setVotes(prev => prev + voteType);
-        }
-        
-        setUserVote(voteType);
-        
-        toast({
-          title: direction === 'up' ? "Upvoted" : "Downvoted",
-          description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`
-        });
       }
     } catch (error) {
       console.error("Error voting:", error);
