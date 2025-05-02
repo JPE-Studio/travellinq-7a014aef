@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
@@ -14,6 +13,25 @@ const MapView: React.FC = () => {
     lat: 45.5152, // Portland, OR coordinates
     lng: -122.6784 
   });
+  const [expanded, setExpanded] = useState(true);
+
+  // Try to get user's location if allowed
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Error getting location:', error);
+          // Keep the default location
+        }
+      );
+    }
+  }, []);
 
   // Query for posts
   const { data: posts = [], isLoading, error } = useQuery({
@@ -25,7 +43,7 @@ const MapView: React.FC = () => {
   });
 
   // Handle error separately with useEffect
-  React.useEffect(() => {
+  useEffect(() => {
     if (error) {
       toast({
         title: "Error loading map data",
@@ -35,6 +53,10 @@ const MapView: React.FC = () => {
       console.error(error);
     }
   }, [error, toast]);
+
+  const handleToggleExpand = () => {
+    setExpanded(!expanded);
+  };
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
@@ -75,8 +97,8 @@ const MapView: React.FC = () => {
               <Map 
                 posts={posts}
                 currentLocation={currentLocation}
-                expanded={true}
-                onToggleExpand={() => {}}
+                expanded={expanded}
+                onToggleExpand={handleToggleExpand}
               />
             </div>
           )}

@@ -23,6 +23,7 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Load token from localStorage or use default
   useEffect(() => {
@@ -34,6 +35,15 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
       setMapboxToken(savedToken);
     }
   }, []);
+
+  // Clear markers when component unmounts or posts change
+  useEffect(() => {
+    return () => {
+      // Remove all markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+    };
+  }, [posts]);
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current) return;
@@ -55,35 +65,6 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
         'top-right'
       );
 
-      // Add a marker for current location
-      new mapboxgl.Marker({ color: '#3FB1CE' })
-        .setLngLat([currentLocation.lng, currentLocation.lat])
-        .addTo(newMap);
-
-      // Add markers for posts
-      posts.forEach(post => {
-        if (post.location) {
-          // Create a popup with post info
-          const popup = new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-              <h3 class="font-semibold">${post.category}</h3>
-              <p class="text-sm">${post.text.substring(0, 100)}${post.text.length > 100 ? '...' : ''}</p>
-            `);
-
-          // Determine marker color based on category
-          let color = '#2E5E4E'; // Default forest green
-          if (post.category === 'campsite') color = '#3A7D44';
-          if (post.category === 'service') color = '#D5A021';
-          if (post.category === 'question') color = '#61A8FF';
-
-          // Add marker for this post
-          new mapboxgl.Marker({ color })
-            .setLngLat([post.location.lng, post.location.lat])
-            .setPopup(popup)
-            .addTo(newMap);
-        }
-      });
-
       newMap.on('load', () => {
         setMapLoaded(true);
       });
@@ -98,7 +79,49 @@ const Map: React.FC<MapProps> = ({ posts, currentLocation, expanded, onToggleExp
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxToken, currentLocation, posts]);
+  }, [mapboxToken, currentLocation]);
+
+  // Add markers when map is ready and posts change
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // Clear previous markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Add a marker for current location
+    const currentLocationMarker = new mapboxgl.Marker({ color: '#3FB1CE' })
+      .setLngLat([currentLocation.lng, currentLocation.lat])
+      .addTo(map.current);
+    
+    markersRef.current.push(currentLocationMarker);
+
+    // Add markers for posts
+    posts.forEach(post => {
+      if (post.location) {
+        // Create a popup with post info
+        const popup = new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`
+            <h3 class="font-semibold">${post.category}</h3>
+            <p class="text-sm">${post.text.substring(0, 100)}${post.text.length > 100 ? '...' : ''}</p>
+          `);
+
+        // Determine marker color based on category
+        let color = '#2E5E4E'; // Default forest green
+        if (post.category === 'campsite') color = '#3A7D44';
+        if (post.category === 'service') color = '#D5A021';
+        if (post.category === 'question') color = '#61A8FF';
+
+        // Add marker for this post
+        const marker = new mapboxgl.Marker({ color })
+          .setLngLat([post.location.lng, post.location.lat])
+          .setPopup(popup)
+          .addTo(map.current);
+        
+        markersRef.current.push(marker);
+      }
+    });
+  }, [posts, mapLoaded, currentLocation]);
 
   // Resize map when expanded state changes
   useEffect(() => {
