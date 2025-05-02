@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import MessageItem from './MessageItem';
+import { markMessagesAsRead } from '@/services/messageService';
 
 interface Message {
   id: string;
@@ -26,6 +27,21 @@ const MessageList: React.FC<MessageListProps> = ({ messages, currentUserId, othe
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Mark messages as read when they are displayed
+  useEffect(() => {
+    if (!currentUserId || messages.length === 0) return;
+    
+    const unreadMessageIds = messages
+      .filter(msg => !msg.read && msg.senderId !== currentUserId)
+      .map(msg => msg.id);
+    
+    if (unreadMessageIds.length > 0) {
+      markMessagesAsRead(unreadMessageIds).catch(error => {
+        console.error("Failed to mark messages as read:", error);
+      });
+    }
+  }, [messages, currentUserId]);
 
   return (
     <div className="flex-grow overflow-y-auto scrollbar-hide p-4 pb-20 md:pb-4">

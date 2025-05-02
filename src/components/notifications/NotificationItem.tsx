@@ -2,14 +2,14 @@
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, User, Check, X } from 'lucide-react';
+import { Bell, User, Check, X, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { handleBuddyRequest } from '@/services/notificationService';
 
 export interface Notification {
   id: string;
-  type: 'mention' | 'reply' | 'vote' | 'subscription' | 'nearby' | 'buddy_request' | 'comment_on_same_post';
+  type: 'mention' | 'reply' | 'vote' | 'subscription' | 'nearby' | 'buddy_request' | 'comment_on_same_post' | 'message';
   message: string;
   createdAt: Date;
   read: boolean;
@@ -88,6 +88,34 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMar
     return null;
   };
 
+  // Get the appropriate icon based on notification type
+  const getNotificationIcon = () => {
+    if (notification.userId) {
+      return (
+        <Avatar className="h-10 w-10">
+          <AvatarImage src={notification.userAvatar} />
+          <AvatarFallback>
+            <User className="h-5 w-5" />
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+    
+    if (notification.type === 'message') {
+      return (
+        <div className="rounded-full bg-blue-500/10 p-2 text-blue-500">
+          <MessageSquare className="h-6 w-6" />
+        </div>
+      );
+    }
+    
+    return (
+      <div className="rounded-full bg-primary/10 p-2 text-primary">
+        <Bell className="h-6 w-6" />
+      </div>
+    );
+  };
+
   return (
     <div 
       className={`block p-4 border-b hover:bg-muted/50 transition-colors ${!notification.read ? 'bg-primary/5' : ''}`}
@@ -98,18 +126,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMar
         className="flex items-start gap-3"
         onClick={(e) => notification.type === 'buddy_request' ? e.preventDefault() : handleClick()}
       >
-        {notification.userId ? (
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={notification.userAvatar} />
-            <AvatarFallback>
-              <User className="h-5 w-5" />
-            </AvatarFallback>
-          </Avatar>
-        ) : (
-          <div className="rounded-full bg-primary/10 p-2 text-primary">
-            <Bell className="h-6 w-6" />
-          </div>
-        )}
+        {getNotificationIcon()}
         
         <div className="flex-1">
           <p className="text-sm text-foreground">{notification.message}</p>

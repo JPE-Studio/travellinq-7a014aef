@@ -44,7 +44,7 @@ export const fetchNotifications = async (): Promise<Notification[]> => {
     // Transform the database notifications to application notifications
     return notifications.map(n => ({
       id: n.id,
-      type: n.type as "mention" | "reply" | "vote" | "subscription" | "nearby" | "buddy_request" | "comment_on_same_post",
+      type: n.type as "mention" | "reply" | "vote" | "subscription" | "nearby" | "buddy_request" | "comment_on_same_post" | "message",
       message: n.message,
       createdAt: new Date(n.created_at),
       read: n.read,
@@ -142,6 +142,43 @@ export const handleBuddyRequest = async (
 };
 
 /**
+ * Creates a notification for a new message
+ * @param senderId ID of the user who sent the message
+ * @param recipientId ID of the user receiving the message
+ * @param conversationId ID of the conversation
+ * @param messagePreview Preview of the message content
+ */
+export const createMessageNotification = async (
+  senderId: string,
+  recipientId: string,
+  conversationId: string,
+  messagePreview: string
+): Promise<void> => {
+  try {
+    // Get sender profile to include their name
+    const senderProfile = await fetchUserProfile(senderId);
+    
+    // Create notification in the database
+    const { error } = await supabase
+      .from("notifications")
+      .insert({
+        user_id: recipientId,
+        type: "message",
+        message: `${senderProfile.pseudonym}: ${messagePreview}`,
+        related_user_id: senderId,
+        link: `/chat/${conversationId}`,
+        read: false
+      });
+      
+    if (error) throw error;
+    
+  } catch (error) {
+    console.error("Error creating message notification:", error);
+    throw error;
+  }
+};
+
+/**
  * Sets up a real-time subscription for new notifications
  * @param callback Function to call when a new notification is received
  */
@@ -182,7 +219,7 @@ export const subscribeToNotifications = (
           // Convert to application notification
           const appNotification: Notification = {
             id: notification.id,
-            type: notification.type as "mention" | "reply" | "vote" | "subscription" | "nearby" | "buddy_request" | "comment_on_same_post",
+            type: notification.type as "mention" | "reply" | "vote" | "subscription" | "nearby" | "buddy_request" | "comment_on_same_post" | "message",
             message: notification.message,
             createdAt: new Date(notification.created_at),
             read: notification.read,
@@ -203,6 +240,12 @@ export const subscribeToNotifications = (
           if (notification.type === 'reply') {
             toastTitle = "New Reply";
             // Keep the default description which includes who replied
+          } else if (notification.type === 'message') {
+            toastTitle = "New Message";
+            // Keep the default description which includes the message preview
+          } else if (notification.type === 'buddy_request') {
+            toastTitle = "New Connection Request";
+            // Keep the default description
           }
           
           toast({

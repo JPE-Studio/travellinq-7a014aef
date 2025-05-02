@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchConversation } from '@/services/conversationService';
 import { sendMessage } from '@/services/messageService';
 import { setupChatSubscription } from '@/services/chatService';
+import { createMessageNotification } from '@/services/notificationService';
 import { useAuth } from '@/contexts/AuthContext';
 import PageLayout from '@/components/PageLayout';
 
@@ -69,6 +70,23 @@ const ChatScreen: React.FC = () => {
             timestamp: new Date(newMessage.created_at),
             read: newMessage.read
           };
+          
+          // Create a notification for the message if it's not from the current user
+          if (formattedMessage.senderId !== data.currentUserId && otherUser?.id) {
+            // Truncate message for notification preview if too long
+            const messagePreview = formattedMessage.text.length > 30 
+              ? `${formattedMessage.text.substring(0, 30)}...` 
+              : formattedMessage.text;
+              
+            createMessageNotification(
+              formattedMessage.senderId,
+              data.currentUserId,
+              conversationId,
+              messagePreview
+            ).catch(err => {
+              console.error("Error creating message notification:", err);
+            });
+          }
           
           setMessages(prevMessages => {
             // Check if we already have this message to avoid duplicates

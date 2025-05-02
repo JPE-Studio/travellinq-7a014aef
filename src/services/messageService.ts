@@ -73,6 +73,40 @@ export const markMessagesAsRead = async (messageIds: string[]) => {
 };
 
 /**
+ * Create a notification for a new message
+ * @deprecated Use createMessageNotification from notificationService instead
+ */
+export const createMessageNotification = async (
+  conversationId: string, 
+  recipientId: string,
+  message: string
+) => {
+  try {
+    const { data: userSession } = await supabase.auth.getSession();
+    if (!userSession.session) throw new Error("User not authenticated");
+    
+    const senderId = userSession.session.user.id;
+    
+    // Create a notification for the message
+    const { error } = await supabase
+      .from("notifications")
+      .insert({
+        user_id: recipientId,
+        type: "message",
+        message: message.length > 30 ? `${message.substring(0, 30)}...` : message,
+        related_user_id: senderId,
+        link: `/chat/${conversationId}`
+      });
+      
+    if (error) {
+      console.error("Error creating message notification:", error);
+    }
+  } catch (error) {
+    console.error("Exception in createMessageNotification:", error);
+  }
+};
+
+/**
  * Get unread message count for current user
  */
 export const getUnreadMessageCount = async () => {
