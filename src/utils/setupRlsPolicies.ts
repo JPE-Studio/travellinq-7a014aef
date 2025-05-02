@@ -15,6 +15,7 @@ export const setupRlsPolicies = async () => {
       throw error;
     }
     
+    console.log("RLS policies setup complete:", data);
     return { success: true };
   } catch (err) {
     console.error("Failed to setup RLS policies:", err);
@@ -25,9 +26,8 @@ export const setupRlsPolicies = async () => {
 // Add a function to make Postgres tables available for real-time
 export const setupRealtimeTables = async () => {
   try {
-    // This will enable realtime for the messages table
-    // Need to use any type assertion since this function is not in the generated types
-    const { data, error } = await (supabase.rpc as any)('add_table_to_publication', {
+    // Use our new helper function to enable realtime for messages
+    const { data, error } = await supabase.rpc('enable_realtime_for_table', {
       table_name: 'messages'
     });
     
@@ -36,6 +36,7 @@ export const setupRealtimeTables = async () => {
       throw error;
     }
     
+    console.log("Realtime setup complete:", data);
     return { success: true };
   } catch (err) {
     console.error("Failed to setup realtime:", err);
@@ -50,15 +51,19 @@ export const enableRowLevelSecurity = async () => {
     const tables = ["conversations", "conversation_participants", "messages"];
     
     for (const table of tables) {
-      // Need to use any type assertion since this function is not in the generated types
-      const { data, error } = await (supabase.rpc as any)('execute_sql', {
-        sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` 
-      });
-      
-      if (error && !error.message.includes("already enabled")) {
-        console.error(`Error enabling RLS on ${table}:`, error);
-      } else {
+      // Use execute_sql directly rather than through RPC
+      try {
+        await supabase.rpc('execute_sql', {
+          sql: `ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;` 
+        });
         console.log(`RLS enabled on ${table} table`);
+      } catch (error: any) {
+        // Ignore "already enabled" errors
+        if (!error.message || !error.message.includes("already enabled")) {
+          console.error(`Error enabling RLS on ${table}:`, error);
+        } else {
+          console.log(`RLS already enabled on ${table} table`);
+        }
       }
     }
     
@@ -69,21 +74,18 @@ export const enableRowLevelSecurity = async () => {
   }
 };
 
-// Check if a table has RLS enabled
+// Check if a table has RLS enabled using our new helper function
 export const checkRlsStatus = async () => {
   try {
-    // Query pg_tables system table to check RLS status
-    // Need to use any type assertion since pg_tables isn't in the generated types
-    const { data, error } = await (supabase.from as any)('pg_tables')
-      .select('tablename, rowsecurity')
-      .eq('schemaname', 'public')
-      .in('tablename', ['conversations', 'conversation_participants', 'messages']);
+    // Use our new helper function to check RLS status
+    const { data, error } = await supabase.rpc('check_rls_status');
     
     if (error) {
       console.error("Error checking RLS status:", error);
       throw error;
     }
     
+    console.log("RLS status:", data);
     return data;
   } catch (err) {
     console.error("Failed to check RLS status:", err);
