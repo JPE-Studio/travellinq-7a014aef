@@ -64,7 +64,7 @@ const Index: React.FC = () => {
   });
 
   useEffect(() => {
-    // Onboarding modal logic
+    // Onboarding modal logic - show modal only if user doesn't have a pseudonym
     if (user && (!profile || !profile.pseudonym || profile.pseudonym === '')) {
       setShowOnboarding(true);
     } else {
@@ -100,10 +100,7 @@ const Index: React.FC = () => {
 
   const handleCompleteOnboarding = () => {
     setShowOnboarding(false);
-    toast({
-      title: "Willkommen bei Travellinq!",
-      description: "Dein Profil wurde erfolgreich erstellt.",
-    });
+    // Removed the welcome toast from here as it's now shown in the OnboardingModal after profile creation
   };
 
   const handleToggleMapExpand = () => {

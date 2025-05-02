@@ -111,9 +111,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       // Aktualisiere das lokale Profil
       await refreshProfile();
       
+      // The welcome toast is now only shown here after successful profile creation
       toast({
-        title: "Profil aktualisiert",
-        description: "Dein Profil wurde erfolgreich aktualisiert.",
+        title: "Willkommen bei Travellinq!",
+        description: "Dein Profil wurde erfolgreich erstellt.",
       });
       
       onComplete();
