@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ThumbsUp, ThumbsDown, Languages, MessageCircle } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageSquare, Loader2, Translate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface PostInteractionsProps {
   postId: string;
@@ -14,6 +14,7 @@ interface PostInteractionsProps {
   translatedText: string | null;
   isTranslating: boolean;
   handleTranslate: () => void;
+  showTranslateButton?: boolean;
 }
 
 const PostInteractions: React.FC<PostInteractionsProps> = ({
@@ -25,47 +26,57 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
   loading,
   translatedText,
   isTranslating,
-  handleTranslate
+  handleTranslate,
+  showTranslateButton = true,
 }) => {
   return (
-    <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+    <div className="flex items-center justify-between text-sm mt-4">
       <div className="flex items-center space-x-4">
         <button 
-          className={`flex items-center transition-colors ${userVote === 1 ? 'text-blue-500' : 'hover:text-foreground'}`} 
-          onClick={() => handleVote('up')} 
+          className={`flex items-center transition-colors ${userVote === 1 ? 'text-blue-500' : 'hover:text-foreground text-muted-foreground'}`}
+          onClick={() => handleVote('up')}
           disabled={loading}
         >
           <ThumbsUp className="h-4 w-4 mr-1" />
           <span>{votes}</span>
         </button>
         <button 
-          className={`flex items-center transition-colors ${userVote === -1 ? 'text-red-500' : 'hover:text-foreground'}`} 
-          onClick={() => handleVote('down')} 
+          className={`flex items-center transition-colors ${userVote === -1 ? 'text-red-500' : 'hover:text-foreground text-muted-foreground'}`}
+          onClick={() => handleVote('down')}
           disabled={loading}
         >
           <ThumbsDown className="h-4 w-4" />
         </button>
+        <Link 
+          to={`/post/${postId}`}
+          className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <MessageSquare className="h-4 w-4 mr-1" />
+          <span>{commentCount}</span>
+        </Link>
       </div>
       
-      {/* Translate button in the center */}
-      {!translatedText && (
+      {showTranslateButton && (
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
-          onClick={handleTranslate} 
-          disabled={isTranslating} 
-          className="text-xs border border-gray-300 h-8 px-3"
+          className="text-muted-foreground"
+          onClick={handleTranslate}
+          disabled={isTranslating || loading}
         >
-          <Languages className="h-3 w-3 mr-1" />
-          {isTranslating ? 'Translating...' : 'Translate'}
+          {isTranslating ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              Translating...
+            </>
+          ) : (
+            <>
+              <Translate className="h-4 w-4 mr-1" />
+              {translatedText ? 'Show Original' : 'Translate'}
+            </>
+          )}
         </Button>
       )}
-      
-      {/* Comments link with icon */}
-      <Link to={`/post/${postId}`} className="flex items-center hover:text-foreground">
-        <MessageCircle className="h-4 w-4 mr-1" />
-        <span>{commentCount}</span>
-      </Link>
     </div>
   );
 };

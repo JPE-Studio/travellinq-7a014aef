@@ -10,6 +10,7 @@ export interface User {
   website?: string;
   latitude?: number;
   longitude?: number;
+  autoTranslate?: boolean;
 }
 
 export interface Post {

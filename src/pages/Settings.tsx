@@ -40,6 +40,7 @@ const Settings: React.FC = () => {
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState('en');
+  const [autoTranslate, setAutoTranslate] = useState(false);
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -51,6 +52,7 @@ const Settings: React.FC = () => {
       setBio(profile.bio || '');
       setLocation(profile.location || '');
       setPreferredLanguage(profile.preferredLanguage || 'en');
+      setAutoTranslate(profile.autoTranslate || false);
     }
   }, [profile]);
   
@@ -115,7 +117,8 @@ const Settings: React.FC = () => {
           bio: bio,
           avatar: avatarUrl,
           location: location,
-          preferred_language: preferredLanguage
+          preferred_language: preferredLanguage,
+          auto_translate: autoTranslate
         })
         .eq('id', user.id);
       
@@ -240,6 +243,42 @@ const Settings: React.FC = () => {
           <h2 className="text-lg font-semibold mb-4">Preferences</h2>
           
           <div className="space-y-4">
+            <div>
+              <Label className="block text-sm font-medium mb-1">Preferred Language</Label>
+              <Select
+                value={preferredLanguage}
+                onValueChange={setPreferredLanguage}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((language) => (
+                    <SelectItem key={language.value} value={language.value}>
+                      {language.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your preferred language for content translation
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Auto-Translate Content</p>
+                <p className="text-sm text-muted-foreground">
+                  Automatically translate posts to your preferred language
+                </p>
+              </div>
+              <Switch 
+                id="auto-translate" 
+                checked={autoTranslate}
+                onCheckedChange={setAutoTranslate}
+              />
+            </div>
+            
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Notifications</p>
@@ -249,6 +288,7 @@ const Settings: React.FC = () => {
               </div>
               <Switch id="notifications" defaultChecked />
             </div>
+            
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Location Sharing</p>
