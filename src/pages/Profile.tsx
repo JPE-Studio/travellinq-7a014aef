@@ -8,7 +8,7 @@ import BottomNavigation from '@/components/BottomNavigation';
 
 const Profile: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0">
+    <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0 overflow-hidden">
       {/* Full width header */}
       <Header />
       
@@ -20,9 +20,9 @@ const Profile: React.FC = () => {
         </div>
         
         {/* Main content */}
-        <div className="flex-grow flex flex-col">
+        <div className="flex-grow flex flex-col overflow-hidden">
           {/* Page specific content here */}
-          <div className="max-w-3xl mx-auto px-4 py-4 w-full">
+          <div className="max-w-3xl mx-auto px-4 py-4 w-full scrollbar-hide pb-safe">
             <div className="flex flex-col items-center space-y-4 mb-8">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={currentUser.avatar} alt={currentUser.pseudonym} className="object-cover" />

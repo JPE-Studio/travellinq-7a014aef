@@ -12,14 +12,14 @@ const Chats: React.FC = () => {
   const chatUsers = mockUsers.filter(user => user.id !== 'user-1');
   
   return (
-    <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0">
+    <div className="min-h-screen flex flex-col w-full bg-background pb-16 md:pb-0 overflow-hidden">
       {/* Full width header */}
       <Header />
       
       {/* Content area */}
-      <div className="flex-grow flex flex-col w-full">
+      <div className="flex-grow flex flex-col w-full overflow-hidden">
         {/* Main content */}
-        <div className="max-w-3xl mx-auto px-4 py-4 w-full">
+        <div className="max-w-3xl mx-auto px-4 py-4 w-full scrollbar-hide pb-safe">
           <h1 className="text-2xl font-bold mb-6">Messages</h1>
           
           <div className="divide-y">
