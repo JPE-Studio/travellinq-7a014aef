@@ -40,12 +40,8 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
     
     console.log("Buddy connection data:", data);
     
-    // Convert Supabase data to BuddyConnection type with status
     if (data) {
-      return {
-        ...data,
-        status: data.status || 'active' // Default to 'active' if status doesn't exist
-      } as BuddyConnection;
+      return data as BuddyConnection;
     }
     
     return null;
@@ -88,11 +84,7 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
     throw error;
   }
   
-  // Return with proper typing
-  return {
-    ...data,
-    status: 'pending'
-  } as BuddyConnection;
+  return data as BuddyConnection;
 };
 
 // Accept a buddy connection request
@@ -130,11 +122,7 @@ export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConn
     throw error;
   }
   
-  // Return with proper typing
-  return {
-    ...data,
-    status: 'active'
-  } as BuddyConnection;
+  return data as BuddyConnection;
 };
 
 // Reject a buddy connection request
@@ -199,11 +187,7 @@ export const updateBuddyNotificationSettings = async (
     throw error;
   }
   
-  // Return with proper typing
-  return {
-    ...data,
-    status: data.status || 'active' // Default to 'active' if status doesn't exist
-  } as BuddyConnection;
+  return data as BuddyConnection;
 };
 
 // Disconnect from a buddy

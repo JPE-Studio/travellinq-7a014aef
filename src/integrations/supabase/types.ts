@@ -17,6 +17,7 @@ export type Database = {
           notify_at_100km: boolean
           notify_at_20km: boolean
           notify_at_50km: boolean
+          status: string
           user_id: string
         }
         Insert: {
@@ -26,6 +27,7 @@ export type Database = {
           notify_at_100km?: boolean
           notify_at_20km?: boolean
           notify_at_50km?: boolean
+          status?: string
           user_id: string
         }
         Update: {
@@ -35,6 +37,7 @@ export type Database = {
           notify_at_100km?: boolean
           notify_at_20km?: boolean
           notify_at_50km?: boolean
+          status?: string
           user_id?: string
         }
         Relationships: []
