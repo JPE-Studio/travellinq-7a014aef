@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { ThumbsUp, ThumbsDown, MessageSquare, Loader2, Languages } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageSquare, Loader2, Languages, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PostInteractionsProps {
   postId: string;
+  authorId: string;
   votes: number;
   commentCount: number;
   userVote: 1 | -1 | null;
@@ -16,10 +18,12 @@ interface PostInteractionsProps {
   handleTranslate: () => void;
   showTranslateButton?: boolean;
   translationAvailable?: boolean;
+  onDelete?: () => void;
 }
 
 const PostInteractions: React.FC<PostInteractionsProps> = ({
   postId,
+  authorId,
   votes,
   commentCount,
   userVote,
@@ -30,7 +34,11 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
   handleTranslate,
   showTranslateButton = true,
   translationAvailable = true,
+  onDelete,
 }) => {
+  const { user } = useAuth();
+  const isAuthor = user?.id === authorId;
+  
   return (
     <div className="flex items-center justify-between text-sm mt-4">
       <div className="flex items-center space-x-4">
@@ -58,28 +66,43 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
         </Link>
       </div>
       
-      {showTranslateButton && (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className={`text-muted-foreground ${!translationAvailable ? 'opacity-50' : ''}`}
-          onClick={handleTranslate}
-          disabled={isTranslating || loading}
-          title={!translationAvailable ? "Translation service is available" : undefined}
-        >
-          {isTranslating ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              Translating...
-            </>
-          ) : (
-            <>
-              <Languages className="h-4 w-4 mr-1" />
-              {translatedText ? 'Show Original' : 'Translate'}
-            </>
-          )}
-        </Button>
-      )}
+      <div className="flex items-center gap-2">
+        {isAuthor && onDelete && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground hover:text-destructive"
+            onClick={onDelete}
+            disabled={loading}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Delete</span>
+          </Button>
+        )}
+        
+        {showTranslateButton && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`text-muted-foreground ${!translationAvailable ? 'opacity-50' : ''}`}
+            onClick={handleTranslate}
+            disabled={isTranslating || loading}
+            title={!translationAvailable ? "Translation service is available" : undefined}
+          >
+            {isTranslating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Translating...
+              </>
+            ) : (
+              <>
+                <Languages className="h-4 w-4 mr-1" />
+                {translatedText ? 'Show Original' : 'Translate'}
+              </>
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

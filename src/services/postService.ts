@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Post, User } from "@/types";
 import { fetchUserProfile } from "./userService";
@@ -300,6 +299,38 @@ export const votePost = async (postId: string, voteType: 1 | -1): Promise<void> 
     }
   } catch (error) {
     console.error(`Error voting for post ${postId}:`, error);
+    throw error;
+  }
+};
+
+// Delete a post
+export const deletePost = async (postId: string): Promise<void> => {
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) throw new Error("User not authenticated");
+    
+    // First, check if the user is the author of the post
+    const { data: post, error: fetchError } = await supabase
+      .from("posts")
+      .select("author_id")
+      .eq("id", postId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    if (!post || post.author_id !== session.session.user.id) {
+      throw new Error("You don't have permission to delete this post");
+    }
+    
+    // Delete the post - related records like comments and votes will be deleted through cascading
+    const { error: deleteError } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", postId);
+    
+    if (deleteError) throw deleteError;
+  } catch (error) {
+    console.error(`Error deleting post ${postId}:`, error);
     throw error;
   }
 };
