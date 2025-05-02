@@ -20,7 +20,7 @@ export const fetchConversation = async (conversationId: string) => {
     
     if (partError) {
       console.error("Error checking participation:", partError);
-      throw new Error("Failed to verify conversation access");
+      throw new Error("Failed to verify conversation access: " + partError.message);
     }
     
     if (!userParticipation) {
@@ -38,7 +38,7 @@ export const fetchConversation = async (conversationId: string) => {
     
     if (otherPartError) {
       console.error("Error fetching other participant:", otherPartError);
-      throw new Error("Could not find conversation participant");
+      throw new Error("Could not find conversation participant: " + otherPartError.message);
     }
     
     // Get all messages
@@ -50,7 +50,7 @@ export const fetchConversation = async (conversationId: string) => {
     
     if (messagesError) {
       console.error("Error fetching messages:", messagesError);
-      throw messagesError;
+      throw new Error("Failed to load messages: " + messagesError.message);
     }
     
     // Get other user profile

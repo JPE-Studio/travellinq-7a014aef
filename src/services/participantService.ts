@@ -26,7 +26,7 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
       
     if (existingError) {
       console.error("Error searching for existing conversation:", existingError);
-      throw existingError;
+      throw new Error("Failed to check for existing conversation: " + existingError.message);
     }
     
     // If we found an existing conversation, return it
@@ -37,7 +37,8 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     console.log("No existing conversation found, creating new one");
     
-    // Create a new conversation
+    // Start a transaction-like flow
+    // Step 1: Create a new conversation
     const { data: newConversation, error: createError } = await supabase
       .from("conversations")
       .insert([{}])
@@ -46,38 +47,44 @@ export const getOrCreateConversation = async (otherUserId: string): Promise<stri
     
     if (createError) {
       console.error("Error creating conversation:", createError);
-      throw createError;
+      throw new Error("Failed to create conversation: " + createError.message);
     }
     
-    console.log("Created new conversation:", newConversation.id);
+    const conversationId = newConversation.id;
+    console.log("Created new conversation:", conversationId);
     
-    // Add current user to conversation
+    // Step 2: Add current user to conversation
     const { error: currentUserPartError } = await supabase
       .from("conversation_participants")
       .insert([{
-        conversation_id: newConversation.id,
+        conversation_id: conversationId,
         user_id: currentUserId
       }]);
     
     if (currentUserPartError) {
       console.error("Error adding current user to conversation:", currentUserPartError);
-      throw currentUserPartError;
+      // If this fails, we should try to clean up the conversation we just created
+      await supabase.from("conversations").delete().eq("id", conversationId);
+      throw new Error("Failed to add you to conversation: " + currentUserPartError.message);
     }
     
-    // Add other user to conversation
+    // Step 3: Add other user to conversation
     const { error: otherUserPartError } = await supabase
       .from("conversation_participants")
       .insert([{
-        conversation_id: newConversation.id,
+        conversation_id: conversationId,
         user_id: otherUserId
       }]);
     
     if (otherUserPartError) {
       console.error("Error adding other user to conversation:", otherUserPartError);
-      throw otherUserPartError;
+      // Clean up everything if adding the other user fails
+      await supabase.from("conversation_participants").delete().eq("conversation_id", conversationId);
+      await supabase.from("conversations").delete().eq("id", conversationId);
+      throw new Error("Failed to add other user to conversation: " + otherUserPartError.message);
     }
     
-    return newConversation.id;
+    return conversationId;
   } catch (error) {
     console.error("Exception in getOrCreateConversation:", error);
     throw error;
@@ -93,6 +100,10 @@ export const getConversationParticipants = async (conversationId: string) => {
     .select("user_id")
     .eq("conversation_id", conversationId);
     
-  if (error) throw error;
+  if (error) {
+    console.error("Error fetching conversation participants:", error);
+    throw new Error("Failed to get conversation participants: " + error.message);
+  }
+  
   return data.map(p => p.user_id);
 };
