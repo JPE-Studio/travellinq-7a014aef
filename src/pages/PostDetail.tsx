@@ -1,30 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import React, { useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, User, ChevronLeft, ThumbsUp, ThumbsDown, Bell, BellOff, Loader2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { fetchPostById, votePost, deletePost } from '@/services/postService';
-import { fetchComments, addComment } from '@/services/commentService';
+import { fetchPostById, deletePost } from '@/services/postService';
+import { fetchComments } from '@/services/commentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import Comment from '@/components/Comment';
-import UserProfileLink from '@/components/UserProfileLink';
 import { usePostTranslation } from '@/hooks/usePostTranslation';
-import PostInteractions from '@/components/post/PostInteractions';
+import { usePostDetailVoting } from '@/components/post-detail/PostVoting';
+import { usePostSubscription } from '@/components/post-detail/PostSubscription';
+import LoadingState from '@/components/post-detail/LoadingState';
+import ErrorState from '@/components/post-detail/ErrorState';
+import PostContent from '@/components/post-detail/PostContent';
+import CommentSection from '@/components/post-detail/CommentSection';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [comment, setComment] = useState('');
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [votes, setVotes] = useState(0);
-  const [userVote, setUserVote] = useState<1 | -1 | null>(null);
   const navigate = useNavigate();
   
   // Query for post data
@@ -49,6 +45,15 @@ const PostDetail: React.FC = () => {
     enabled: !!id
   });
   
+  // Use the post subscription hook
+  const { isSubscribed, loading: subscriptionLoading, handleSubscribe } = usePostSubscription(id);
+  
+  // Use the post voting hook
+  const { votes, userVote, loading: votingLoading, handleVote } = usePostDetailVoting(
+    id as string, 
+    post?.votes || 0
+  );
+  
   // Use the post translation hook
   const { 
     isTranslating, 
@@ -58,12 +63,8 @@ const PostDetail: React.FC = () => {
     translationAvailable 
   } = usePostTranslation(post?.text || '', false);
   
-  // Update local state when post data comes in
-  useEffect(() => {
-    if (post) {
-      setVotes(post.votes);
-    }
-  }, [post]);
+  // Combined loading state
+  const loading = subscriptionLoading || votingLoading;
   
   // Listen for real-time comment updates
   useEffect(() => {
@@ -94,274 +95,18 @@ const PostDetail: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [id, queryClient]);
-  
-  // Check if user is already subscribed to this post
-  useEffect(() => {
-    if (!user || !id) return;
-
-    const checkSubscription = async () => {
-      try {
-        const { data } = await supabase
-          .from('post_subscriptions')
-          .select('id')
-          .eq('post_id', id)
-          .eq('user_id', user.id)
-          .single();
-        
-        setIsSubscribed(!!data);
-      } catch (error) {
-        // No subscription found
-        setIsSubscribed(false);
-      }
-    };
-
-    // Check if user has already voted on this post
-    const checkUserVote = async () => {
-      try {
-        const { data } = await supabase
-          .from('user_post_votes')
-          .select('vote_type')
-          .eq('post_id', id)
-          .eq('user_id', user.id)
-          .single();
-        
-        if (data) {
-          setUserVote(data.vote_type as 1 | -1);
-        }
-      } catch (error) {
-        // No vote found
-        setUserVote(null);
-      }
-    };
-
-    checkSubscription();
-    checkUserVote();
-  }, [id, user]);
-  
-  // Organize comments into a nested tree structure
-  const organizedComments = React.useMemo(() => {
-    const commentMap: Record<string, any> = {};
-    const rootComments: any[] = [];
-    
-    // First, create a map of all comments by id
-    commentsData.forEach(comment => {
-      commentMap[comment.id] = {
-        ...comment,
-        children: [],
-      };
-    });
-    
-    // Then, build the hierarchy by adding each comment to its parent's children array
-    commentsData.forEach(comment => {
-      if (comment.parentCommentId) {
-        // This is a child comment, add it to its parent
-        const parentComment = commentMap[comment.parentCommentId];
-        if (parentComment) {
-          parentComment.children.push(commentMap[comment.id]);
-        } else {
-          // Parent comment not found, treat as root comment
-          rootComments.push(commentMap[comment.id]);
-        }
-      } else {
-        // This is a root comment
-        rootComments.push(commentMap[comment.id]);
-      }
-    });
-    
-    // Sort root comments by creation date (newest first)
-    return rootComments.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }, [commentsData]);
-  
-  // Render a comment and its nested children recursively
-  const renderCommentWithReplies = (comment: any, depth = 0) => {
-    return (
-      <React.Fragment key={comment.id}>
-        <Comment 
-          comment={comment} 
-          postId={id as string}
-          depth={depth}
-        />
-        {comment.children.map((childComment: any) => 
-          renderCommentWithReplies(childComment, depth + 1)
-        )}
-      </React.Fragment>
-    );
-  };
-  
-  // Mutation for adding comments
-  const addCommentMutation = useMutation({
-    mutationFn: ({ postId, text }: { postId: string, text: string }) => 
-      addComment(postId, text),
-    onSuccess: () => {
-      // Invalidate and refetch comments
-      queryClient.invalidateQueries({ queryKey: ['comments', id] });
-      setComment('');
-      toast({
-        title: "Comment posted",
-        description: "Your comment has been added to the discussion.",
-      });
-    },
-    onError: (error) => {
-      console.error("Error posting comment:", error);
-      toast({
-        title: "Error",
-        description: "Failed to post your comment. Please try again.",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleSubscribe = async () => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to subscribe to posts.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!id) return;
-    
-    setLoading(true);
-
-    try {
-      if (isSubscribed) {
-        // Unsubscribe
-        await supabase
-          .from('post_subscriptions')
-          .delete()
-          .eq('post_id', id)
-          .eq('user_id', user.id);
-
-        setIsSubscribed(false);
-        toast({
-          title: "Unsubscribed",
-          description: `You'll no longer receive notifications for this post.`,
-        });
-      } else {
-        // Subscribe
-        await supabase
-          .from('post_subscriptions')
-          .insert({
-            post_id: id,
-            user_id: user.id
-          });
-
-        setIsSubscribed(true);
-        toast({
-          title: "Subscribed",
-          description: `You'll receive notifications for updates to this post.`,
-        });
-      }
-    } catch (error) {
-      console.error("Error toggling subscription:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update subscription. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVote = async (direction: 'up' | 'down') => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to vote on posts.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!id) return;
-    
-    setLoading(true);
-    
-    try {
-      const voteType = direction === 'up' ? 1 : -1;
-      
-      // If user already voted the same way, treat as removing vote
-      if (userVote === voteType) {
-        // Remove vote
-        await supabase
-          .from('user_post_votes')
-          .delete()
-          .eq('post_id', id)
-          .eq('user_id', user.id);
-        
-        setVotes(prev => prev - voteType); // Adjust the vote count
-        setUserVote(null);
-        
-        toast({
-          title: "Vote removed",
-          description: `Your vote has been removed.`,
-        });
-      } else {
-        // Add or change vote
-        await votePost(id, voteType);
-        
-        // If changing vote, need to adjust by 2 (remove old vote and add new one)
-        if (userVote !== null) {
-          setVotes(prev => prev - userVote + voteType);
-        } else {
-          setVotes(prev => prev + voteType);
-        }
-        
-        setUserVote(voteType);
-        
-        toast({
-          title: direction === 'up' ? "Upvoted" : "Downvoted",
-          description: `You ${direction === 'up' ? 'upvoted' : 'downvoted'} this post.`,
-        });
-      }
-    } catch (error) {
-      console.error("Error voting:", error);
-      toast({
-        title: "Error",
-        description: "Failed to register your vote. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to comment.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!comment.trim()) {
-      toast({
-        title: "Comment cannot be empty",
-        description: "Please write something before posting your comment.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (id) {
-      addCommentMutation.mutate({
-        postId: id,
-        text: comment.trim()
-      });
-    }
-  };
 
   const handleDeletePost = async () => {
-    if (!user || !id) return;
+    if (!user || !id || !post) return;
+    
+    if (user.id !== post.author.id) {
+      toast({
+        title: "Permission denied",
+        description: "You can only delete your own posts.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       if (window.confirm("Are you sure you want to delete this post? This cannot be undone.")) {
@@ -383,33 +128,11 @@ const PostDetail: React.FC = () => {
   };
 
   if (isPostLoading) {
-    return (
-      <div className="min-h-screen flex flex-col w-full bg-background">
-        <Header />
-        <div className="flex-grow flex justify-center items-center">
-          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (postError || !post) {
-    return (
-      <div className="min-h-screen flex flex-col w-full bg-background">
-        <Header />
-        <div className="flex-grow flex justify-center items-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
-            <p className="text-muted-foreground mb-4">
-              This post may have been removed or is not available.
-            </p>
-            <Link to="/" className="text-primary hover:underline">
-              Return to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+    return <ErrorState />;
   }
 
   return (
@@ -433,127 +156,26 @@ const PostDetail: React.FC = () => {
               Back to feed
             </Link>
             
-            <div className="bg-card rounded-lg shadow p-4 mb-4">
-              <div className="flex items-center mb-3">
-                <Link to={`/users/${post.author.id}`} className="mr-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={post.author.avatar} className="object-cover" />
-                    <AvatarFallback>
-                      <User className="h-6 w-6 text-muted-foreground" />
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-                <div>
-                  <UserProfileLink user={post.author} showAvatar={false} className="font-semibold hover:underline" />
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
-                    {post.location && (
-                      <>
-                        <span className="mx-1">•</span>
-                        <MapPin size={12} className="mr-1" />
-                        <span>
-                          {post.distance !== undefined ? 
-                            `${post.distance.toFixed(1)} miles away` : 
-                            (typeof post.location === 'string' ? 
-                              post.location : 
-                              `${post.location.lat.toFixed(4)}, ${post.location.lng.toFixed(4)}`)
-                          }
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <p className="mb-4">{translatedText || post.text}</p>
-              {detectedLanguage && translatedText && (
-                <p className="text-xs text-muted-foreground mb-4">
-                  Translated from {detectedLanguage}
-                </p>
-              )}
-              
-              {post.images && post.images.length > 0 && (
-                <div className="grid grid-cols-1 gap-2 mb-4">
-                  {post.images.map((image, index) => (
-                    <img 
-                      key={index} 
-                      src={image} 
-                      alt={`Post by ${post.author.pseudonym}`}
-                      className="w-full rounded-md aspect-square object-cover"
-                    />
-                  ))}
-                </div>
-              )}
-              
-              <PostInteractions 
-                postId={post.id}
-                authorId={post.author.id}
-                votes={votes}
-                commentCount={post.commentCount}
-                userVote={userVote}
-                handleVote={handleVote}
-                loading={loading}
-                translatedText={translatedText}
-                isTranslating={isTranslating}
-                handleTranslate={handleTranslate}
-                showTranslateButton={true}
-                translationAvailable={translationAvailable}
-                onDelete={user?.id === post.author.id ? handleDeletePost : undefined}
-              />
-            </div>
+            <PostContent 
+              post={post}
+              votes={votes}
+              userVote={userVote}
+              loading={loading}
+              translatedText={translatedText}
+              isTranslating={isTranslating}
+              detectedLanguage={detectedLanguage}
+              handleVote={handleVote}
+              handleTranslate={handleTranslate}
+              translationAvailable={translationAvailable}
+              handleDeletePost={handleDeletePost}
+            />
             
-            <div className="bg-card rounded-lg shadow p-4">
-              <h2 className="font-semibold mb-4">Comments ({commentsData.length})</h2>
-              <form className="flex mb-4" onSubmit={handleSubmitComment}>
-                <Avatar className="h-8 w-8 mr-3">
-                  <AvatarImage src={profile?.avatar} />
-                  <AvatarFallback>
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-grow">
-                  <textarea 
-                    className="w-full p-2 border rounded-md resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Add a comment..."
-                    rows={2}
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                  />
-                  <div className="flex justify-end mt-2">
-                    <Button 
-                      type="submit" 
-                      size="sm"
-                      disabled={addCommentMutation.isPending}
-                    >
-                      {addCommentMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          Posting...
-                        </>
-                      ) : 'Post'}
-                    </Button>
-                  </div>
-                </div>
-              </form>
-              
-              {areCommentsLoading ? (
-                <div className="flex justify-center my-8">
-                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-                </div>
-              ) : commentsError ? (
-                <div className="text-center text-destructive my-4">
-                  Error loading comments. Please try again.
-                </div>
-              ) : organizedComments.length === 0 ? (
-                <div className="text-center text-muted-foreground py-4">
-                  No comments yet. Be the first to comment!
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {organizedComments.map(comment => renderCommentWithReplies(comment))}
-                </div>
-              )}
-            </div>
+            <CommentSection 
+              postId={id as string}
+              comments={commentsData}
+              areCommentsLoading={areCommentsLoading}
+              commentsError={commentsError}
+            />
           </div>
         </div>
         
