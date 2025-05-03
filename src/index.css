@@ -154,6 +154,11 @@
   @apply object-cover;
 }
 
+/* Also handle any direct img elements inside Avatar components */
+.radix-avatar img {
+  object-fit: cover;
+}
+
 /* Fix content padding for bottom navigation on mobile */
 @media (max-width: 768px) {
   .pb-safe {

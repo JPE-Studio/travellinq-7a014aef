@@ -28,7 +28,7 @@ const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ userData }) => {
         </div>
         <div className="absolute bottom-0 translate-y-1/2 left-6">
           <Avatar className="h-24 w-24 ring-4 ring-background">
-            <AvatarImage src={userData.avatar} alt={userData.pseudonym} />
+            <AvatarImage src={userData.avatar} alt={userData.pseudonym} className="object-cover" />
             <AvatarFallback className="text-lg">
               <User className="h-12 w-12" />
             </AvatarFallback>
