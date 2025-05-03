@@ -58,19 +58,24 @@ export const usePushNotifications = () => {
       setLoading(true);
       setError(null);
 
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { error: registrationError } = await supabase.functions.invoke('register-push-token', {
         body: { token, platform }
       });
 
       if (registrationError) {
-        throw registrationError;
+        console.error('Registration error:', registrationError);
+        throw new Error(registrationError.message || 'Failed to register token');
       }
 
       setPushEnabled(true);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error registering push token:', err);
-      setError('Failed to register for push notifications');
+      setError(err.message || 'Failed to register for push notifications');
       return false;
     } finally {
       setLoading(false);
@@ -96,29 +101,63 @@ export const usePushNotifications = () => {
           return false;
         }
 
-        // Here we would typically register for push notifications via Firebase or other service
+        // Here we would typically register with Firebase Cloud Messaging or other service
         // For this example, we'll simulate getting a token
         const mockToken = `device-${Math.random().toString(36).substring(2, 15)}`;
         return await registerToken(mockToken);
       } else {
-        // Disable push notifications logic would go here
-        // For now we'll just update the UI state
+        // Disable push notifications
+        const { error: disableError } = await supabase.functions.invoke('register-push-token', {
+          body: { 
+            token: 'disable', 
+            platform,
+            enabled: false 
+          }
+        });
+
+        if (disableError) {
+          throw new Error(disableError.message || 'Failed to disable notifications');
+        }
+
         setPushEnabled(false);
         return true;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error toggling push notifications:', err);
-      setError('Failed to toggle push notifications');
+      setError(err.message || 'Failed to toggle push notifications');
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Check current permission status on mount
+  // Check current permission status and enabled state on mount
   useEffect(() => {
-    checkPermission();
-  }, []);
+    const checkCurrentState = async () => {
+      await checkPermission();
+      if (user && permissionStatus === 'granted') {
+        try {
+          // Check if user has registered for push notifications
+          const { data, error } = await supabase
+            .from('push_notification_tokens')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('enabled', true)
+            .maybeSingle();
+          
+          if (error) {
+            console.error('Error checking push notification status:', error);
+          } else {
+            setPushEnabled(!!data);
+          }
+        } catch (err) {
+          console.error('Error checking push notification token:', err);
+        }
+      }
+    };
+    
+    checkCurrentState();
+  }, [user, permissionStatus]);
 
   return {
     permissionStatus,

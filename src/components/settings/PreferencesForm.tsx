@@ -4,6 +4,9 @@ import { Switch } from '@/components/ui/switch';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 interface PreferencesFormProps {
   autoTranslate: boolean;
@@ -27,6 +30,28 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
   } = usePushNotifications();
   
   const isNotificationsUnsupported = permissionStatus === 'unsupported';
+
+  const handleTogglePushNotifications = async () => {
+    const result = await togglePushNotifications();
+    if (result) {
+      toast({
+        title: pushEnabled ? "Notifications disabled" : "Notifications enabled",
+        description: pushEnabled 
+          ? "You will no longer receive push notifications" 
+          : "You will now receive push notifications",
+      });
+    }
+  };
+
+  const handleRetry = async () => {
+    const result = await togglePushNotifications();
+    if (result) {
+      toast({
+        title: "Registration successful",
+        description: "Push notifications have been enabled",
+      });
+    }
+  };
 
   return (
     <div className="bg-card rounded-lg shadow p-6 mb-6">
@@ -57,7 +82,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
           <Switch 
             id="notifications" 
             checked={pushEnabled}
-            onCheckedChange={() => togglePushNotifications()}
+            onCheckedChange={() => handleTogglePushNotifications()}
             disabled={isNotificationsUnsupported || loading || permissionStatus === 'denied'}
           />
         </div>
@@ -65,7 +90,20 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
         {error && (
           <Alert variant="destructive" className="mt-2">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="flex items-center justify-between w-full">
+              <span>{error}</span>
+              {!isNotificationsUnsupported && permissionStatus !== 'denied' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRetry}
+                  disabled={loading}
+                  className="ml-2"
+                >
+                  {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Retry"}
+                </Button>
+              )}
+            </AlertDescription>
           </Alert>
         )}
         
