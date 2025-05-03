@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import Comment from '@/components/Comment';
 import UserProfileLink from '@/components/UserProfileLink';
 import { usePostTranslation } from '@/hooks/usePostTranslation';
+import PostInteractions from '@/components/post/PostInteractions';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,7 @@ const PostDetail: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [votes, setVotes] = useState(0);
   const [userVote, setUserVote] = useState<1 | -1 | null>(null);
+  const navigate = useNavigate();
   
   // Query for post data
   const { 
@@ -452,7 +454,9 @@ const PostDetail: React.FC = () => {
                         <span>
                           {post.distance !== undefined ? 
                             `${post.distance.toFixed(1)} miles away` : 
-                            post.location
+                            (typeof post.location === 'string' ? 
+                              post.location : 
+                              `${post.location.lat.toFixed(4)}, ${post.location.lng.toFixed(4)}`)
                           }
                         </span>
                       </>
