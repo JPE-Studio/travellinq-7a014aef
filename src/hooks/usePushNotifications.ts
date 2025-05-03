@@ -135,23 +135,21 @@ export const usePushNotifications = () => {
   useEffect(() => {
     const checkCurrentState = async () => {
       await checkPermission();
+      
+      // Check if user has registered for push notifications by calling the edge function
       if (user && permissionStatus === 'granted') {
         try {
-          // Check if user has registered for push notifications
-          const { data, error } = await supabase
-            .from('push_notification_tokens')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('enabled', true)
-            .maybeSingle();
+          const { data, error } = await supabase.functions.invoke('register-push-token', {
+            body: { action: 'check-status' }
+          });
           
           if (error) {
             console.error('Error checking push notification status:', error);
           } else {
-            setPushEnabled(!!data);
+            setPushEnabled(data?.enabled || false);
           }
         } catch (err) {
-          console.error('Error checking push notification token:', err);
+          console.error('Error checking push notification status:', err);
         }
       }
     };
