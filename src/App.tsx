@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -43,15 +43,19 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
+        <Toaster position="top-center" />
+        <Sonner position="bottom-center" />
         <RLSSetup />
         <OnboardingCheck /> {/* Add the onboarding check component */}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/:userId" element={<Profile />} />
+            {/* Redirect from /profile/:userId to /users/:userId */}
+            <Route path="/profile/:userId" element={<Navigate to={(location) => {
+              const path = location.pathname.replace('/profile/', '/users/');
+              return path;
+            }} />} />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/map" element={<MapView />} />
             <Route path="/chats" element={<Chats />} />

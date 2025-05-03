@@ -16,16 +16,22 @@ interface MessageItemProps {
     avatar?: string;
     pseudonym: string;
   };
+  currentUserAvatar?: string;
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ message, isSentByMe, otherUser }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ 
+  message, 
+  isSentByMe, 
+  otherUser,
+  currentUserAvatar
+}) => {
   return (
     <div 
       className={`flex mb-4 ${isSentByMe ? 'justify-end' : 'justify-start'}`}
     >
       {!isSentByMe && (
         <Avatar className="h-8 w-8 mr-2 self-end">
-          <AvatarImage src={otherUser.avatar} alt={otherUser.pseudonym} className="object-cover" />
+          <AvatarImage src={otherUser.avatar} alt={otherUser.pseudonym} />
           <AvatarFallback>
             <User className="h-4 w-4 text-muted-foreground" />
           </AvatarFallback>
@@ -47,6 +53,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isSentByMe, otherUse
       
       {isSentByMe && (
         <Avatar className="h-8 w-8 ml-2 self-end">
+          <AvatarImage src={currentUserAvatar} />
           <AvatarFallback>
             <User className="h-4 w-4 text-muted-foreground" />
           </AvatarFallback>

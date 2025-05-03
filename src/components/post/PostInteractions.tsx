@@ -40,7 +40,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
   const isAuthor = user?.id === authorId;
   
   return (
-    <div className="flex items-center justify-between text-sm mt-4">
+    <div className="flex items-center justify-between text-sm mt-3 pb-1">
       <div className="flex items-center space-x-4">
         <button 
           className={`flex items-center transition-colors ${userVote === 1 ? 'text-blue-500' : 'hover:text-foreground text-muted-foreground'}`}
@@ -57,6 +57,28 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
         >
           <ThumbsDown className="h-4 w-4" />
         </button>
+      </div>
+      
+      <div className="flex items-center">
+        {showTranslateButton && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className={`text-muted-foreground p-1 h-auto ${!translationAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleTranslate}
+            disabled={isTranslating || loading || !translationAvailable}
+            title={!translationAvailable ? "Translation service is currently unavailable" : "Translate"}
+          >
+            {isTranslating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Languages className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+      </div>
+      
+      <div className="flex items-center gap-2">
         <Link 
           to={`/post/${postId}`}
           className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
@@ -64,42 +86,17 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
           <MessageSquare className="h-4 w-4 mr-1" />
           <span>{commentCount}</span>
         </Link>
-      </div>
-      
-      <div className="flex items-center gap-2">
+        
         {isAuthor && onDelete && (
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive p-1 h-auto"
             onClick={onDelete}
             disabled={loading}
           >
             <Trash2 className="h-4 w-4" />
             <span className="sr-only">Delete</span>
-          </Button>
-        )}
-        
-        {showTranslateButton && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`text-muted-foreground ${!translationAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={handleTranslate}
-            disabled={isTranslating || loading || !translationAvailable}
-            title={!translationAvailable ? "Translation service is currently unavailable" : ""}
-          >
-            {isTranslating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                Translating...
-              </>
-            ) : (
-              <>
-                <Languages className="h-4 w-4 mr-1" />
-                {translatedText ? 'Show Original' : 'Translate'}
-              </>
-            )}
           </Button>
         )}
       </div>

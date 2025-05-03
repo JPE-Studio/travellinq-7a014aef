@@ -14,13 +14,19 @@ interface Message {
 interface MessageListProps {
   messages: Message[];
   currentUserId: string | null;
+  currentUserAvatar?: string;
   otherUser: {
     avatar?: string;
     pseudonym: string;
   };
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, currentUserId, otherUser }) => {
+const MessageList: React.FC<MessageListProps> = ({ 
+  messages, 
+  currentUserId, 
+  currentUserAvatar,
+  otherUser 
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom whenever messages change
@@ -57,6 +63,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, currentUserId, othe
           message={msg}
           isSentByMe={msg.senderId === currentUserId}
           otherUser={otherUser}
+          currentUserAvatar={currentUserAvatar}
         />
       ))}
       <div ref={messagesEndRef} />

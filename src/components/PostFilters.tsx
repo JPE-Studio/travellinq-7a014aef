@@ -1,6 +1,6 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -20,10 +20,12 @@ const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
   // but we won't show UI controls for them anymore
   const [selectedCategories] = useState<string[]>(['general', 'campsite', 'service', 'question']);
 
-  const handleRadiusChange = (value: number[]) => {
-    setRadius(value[0]);
+  const radiusOptions = [2, 5, 50, 100]; // km radius options
+
+  const handleRadiusButtonClick = (value: number) => {
+    setRadius(value);
     if (!autoRadius) {
-      onFilterChange({ radius: value[0], autoRadius, categories: selectedCategories });
+      onFilterChange({ radius: value, autoRadius, categories: selectedCategories });
     }
   };
 
@@ -34,10 +36,6 @@ const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
       autoRadius: checked,
       categories: selectedCategories
     });
-  };
-
-  const applyFilters = () => {
-    onFilterChange({ radius, autoRadius, categories: selectedCategories });
   };
 
   return (
@@ -59,16 +57,19 @@ const PostFilters: React.FC<PostFiltersProps> = ({ onFilterChange }) => {
           
           {!autoRadius && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Distance: {radius} miles</span>
+              <div className="flex items-center gap-2 mt-2">
+                {radiusOptions.map((option) => (
+                  <Button
+                    key={option}
+                    variant={radius === option ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleRadiusButtonClick(option)}
+                    className="flex-1"
+                  >
+                    {option} km
+                  </Button>
+                ))}
               </div>
-              <Slider
-                value={[radius]}
-                min={5}
-                max={500}
-                step={5}
-                onValueChange={handleRadiusChange}
-              />
             </div>
           )}
           {autoRadius && (

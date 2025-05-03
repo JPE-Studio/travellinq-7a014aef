@@ -12,6 +12,7 @@ interface UserData {
   id: string;
   pseudonym: string;
   avatar?: string;
+  bannerImage?: string;
   location: string | null;
   bio: string | null;
   website?: string | null;
