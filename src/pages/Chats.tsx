@@ -10,6 +10,8 @@ import ErrorState from '@/components/chat/ErrorState';
 import CreateChatButton from '@/components/chat/CreateChatButton';
 import DeleteDialog from '@/components/chat/DeleteDialog';
 import { useChats } from '@/hooks/useChats';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { User } from 'lucide-react';
 
 const Chats: React.FC = () => {
   const navigate = useNavigate();
@@ -70,16 +72,16 @@ const Chats: React.FC = () => {
                       className="flex-shrink-0 cursor-pointer"
                       onClick={(e) => handleUserProfileClick(conversation.otherUser?.id, e)}
                     >
-                      {/* Avatar component */}
-                      <div className="h-12 w-12 rounded-full overflow-hidden">
-                        {conversation.otherUser.avatar && (
-                          <img 
-                            src={conversation.otherUser.avatar} 
-                            alt={conversation.otherUser.pseudonym}
-                            className="h-full w-full object-cover"
-                          />
-                        )}
-                      </div>
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage 
+                          src={conversation.otherUser.avatar} 
+                          alt={conversation.otherUser.pseudonym}
+                          className="object-cover"
+                        />
+                        <AvatarFallback>
+                          <User className="h-6 w-6 text-muted-foreground" />
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
                     
                     <div className="ml-4 flex-grow overflow-hidden">
