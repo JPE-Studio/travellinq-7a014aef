@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -6,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 interface MapProps {
   posts: Post[];
   currentLocation: {
@@ -17,8 +19,10 @@ interface MapProps {
   fullscreen?: boolean;
   onToggleFullscreen?: () => void;
 }
+
 const MAPBOX_TOKEN_KEY = 'mapbox_token';
 const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoianBlLXN0dWRpbyIsImEiOiJjbWE2a2hwcjgwcWRlMmlzNjlsdGhqMWN3In0.DeZp50DLkrA8eI1AQs778w';
+
 const Map: React.FC<MapProps> = ({
   posts,
   currentLocation,
@@ -178,16 +182,31 @@ const Map: React.FC<MapProps> = ({
 
   // Calculate z-index based on fullscreen state
   const zIndex = fullscreen ? 'z-50' : 'z-10';
-  return <div className={`relative ${mapHeight} rounded-md overflow-hidden transition-all duration-300 ease-in-out w-full ${fullscreen ? `fixed inset-0 ${zIndex} bg-background` : ''}`}>
-      {!mapboxToken ? <div className="text-muted-foreground text-center p-4 bg-muted h-full flex items-center justify-center">
+
+  return (
+    <div className={`relative ${mapHeight} rounded-md overflow-hidden transition-all duration-300 ease-in-out w-full ${fullscreen ? `fixed inset-0 ${zIndex} bg-background` : ''}`}>
+      {!mapboxToken ? (
+        <div className="text-muted-foreground text-center p-4 bg-muted h-full flex items-center justify-center">
           <p>Loading map...</p>
-        </div> : <div ref={mapContainer} className="h-full w-full" />}
+        </div>
+      ) : (
+        <div ref={mapContainer} className="h-full w-full" />
+      )}
       
       <div className="absolute bottom-2 right-2 flex gap-2 z-10">
-        {onToggleFullscreen}
-        
-        
+        {onToggleFullscreen && (
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="bg-card/80 backdrop-blur-sm"
+            onClick={onToggleFullscreen}
+          >
+            {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </Button>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Map;

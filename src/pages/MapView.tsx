@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import Map from '@/components/Map';
 import { Link } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import PageLayout from '@/components/PageLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 const MapView: React.FC = () => {
   const {
     toast
@@ -30,6 +32,7 @@ const MapView: React.FC = () => {
       getUserLocation();
     }
   }, []);
+
   const getUserLocation = () => {
     if (navigator.geolocation) {
       setIsLocating(true);
@@ -85,9 +88,11 @@ const MapView: React.FC = () => {
       console.error(error);
     }
   }, [error, toast]);
+
   const handleToggleExpand = () => {
     setExpanded(!expanded);
   };
+
   const handleToggleFullscreen = () => {
     setFullscreen(!fullscreen);
     // When entering or exiting fullscreen, we want to update the map
@@ -98,28 +103,40 @@ const MapView: React.FC = () => {
 
   // If in fullscreen mode, only show the map
   if (fullscreen) {
-    return <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
         <div className="flex-grow relative">
-          <Map posts={posts} currentLocation={currentLocation} expanded={expanded} onToggleExpand={handleToggleExpand} fullscreen={fullscreen} onToggleFullscreen={handleToggleFullscreen} />
+          <Map 
+            posts={posts} 
+            currentLocation={currentLocation} 
+            expanded={expanded} 
+            onToggleExpand={handleToggleExpand} 
+            fullscreen={fullscreen} 
+            onToggleFullscreen={handleToggleFullscreen} 
+          />
         </div>
         {/* Always show bottom navigation in fullscreen mode */}
         <div className="md:hidden">
           <div className="h-16"></div> {/* Spacer for the bottom navigation */}
         </div>
-      </div>;
+      </div>
+    );
   }
-  return <PageLayout>
+
+  return (
+    <PageLayout>
       <div className="p-4 flex justify-between items-center">
         <div>
-          
           <h1 className="text-xl font-bold">Explore Locations</h1>
         </div>
-        
       </div>
       
-      {isLoading ? <div className="flex-grow flex items-center justify-center">
+      {isLoading ? (
+        <div className="flex-grow flex items-center justify-center">
           <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
-        </div> : error ? <div className="flex-grow flex flex-col items-center justify-center p-4">
+        </div>
+      ) : error ? (
+        <div className="flex-grow flex flex-col items-center justify-center p-4">
           <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
           <div className="text-destructive text-center mb-4">
             <p className="font-semibold mb-1">Error loading map data</p>
@@ -128,15 +145,29 @@ const MapView: React.FC = () => {
           <Button onClick={() => refetch()} variant="outline">
             Retry
           </Button>
-        </div> : (/* Full-sized map with proper mobile handling */
-    <div className={`flex-grow relative mx-4 mb-4 ${isMobile ? 'h-[calc(100vh-180px)]' : ''}`}>
-          <Map posts={posts} currentLocation={currentLocation} expanded={expanded} onToggleExpand={handleToggleExpand} fullscreen={fullscreen} onToggleFullscreen={handleToggleFullscreen} />
-        </div>)}
+        </div>
+      ) : (
+        /* Full-sized map with proper mobile handling */
+        <div className={`flex-grow relative mx-4 mb-4 ${isMobile ? 'h-[calc(100vh-180px)]' : ''}`}>
+          <Map 
+            posts={posts} 
+            currentLocation={currentLocation} 
+            expanded={expanded} 
+            onToggleExpand={handleToggleExpand} 
+            fullscreen={fullscreen} 
+            onToggleFullscreen={handleToggleFullscreen} 
+          />
+        </div>
+      )}
 
       {/* Post count indicator */}
-      {!isLoading && !error && <div className="text-center text-sm text-muted-foreground mb-4">
+      {!isLoading && !error && (
+        <div className="text-center text-sm text-muted-foreground mb-4">
           Showing {posts.length} {posts.length === 1 ? 'post' : 'posts'} on the map
-        </div>}
-    </PageLayout>;
+        </div>
+      )}
+    </PageLayout>
+  );
 };
+
 export default MapView;
