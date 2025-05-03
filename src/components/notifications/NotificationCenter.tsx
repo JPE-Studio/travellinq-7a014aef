@@ -11,7 +11,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationsList from './NotificationsList';
 import { Notification } from './NotificationItem';
-import { toast } from '@/components/ui/use-toast';
 import { 
   fetchNotifications,
   markNotificationAsRead,
@@ -36,11 +35,6 @@ const NotificationCenter: React.FC = () => {
       setUnreadCount(notificationsData.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load notifications. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
@@ -77,17 +71,8 @@ const NotificationCenter: React.FC = () => {
       await markAllNotificationsAsRead();
       setNotifications(notifications.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-      toast({
-        title: "Success",
-        description: "All notifications marked as read"
-      });
     } catch (error) {
       console.error('Error marking all as read:', error);
-      toast({
-        title: "Error",
-        description: "Failed to mark notifications as read. Please try again.",
-        variant: "destructive"
-      });
     }
   };
 
