@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,12 +7,13 @@ import { MapPin, User, ChevronLeft, ThumbsUp, ThumbsDown, Bell, BellOff, Loader2
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { fetchPostById, votePost } from '@/services/postService';
+import { fetchPostById, votePost, deletePost } from '@/services/postService';
 import { fetchComments, addComment } from '@/services/commentService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Comment from '@/components/Comment';
 import UserProfileLink from '@/components/UserProfileLink';
+import { usePostTranslation } from '@/hooks/usePostTranslation';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +46,15 @@ const PostDetail: React.FC = () => {
     queryFn: () => fetchComments(id as string),
     enabled: !!id
   });
+  
+  // Use the post translation hook
+  const { 
+    isTranslating, 
+    translatedText, 
+    detectedLanguage, 
+    handleTranslate,
+    translationAvailable 
+  } = usePostTranslation(post?.text || '', false);
   
   // Update local state when post data comes in
   useEffect(() => {
@@ -349,6 +358,28 @@ const PostDetail: React.FC = () => {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (!user || !id) return;
+    
+    try {
+      if (window.confirm("Are you sure you want to delete this post? This cannot be undone.")) {
+        await deletePost(id);
+        toast({
+          title: "Post deleted",
+          description: "Your post has been successfully deleted",
+        });
+        navigate('/');
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the post. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (isPostLoading) {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
@@ -402,7 +433,7 @@ const PostDetail: React.FC = () => {
             
             <div className="bg-card rounded-lg shadow p-4 mb-4">
               <div className="flex items-center mb-3">
-                <Link to={`/profile/${post.author.id}`} className="mr-3">
+                <Link to={`/users/${post.author.id}`} className="mr-3">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={post.author.avatar} className="object-cover" />
                     <AvatarFallback>
@@ -421,7 +452,7 @@ const PostDetail: React.FC = () => {
                         <span>
                           {post.distance !== undefined ? 
                             `${post.distance.toFixed(1)} miles away` : 
-                            "Distance unknown"
+                            post.location
                           }
                         </span>
                       </>
@@ -430,7 +461,12 @@ const PostDetail: React.FC = () => {
                 </div>
               </div>
               
-              <p className="mb-4">{post.text}</p>
+              <p className="mb-4">{translatedText || post.text}</p>
+              {detectedLanguage && translatedText && (
+                <p className="text-xs text-muted-foreground mb-4">
+                  Translated from {detectedLanguage}
+                </p>
+              )}
               
               {post.images && post.images.length > 0 && (
                 <div className="grid grid-cols-1 gap-2 mb-4">
@@ -439,49 +475,27 @@ const PostDetail: React.FC = () => {
                       key={index} 
                       src={image} 
                       alt={`Post by ${post.author.pseudonym}`}
-                      className="w-full rounded-md"
+                      className="w-full rounded-md aspect-square object-cover"
                     />
                   ))}
                 </div>
               )}
               
-              <div className="flex items-center justify-between text-sm mt-4">
-                <div className="flex items-center space-x-4">
-                  <button 
-                    className={`flex items-center transition-colors ${userVote === 1 ? 'text-blue-500' : 'hover:text-foreground text-muted-foreground'}`}
-                    onClick={() => handleVote('up')}
-                    disabled={loading}
-                  >
-                    <ThumbsUp className="h-4 w-4 mr-1" />
-                    <span>{votes}</span>
-                  </button>
-                  <button 
-                    className={`flex items-center transition-colors ${userVote === -1 ? 'text-red-500' : 'hover:text-foreground text-muted-foreground'}`}
-                    onClick={() => handleVote('down')}
-                    disabled={loading}
-                  >
-                    <ThumbsDown className="h-4 w-4" />
-                  </button>
-                </div>
-                
-                <button 
-                  className={`flex items-center ${isSubscribed ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                  onClick={handleSubscribe}
-                  disabled={loading}
-                >
-                  {isSubscribed ? (
-                    <>
-                      <Bell className="h-4 w-4 mr-1 fill-primary" />
-                      <span>Subscribed</span>
-                    </>
-                  ) : (
-                    <>
-                      <BellOff className="h-4 w-4 mr-1" />
-                      <span>Subscribe</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              <PostInteractions 
+                postId={post.id}
+                authorId={post.author.id}
+                votes={votes}
+                commentCount={post.commentCount}
+                userVote={userVote}
+                handleVote={handleVote}
+                loading={loading}
+                translatedText={translatedText}
+                isTranslating={isTranslating}
+                handleTranslate={handleTranslate}
+                showTranslateButton={true}
+                translationAvailable={translationAvailable}
+                onDelete={user?.id === post.author.id ? handleDeletePost : undefined}
+              />
             </div>
             
             <div className="bg-card rounded-lg shadow p-4">

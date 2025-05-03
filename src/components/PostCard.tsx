@@ -114,7 +114,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             handleTranslate={handleTranslate}
             showTranslateButton={true}
             translationAvailable={translationAvailable}
-            onDelete={handleDeleteClick}
+            onDelete={profile?.id === post.author.id ? handleDeleteClick : undefined}
           />
         </div>
       </div>
