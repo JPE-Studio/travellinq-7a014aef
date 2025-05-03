@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchUserProfile } from '@/services/userService';
@@ -27,7 +26,7 @@ interface UseProfileDataReturn {
   setApproximateDistance: (distance: number | null) => void;
 }
 
-export const useProfileData = (userId: string | undefined, currentUser: User | null): UseProfileDataReturn => {
+export const useProfileData = (userId: string, currentUser: User | null): UseProfileDataReturn => {
   const [userData, setUserData] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buddyConnection, setBuddyConnection] = useState<BuddyConnection | null>(null);
@@ -35,12 +34,13 @@ export const useProfileData = (userId: string | undefined, currentUser: User | n
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!userId) {
-      console.error("No user ID provided");
+    // Check if userId is valid (not empty and not literal ":userId")
+    if (!userId || userId === ":userId") {
+      console.error("No valid user ID provided");
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No user ID provided.",
+        description: "Invalid user ID provided.",
       });
       setLoading(false);
       return;

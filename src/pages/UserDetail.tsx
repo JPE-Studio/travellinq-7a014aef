@@ -22,7 +22,7 @@ const UserDetail: React.FC = () => {
     buddyConnection, 
     approximateDistance,
     setBuddyConnection 
-  } = useProfileData(userId, currentUser);
+  } = useProfileData(userId || "", currentUser);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -66,7 +66,7 @@ const UserDetail: React.FC = () => {
       <div className="max-w-3xl mx-auto p-4">
         <UserDetailCard 
           userData={userData}
-          userId={userId!}
+          userId={userId || ""}
           buddyConnection={buddyConnection}
           approximateDistance={approximateDistance}
           setBuddyConnection={setBuddyConnection}

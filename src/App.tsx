@@ -46,7 +46,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <RLSSetup />
-        <OnboardingCheck /> {/* Add the onboarding check component */}
+        <OnboardingCheck />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -54,7 +54,7 @@ const App = () => (
             {/* Redirect from /profile/:userId to /users/:userId */}
             <Route 
               path="/profile/:userId" 
-              element={<Navigate to="/users/:userId" replace />} 
+              element={<Navigate to={(location) => `/users${location.pathname.substring(8)}`} replace />} 
             />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/map" element={<MapView />} />

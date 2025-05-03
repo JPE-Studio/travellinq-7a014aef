@@ -18,12 +18,12 @@ const UserProfileLink: React.FC<UserProfileLinkProps> = ({
 }) => {
   return (
     <Link 
-      to={`/users/${user.id}`} 
+      to={`/users/${user.id}`}
       className={`inline-flex items-center gap-2 hover:underline ${className}`}
     >
       {showAvatar && (
         <Avatar className="h-6 w-6">
-          <AvatarImage src={user.avatar} alt={user.pseudonym} />
+          <AvatarImage src={user.avatar} alt={user.pseudonym} className="object-cover" />
           <AvatarFallback>
             <User className="h-3 w-3" />
           </AvatarFallback>
