@@ -8,6 +8,7 @@ import { useProfileData } from '@/hooks/useProfileData';
 import UserDetailCard from '@/components/user-detail/UserDetailCard';
 import UserDetailError from '@/components/user-detail/UserDetailError';
 import UserDetailLoading from '@/components/user-detail/UserDetailLoading';
+import PageLayout from '@/components/PageLayout';
 
 const UserDetail: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -38,31 +39,28 @@ const UserDetail: React.FC = () => {
   // Show loading state while fetching user data
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <Header />
+      <PageLayout showHeader={true}>
         <div className="max-w-3xl mx-auto p-4">
           <UserDetailLoading />
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // Show error state if user data not found
   if (!userData) {
     return (
-      <div className="min-h-screen bg-background pb-16 md:pb-0">
-        <Header />
+      <PageLayout showHeader={true}>
         <div className="max-w-3xl mx-auto p-4">
           <UserDetailError />
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // Render user profile
   return (
-    <div className="min-h-screen bg-background pb-16 md:pb-0">
-      <Header />
+    <PageLayout showHeader={true}>
       <div className="max-w-3xl mx-auto p-4">
         <UserDetailCard 
           userData={userData}
@@ -72,7 +70,7 @@ const UserDetail: React.FC = () => {
           setBuddyConnection={setBuddyConnection}
         />
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

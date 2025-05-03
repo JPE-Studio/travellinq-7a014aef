@@ -1,8 +1,10 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User } from 'lucide-react';
+import { User, ArrowLeft } from 'lucide-react';
 import { CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface UserProfileHeaderProps {
   userData: {
@@ -14,9 +16,20 @@ interface UserProfileHeaderProps {
 }
 
 const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ userData }) => {
+  const navigate = useNavigate();
+
   return (
     <>
       <div className="relative">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="absolute top-2 left-2 z-10 bg-background/50 backdrop-blur-sm"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+
         <div className={`${userData.bannerImage ? '' : 'bg-gradient-to-r from-blue-500 to-purple-500'} h-32`}>
           {userData.bannerImage && (
             <img 
