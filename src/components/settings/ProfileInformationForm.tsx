@@ -56,7 +56,7 @@ const ProfileInformationForm: React.FC<ProfileInformationFormProps> = ({
       
       <div className="flex items-center mb-6">
         <Avatar className="h-16 w-16 mr-4">
-          <AvatarImage src={avatarPreview || profile?.avatar} />
+          <AvatarImage src={avatarPreview || profile?.avatar} className="object-cover" />
           <AvatarFallback>
             <User className="h-8 w-8 text-muted-foreground" />
           </AvatarFallback>

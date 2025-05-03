@@ -37,7 +37,7 @@ const ProfileButton: React.FC = () => {
       <DropdownMenuTrigger asChild>
         <button className="rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary-foreground/30">
           <Avatar>
-            <AvatarImage src={profile?.avatar} alt={profile?.pseudonym || user.email} />
+            <AvatarImage src={profile?.avatar} alt={profile?.pseudonym || user.email} className="object-cover" />
             <AvatarFallback>
               <User className="h-6 w-6" />
             </AvatarFallback>
