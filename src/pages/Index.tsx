@@ -5,7 +5,6 @@ import PostList from '@/components/PostList';
 import PostFilters from '@/components/PostFilters';
 import CreatePostButton from '@/components/CreatePostButton';
 import OnboardingModal from '@/components/OnboardingModal';
-import { toast } from '@/components/ui/use-toast';
 import { fetchPosts } from '@/services/postService';
 import { useAuth } from '@/contexts/AuthContext';
 import PageLayout from '@/components/PageLayout';
@@ -86,7 +85,8 @@ const Index: React.FC = () => {
       setShowOnboarding(false);
     }
     
-    // Friend nearby notification
+    // Remove friend nearby notification
+    /* 
     const timer = setTimeout(() => {
       const friendNearby = localStorage.getItem('friend-notification-shown');
       if (!friendNearby) {
@@ -99,6 +99,7 @@ const Index: React.FC = () => {
     }, 10000);
     
     return () => clearTimeout(timer);
+    */
   }, [user, profile]);
 
   const handleFilterChange = (newFilters: {
@@ -111,10 +112,13 @@ const Index: React.FC = () => {
       autoRadius: newFilters.autoRadius,
       categories: newFilters.categories,
     });
+    // Remove toast notification
+    /*
     toast({
       title: "Filters Applied",
       description: `Showing posts within ${newFilters.autoRadius ? 'automatic' : newFilters.radius + ' miles'} radius.`,
     });
+    */
   };
 
   const handleCompleteOnboarding = () => {

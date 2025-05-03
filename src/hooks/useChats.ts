@@ -1,11 +1,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { fetchUserConversations, deleteConversation } from '@/services/conversations';
 import { ConversationPreview } from '@/types/chat';
 
 export const useChats = () => {
-  const { toast } = useToast();
   const [conversations, setConversations] = useState<ConversationPreview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,17 +20,10 @@ export const useChats = () => {
     } catch (err) {
       console.error('Error loading conversations:', err);
       setError('Unable to load conversations');
-      if (err instanceof Error && err.message !== 'No conversations found') {
-        toast({
-          variant: "destructive",
-          title: "Error loading messages",
-          description: "We couldn't load your conversations. Please try again later.",
-        });
-      }
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const handleDeleteClick = (conversationId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,19 +37,10 @@ export const useChats = () => {
     
     try {
       await deleteConversation(conversationToDelete);
-      toast({
-        title: "Conversation deleted",
-        description: "The conversation has been permanently deleted.",
-      });
       // Remove the deleted conversation from the state
       setConversations(conversations.filter(c => c.id !== conversationToDelete));
     } catch (err) {
       console.error('Error deleting conversation:', err);
-      toast({
-        variant: "destructive",
-        title: "Error deleting conversation",
-        description: err instanceof Error ? err.message : "An error occurred while deleting the conversation.",
-      });
     } finally {
       setDeleteDialogOpen(false);
       setConversationToDelete(null);

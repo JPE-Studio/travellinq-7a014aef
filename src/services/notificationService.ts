@@ -1,7 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Notification } from "@/components/notifications/NotificationItem";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "@/components/ui/use-toast";
 import { fetchUserProfile } from "./userService";
 import { acceptBuddyRequest, rejectBuddyRequest } from "./chatService";
 
@@ -115,16 +115,8 @@ export const handleBuddyRequest = async (
   try {
     if (action === 'accept') {
       await acceptBuddyRequest(requesterId);
-      toast({
-        title: "Connection accepted",
-        description: "You are now connected as buddies.",
-      });
     } else {
       await rejectBuddyRequest(requesterId);
-      toast({
-        title: "Connection rejected",
-        description: "The buddy request has been declined."
-      });
     }
     
     // Mark the notification as read
@@ -132,11 +124,6 @@ export const handleBuddyRequest = async (
     
   } catch (error) {
     console.error(`Error ${action}ing buddy request:`, error);
-    toast({
-      variant: "destructive",
-      title: `Failed to ${action} connection`,
-      description: error instanceof Error ? error.message : "An error occurred",
-    });
     throw error;
   }
 };
@@ -233,25 +220,7 @@ export const subscribeToNotifications = (
           // Call the callback
           callback(appNotification);
           
-          // Show toast notification with specific messages based on type
-          let toastTitle = "New notification";
-          let toastDescription = notification.message;
-          
-          if (notification.type === 'reply') {
-            toastTitle = "New Reply";
-            // Keep the default description which includes who replied
-          } else if (notification.type === 'message') {
-            toastTitle = "New Message";
-            // Keep the default description which includes the message preview
-          } else if (notification.type === 'buddy_request') {
-            toastTitle = "New Connection Request";
-            // Keep the default description
-          }
-          
-          toast({
-            title: toastTitle,
-            description: toastDescription,
-          });
+          // Removed toast notifications for new notifications
         }
       )
       .subscribe();

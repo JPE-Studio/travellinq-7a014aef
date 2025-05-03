@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const usePostSubscription = (postId: string) => {
@@ -39,11 +38,6 @@ export const usePostSubscription = (postId: string) => {
 
   const handleSubscribe = async () => {
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to subscribe to posts.",
-        variant: "destructive"
-      });
       return;
     }
     
@@ -63,10 +57,6 @@ export const usePostSubscription = (postId: string) => {
         }
         
         setIsSubscribed(false);
-        toast({
-          title: "Unsubscribed",
-          description: `You'll no longer receive notifications for this post.`
-        });
       } else {
         // Subscribe
         const { error } = await supabase
@@ -82,18 +72,9 @@ export const usePostSubscription = (postId: string) => {
         }
           
         setIsSubscribed(true);
-        toast({
-          title: "Subscribed",
-          description: `You'll receive notifications for updates to this post.`
-        });
       }
     } catch (error) {
       console.error("Error toggling subscription:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update subscription. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
