@@ -10,7 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationsList from './NotificationsList';
-import { Notification } from './NotificationItem';
+import { Notification } from './types';
 import { 
   fetchNotifications,
   markNotificationAsRead,

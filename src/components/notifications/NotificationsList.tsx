@@ -1,6 +1,7 @@
 
 import React from 'react';
-import NotificationItem, { Notification } from './NotificationItem';
+import NotificationItem from './NotificationItem';
+import { Notification } from './types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BellRing } from 'lucide-react';
