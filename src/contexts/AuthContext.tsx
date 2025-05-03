@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           location: data.location,
           preferredLanguage: data.preferred_language,
           autoTranslate: data.auto_translate || false,
+          locationSharing: data.location_sharing !== false,
           joinedAt: new Date(data.joined_at)
         });
       }

@@ -13,7 +13,9 @@ const mapProfileToUser = (profile: any): User => ({
   preferredLanguage: profile.preferred_language,
   website: profile.website,
   latitude: profile.latitude,
-  longitude: profile.longitude
+  longitude: profile.longitude,
+  autoTranslate: profile.auto_translate || false,
+  locationSharing: profile.location_sharing !== false
 });
 
 // Fetch user profile by ID

@@ -319,6 +319,7 @@ export type Database = {
           joined_at: string
           latitude: number | null
           location: string | null
+          location_sharing: boolean
           longitude: number | null
           preferred_language: string | null
           pseudonym: string
@@ -332,6 +333,7 @@ export type Database = {
           joined_at?: string
           latitude?: number | null
           location?: string | null
+          location_sharing?: boolean
           longitude?: number | null
           preferred_language?: string | null
           pseudonym: string
@@ -345,6 +347,7 @@ export type Database = {
           joined_at?: string
           latitude?: number | null
           location?: string | null
+          location_sharing?: boolean
           longitude?: number | null
           preferred_language?: string | null
           pseudonym?: string
