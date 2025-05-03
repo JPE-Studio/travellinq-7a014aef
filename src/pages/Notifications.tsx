@@ -81,8 +81,8 @@ const Notifications: React.FC = () => {
 
   return (
     <PageLayout>
-      <div className="max-w-3xl mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-6 px-4">
           <h1 className="text-2xl font-bold">Notifications</h1>
           {notifications.some(n => !n.read) && (
             <Button onClick={handleMarkAllAsRead}>
