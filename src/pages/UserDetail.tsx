@@ -40,7 +40,7 @@ const UserDetail: React.FC = () => {
   if (loading) {
     return (
       <PageLayout showHeader={true}>
-        <div className="flex-1">
+        <div className="flex-1 container px-4 md:px-6">
           <UserDetailLoading />
         </div>
       </PageLayout>
@@ -51,7 +51,7 @@ const UserDetail: React.FC = () => {
   if (!userData) {
     return (
       <PageLayout showHeader={true}>
-        <div className="flex-1">
+        <div className="flex-1 container px-4 md:px-6">
           <UserDetailError />
         </div>
       </PageLayout>
@@ -61,7 +61,7 @@ const UserDetail: React.FC = () => {
   // Render user profile
   return (
     <PageLayout showHeader={true}>
-      <div className="flex-1">
+      <div className="flex-1 container px-4 md:px-6">
         <UserDetailCard 
           userData={userData}
           userId={userId || ""}
