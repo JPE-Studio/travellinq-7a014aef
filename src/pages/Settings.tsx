@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -41,6 +42,7 @@ const Settings: React.FC = () => {
   const [location, setLocation] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [autoTranslate, setAutoTranslate] = useState(false);
+  const [locationSharing, setLocationSharing] = useState(true);
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -53,6 +55,8 @@ const Settings: React.FC = () => {
       setLocation(profile.location || '');
       setPreferredLanguage(profile.preferredLanguage || 'en');
       setAutoTranslate(profile.autoTranslate || false);
+      // Default to true if the property doesn't exist
+      setLocationSharing(profile.locationSharing !== false);
     }
   }, [profile]);
   
@@ -118,7 +122,8 @@ const Settings: React.FC = () => {
           avatar: avatarUrl,
           location: location,
           preferred_language: preferredLanguage,
-          auto_translate: autoTranslate
+          auto_translate: autoTranslate,
+          location_sharing: locationSharing
         })
         .eq('id', user.id);
       
@@ -243,28 +248,6 @@ const Settings: React.FC = () => {
           <h2 className="text-lg font-semibold mb-4">Preferences</h2>
           
           <div className="space-y-4">
-            <div>
-              <Label className="block text-sm font-medium mb-1">Preferred Language</Label>
-              <Select
-                value={preferredLanguage}
-                onValueChange={setPreferredLanguage}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((language) => (
-                    <SelectItem key={language.value} value={language.value}>
-                      {language.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Your preferred language for content translation
-              </p>
-            </div>
-
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Auto-Translate Content</p>
@@ -293,10 +276,14 @@ const Settings: React.FC = () => {
               <div>
                 <p className="font-medium">Location Sharing</p>
                 <p className="text-sm text-muted-foreground">
-                  Share your location with the community
+                  Share your location with the community and see distances to posts
                 </p>
               </div>
-              <Switch id="location-sharing" defaultChecked />
+              <Switch 
+                id="location-sharing"
+                checked={locationSharing}
+                onCheckedChange={setLocationSharing}
+              />
             </div>
           </div>
         </div>

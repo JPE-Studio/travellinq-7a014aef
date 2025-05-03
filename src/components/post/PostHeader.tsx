@@ -6,6 +6,7 @@ import { MapPin, User, Bell, BellOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { formatDistance } from '@/utils/formatUtils';
 import { Post } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PostHeaderProps {
   post: Post;
@@ -20,6 +21,12 @@ const PostHeader: React.FC<PostHeaderProps> = ({
   handleSubscribe,
   loading
 }) => {
+  // Get the user's profile to check location sharing preference
+  const { profile } = useAuth();
+  
+  // Default to true if the preference is not set
+  const locationSharingEnabled = profile?.locationSharing !== false;
+  
   return (
     <div className="flex items-center justify-between mb-3">
       <Link to={`/profile/${post.author.id}`} className="flex items-center">
@@ -39,22 +46,20 @@ const PostHeader: React.FC<PostHeaderProps> = ({
               <>
                 <span className="mx-1">•</span>
                 <MapPin size={12} className="mr-1" />
-                <span className="flex items-center">
-                  {post.distance !== undefined ? (
-                    <>
-                      <span className={post.distance <= 10 ? "text-forest font-medium" : ""}>
-                        {formatDistance(post.distance)}
+                {locationSharingEnabled && post.distance !== undefined ? (
+                  <span className="flex items-center">
+                    <span className={post.distance <= 10 ? "text-forest font-medium" : ""}>
+                      {formatDistance(post.distance)}
+                    </span>
+                    {post.distance <= 5 && (
+                      <span className="ml-1 bg-forest/20 text-forest px-1 rounded text-[10px]">
+                        Near you
                       </span>
-                      {post.distance <= 5 && (
-                        <span className="ml-1 bg-forest/20 text-forest px-1 rounded text-[10px]">
-                          Near you
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <span>Location available</span>
-                  )}
-                </span>
+                    )}
+                  </span>
+                ) : (
+                  <span>Location available</span>
+                )}
               </>
             )}
           </div>

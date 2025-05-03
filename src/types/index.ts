@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   pseudonym: string;
@@ -11,6 +10,7 @@ export interface User {
   latitude?: number;
   longitude?: number;
   autoTranslate?: boolean;
+  locationSharing?: boolean;
 }
 
 export interface Post {
