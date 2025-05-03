@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -39,6 +39,14 @@ const RLSSetup = () => {
   return null;
 };
 
+// This component handles the redirect from /profile/:userId to /users/:userId
+const ProfileRedirect = () => {
+  const { userId } = useParams<{ userId: string }>();
+  const targetPath = `/users/${userId}`;
+  
+  return <Navigate to={targetPath} replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -51,10 +59,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
-            {/* Redirect from /profile/:userId to /users/:userId */}
+            {/* Redirect from /profile/:userId to /users/:userId using a component */}
             <Route 
               path="/profile/:userId" 
-              element={<Navigate to={(location) => `/users${location.pathname.substring(8)}`} replace />} 
+              element={<ProfileRedirect />} 
             />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/map" element={<MapView />} />
