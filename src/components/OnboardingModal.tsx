@@ -1,28 +1,15 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { MapPin, Camera, User, Upload, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Textarea } from "@/components/ui/textarea";
+import { Form } from '@/components/ui/form';
+import OnboardingStep1 from './onboarding/OnboardingStep1';
+import OnboardingStep2 from './onboarding/OnboardingStep2';
+import OnboardingStep3 from './onboarding/OnboardingStep3';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -193,178 +180,30 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
           <div className="p-6 flex-1 overflow-y-auto">
             <Form {...form}>
               {step === 1 && (
-                <div className="text-center space-y-6">
-                  <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto">
-                    <MapPin size={32} />
-                  </div>
-                  
-                  <div>
-                    <DialogTitle className="text-2xl font-bold mb-2">Welcome to Travellinq</DialogTitle>
-                    <p className="text-muted-foreground">
-                      Connect with fellow travelers, share tips and discover hidden places on your journey.
-                    </p>
-                  </div>
-                  
-                  <div className="pt-4">
-                    <FormField
-                      control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Where are you now?</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g. Vienna, Austria"
-                              {...field}
-                              autoComplete="off"
-                            />
-                          </FormControl>
-                          <p className="text-xs text-muted-foreground">
-                            Let others know where you're currently traveling
-                          </p>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      onClick={() => setStep(2)} 
-                      className="w-full mt-4"
-                    >
-                      Continue
-                    </Button>
-                  </div>
-                </div>
+                <OnboardingStep1 
+                  form={form} 
+                  onNext={handleNextStep} 
+                />
               )}
               
               {step === 2 && (
-                <div className="space-y-6">
-                  <div>
-                    <DialogTitle className="text-2xl font-bold mb-2">Create Your Profile</DialogTitle>
-                    <p className="text-muted-foreground">
-                      Set up your profile to connect with other travelers.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="pseudonym"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username <span className="text-destructive">*</span></FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g. TravelExplorer"
-                              {...field}
-                              autoComplete="off"
-                              minLength={3}
-                              maxLength={30}
-                              required
-                            />
-                          </FormControl>
-                          <FormMessage />
-                          <p className="text-xs text-muted-foreground">
-                            Choose a unique username (minimum 3 characters).
-                          </p>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="bio"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Bio</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Share a bit about yourself and your travel interests..."
-                              className="resize-none"
-                              maxLength={300}
-                              rows={3}
-                              {...field}
-                            />
-                          </FormControl>
-                          <p className="text-xs text-muted-foreground">
-                            Optional, max 300 characters
-                          </p>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="pt-4 flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={handlePrevStep}
-                    >
-                      Back
-                    </Button>
-                    <Button 
-                      className="flex-1"
-                      onClick={handleNextStep}
-                      disabled={!form.getValues('pseudonym') || form.getValues('pseudonym').length < 3}
-                    >
-                      Continue
-                    </Button>
-                  </div>
-                </div>
+                <OnboardingStep2 
+                  form={form} 
+                  onNext={handleNextStep} 
+                  onPrev={handlePrevStep} 
+                />
               )}
 
               {step === 3 && (
-                <div className="space-y-6">
-                  <div>
-                    <DialogTitle className="text-2xl font-bold mb-2">Add Profile Picture</DialogTitle>
-                    <p className="text-muted-foreground">
-                      Upload a profile picture to help other travelers recognize you.
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col items-center space-y-6">
-                    {avatarPreview ? (
-                      <div className="relative">
-                        <Avatar className="w-32 h-32 border-2 border-primary">
-                          <AvatarImage src={avatarPreview} alt="Avatar preview" />
-                          <AvatarFallback>
-                            <User className="h-16 w-16" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <button 
-                          onClick={removeAvatar}
-                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
-                          type="button"
-                          aria-label="Remove avatar"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground">
-                        <Camera size={32} className="text-muted-foreground" />
-                      </div>
-                    )}
-                    
-                    <div className="w-full">
-                      <Label htmlFor="avatar" className="cursor-pointer">
-                        <div className="flex items-center justify-center gap-2 p-3 border border-input bg-background hover:bg-accent text-center rounded-md">
-                          <Upload size={16} />
-                          <span>{avatarPreview ? 'Change Picture' : 'Select Picture'}</span>
-                        </div>
-                        <input 
-                          id="avatar" 
-                          type="file" 
-                          accept="image/*"
-                          onChange={handleAvatarChange}
-                          className="hidden" 
-                        />
-                      </Label>
-                      <p className="text-xs text-muted-foreground text-center mt-2">
-                        Optional: JPG or PNG, max 5MB
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <OnboardingStep3 
+                  avatarFile={avatarFile}
+                  avatarPreview={avatarPreview}
+                  isUploading={isUploading}
+                  onPrev={handlePrevStep}
+                  onComplete={handleSubmitOnboarding}
+                  onAvatarChange={handleAvatarChange}
+                  removeAvatar={removeAvatar}
+                />
               )}
             </Form>
           </div>
