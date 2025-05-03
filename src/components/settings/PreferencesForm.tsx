@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { AlertCircle } from 'lucide-react';
@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PreferencesFormProps {
   autoTranslate: boolean;
@@ -21,6 +22,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
   locationSharing,
   setLocationSharing,
 }) => {
+  const { user } = useAuth();
   const {
     permissionStatus,
     pushEnabled,
@@ -32,6 +34,15 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
   const isNotificationsUnsupported = permissionStatus === 'unsupported';
 
   const handleTogglePushNotifications = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You need to be signed in to enable push notifications",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const result = await togglePushNotifications();
     if (result) {
       toast({
@@ -44,6 +55,15 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
   };
 
   const handleRetry = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You need to be signed in to enable push notifications",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const result = await togglePushNotifications();
     if (result) {
       toast({
@@ -83,16 +103,25 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
             id="notifications" 
             checked={pushEnabled}
             onCheckedChange={() => handleTogglePushNotifications()}
-            disabled={isNotificationsUnsupported || loading || permissionStatus === 'denied'}
+            disabled={!user || isNotificationsUnsupported || loading || permissionStatus === 'denied'}
           />
         </div>
+        
+        {!user && (
+          <Alert className="mt-2 bg-amber-50 text-amber-800 border-amber-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              You need to be signed in to enable push notifications.
+            </AlertDescription>
+          </Alert>
+        )}
         
         {error && (
           <Alert variant="destructive" className="mt-2">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between w-full">
               <span>{error}</span>
-              {!isNotificationsUnsupported && permissionStatus !== 'denied' && (
+              {user && !isNotificationsUnsupported && permissionStatus !== 'denied' && (
                 <Button 
                   variant="outline" 
                   size="sm" 

@@ -62,7 +62,8 @@ export const usePushNotifications = () => {
         throw new Error('User not authenticated');
       }
 
-      const { error: registrationError } = await supabase.functions.invoke('register-push-token', {
+      // Make sure we're authenticated when calling the function
+      const { data, error: registrationError } = await supabase.functions.invoke('register-push-token', {
         body: { token, platform }
       });
 
@@ -154,7 +155,9 @@ export const usePushNotifications = () => {
       }
     };
     
-    checkCurrentState();
+    if (user) {
+      checkCurrentState();
+    }
   }, [user, permissionStatus]);
 
   return {

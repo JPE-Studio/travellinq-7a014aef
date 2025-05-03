@@ -10,16 +10,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        global: { headers: { Authorization: req.headers.get('Authorization')! } },
-      }
-    );
-
-    // Get the JWT from the request to identify the user
+    // Create a Supabase client with the JWT from the request
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    
     const authHeader = req.headers.get('Authorization');
+    
     if (!authHeader) {
       console.error('Missing authorization header');
       return new Response(
@@ -27,13 +23,22 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    const supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      global: { 
+        headers: { 
+          Authorization: authHeader 
+        } 
+      },
+    });
 
     // Get user from token
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
     if (userError || !user) {
       console.error('Invalid token or user not found:', userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid token or user not found' }),
+        JSON.stringify({ error: 'Invalid token or user not found', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -47,11 +52,11 @@ Deno.serve(async (req) => {
       console.log('Checking notification status for user:', user.id);
       
       const { data: tokens, error: fetchError } = await supabaseClient
-        .from('notifications')  // Using the existing notifications table
+        .from('notifications')
         .select('*')
         .eq('user_id', user.id)
-        .eq('type', 'push_token')  // Using a type field to identify push tokens
-        .eq('read', false)  // Using read=false to indicate enabled tokens
+        .eq('type', 'push_token')
+        .eq('read', false)
         .limit(1);
 
       if (fetchError) {
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
     if (token === 'disable' || enabled === false) {
       const { error: disableError } = await supabaseClient
         .from('notifications')
-        .update({ read: true })  // Mark as read to disable
+        .update({ read: true })
         .eq('user_id', user.id)
         .eq('type', 'push_token');
 
@@ -107,7 +112,7 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('user_id', user.id)
       .eq('type', 'push_token')
-      .eq('message', token);  // Store token in the message field
+      .eq('message', token);
 
     if (fetchError) {
       console.error('Error fetching existing tokens:', fetchError);
@@ -124,9 +129,9 @@ Deno.serve(async (req) => {
         .insert({
           user_id: user.id,
           type: 'push_token',
-          message: token,  // Store token in message field
-          read: false,     // Use read=false to indicate enabled
-          link: platform   // Store platform in link field
+          message: token,
+          read: false,
+          link: platform
         });
 
       if (insertError) {
@@ -140,7 +145,7 @@ Deno.serve(async (req) => {
       // If token exists but may be disabled, enable it
       const { error: updateError } = await supabaseClient
         .from('notifications')
-        .update({ read: false })  // Mark as unread to enable
+        .update({ read: false })
         .eq('user_id', user.id)
         .eq('type', 'push_token')
         .eq('message', token);
