@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Post } from '@/types';
 import { languages } from '@/utils/formatUtils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface PostContentProps {
   post: Post;
@@ -25,12 +26,15 @@ const PostContent: React.FC<PostContentProps> = ({ post, translatedText, detecte
       {post.images && post.images.length > 0 && (
         <div className={`grid gap-2 mb-3 ${post.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {post.images.map((image, index) => (
-            <img 
-              key={index} 
-              src={image} 
-              alt={`Post by ${post.author.pseudonym}`} 
-              className="w-full h-48 object-cover rounded-md" 
-            />
+            <div key={index} className="w-full">
+              <AspectRatio ratio={1 / 1} className="bg-muted">
+                <img 
+                  src={image} 
+                  alt={`Post by ${post.author.pseudonym}`} 
+                  className="w-full h-full object-cover rounded-md" 
+                />
+              </AspectRatio>
+            </div>
           ))}
         </div>
       )}
