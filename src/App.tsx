@@ -52,9 +52,10 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
             {/* Redirect from /profile/:userId to /users/:userId */}
-            <Route path="/profile/:userId" element={
-              <Navigate to={params => `/users/${params["*"]}`} />
-            } />
+            <Route 
+              path="/profile/:userId" 
+              element={<Navigate to="/users/:userId" replace />} 
+            />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/map" element={<MapView />} />
             <Route path="/chats" element={<Chats />} />
