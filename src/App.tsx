@@ -43,8 +43,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster position="top-center" />
-        <Sonner position="bottom-center" />
+        <Toaster />
+        <Sonner />
         <RLSSetup />
         <OnboardingCheck /> {/* Add the onboarding check component */}
         <BrowserRouter>
@@ -52,10 +52,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
             {/* Redirect from /profile/:userId to /users/:userId */}
-            <Route path="/profile/:userId" element={<Navigate to={(location) => {
-              const path = location.pathname.replace('/profile/', '/users/');
-              return path;
-            }} />} />
+            <Route path="/profile/:userId" element={
+              <Navigate to={params => `/users/${params["*"]}`} />
+            } />
             <Route path="/post/:id" element={<PostDetail />} />
             <Route path="/map" element={<MapView />} />
             <Route path="/chats" element={<Chats />} />
