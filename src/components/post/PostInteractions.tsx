@@ -16,14 +16,36 @@ import { reportPost } from '@/services/adminService';
 
 interface PostInteractionsProps {
   postId: string;
+  authorId: string; // Added authorId property to fix the type error
   commentCount: number;
-  onCommentClick: () => void;
+  onCommentClick?: () => void;
+  votes?: number;
+  userVote?: 1 | -1 | null;
+  handleVote?: (direction: 'up' | 'down') => void;
+  loading?: boolean;
+  translatedText?: string | null;
+  isTranslating?: boolean;
+  handleTranslate?: () => void;
+  showTranslateButton?: boolean;
+  translationAvailable?: boolean;
+  onDelete?: () => void;
 }
 
 const PostInteractions: React.FC<PostInteractionsProps> = ({ 
-  postId, 
+  postId,
+  authorId, // Added authorId parameter
   commentCount,
-  onCommentClick,
+  onCommentClick = () => {},
+  votes,
+  userVote,
+  handleVote,
+  loading,
+  translatedText,
+  isTranslating,
+  handleTranslate,
+  showTranslateButton = false,
+  translationAvailable = false,
+  onDelete
 }) => {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -86,6 +108,17 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
         >
           <Flag className="h-4 w-4 mr-1" /> Report
         </Button>
+
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive"
+            onClick={onDelete}
+          >
+            Delete
+          </Button>
+        )}
       </div>
 
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
