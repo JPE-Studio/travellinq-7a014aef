@@ -26,7 +26,11 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
       throw error;
     }
     
-    return data || [];
+    // Ensure the status is cast to the correct type
+    return (data as any[]).map(report => ({
+      ...report,
+      status: report.status as 'pending' | 'resolved' | 'rejected'
+    }));
   } catch (error) {
     console.error("Error in fetchPostReports:", error);
     throw error;
@@ -128,9 +132,9 @@ export const updateFeedRadius = async (userId: string, radius: number): Promise<
 export const getAppMetrics = async (): Promise<AppMetrics> => {
   try {
     // Get total users
-    const { data: totalUsers, error: userError } = await supabase
+    const { count: totalUsers, error: userError } = await supabase
       .from('profiles')
-      .select('count', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
     
     if (userError) throw userError;
     
@@ -138,17 +142,17 @@ export const getAppMetrics = async (): Promise<AppMetrics> => {
     const lastWeek = new Date();
     lastWeek.setDate(lastWeek.getDate() - 7);
     
-    const { data: newSignups, error: signupError } = await supabase
+    const { count: newSignups, error: signupError } = await supabase
       .from('profiles')
-      .select('count', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .gte('joined_at', lastWeek.toISOString());
     
     if (signupError) throw signupError;
     
     // Get total posts
-    const { data: totalPosts, error: postError } = await supabase
+    const { count: totalPosts, error: postError } = await supabase
       .from('posts')
-      .select('count', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
     
     if (postError) throw postError;
     
@@ -209,10 +213,10 @@ export const getAppMetrics = async (): Promise<AppMetrics> => {
     ]);
     
     return {
-      totalUsers: totalUsers?.count || 0,
+      totalUsers: totalUsers || 0,
       dailyActiveUsers: activeUserIds.size,
-      totalPosts: totalPosts?.count || 0,
-      newSignups: newSignups?.count || 0,
+      totalPosts: totalPosts || 0,
+      newSignups: newSignups || 0,
       postsByCategory,
       usersByLocation
     };

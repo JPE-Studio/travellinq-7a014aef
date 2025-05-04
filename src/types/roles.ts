@@ -50,3 +50,21 @@ export interface UserExport {
   location?: string;
   joinedAt: string;
 }
+
+// Add a new function to assign a superadmin role
+export const assignSuperadmin = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await fetch('/api/assign-superadmin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userId })
+    }).then(res => res.json());
+    
+    return !error;
+  } catch (error) {
+    console.error("Error assigning superadmin role:", error);
+    return false;
+  }
+};

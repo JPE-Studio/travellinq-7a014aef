@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import ReportsManagement from "./pages/admin/ReportsManagement";
 import DataExport from "./pages/admin/DataExport";
+import BecomeAdmin from "./pages/BecomeAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
 import { setupRlsPolicies } from "./utils/setupRlsPolicies";
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/become-admin" element={<BecomeAdmin />} />
             
             {/* Admin Routes - Protected by role */}
             <Route 

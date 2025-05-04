@@ -23,12 +23,15 @@ const Unauthorized: React.FC = () => {
           <p className="text-sm">Your current role(s): {roles.join(', ')}</p>
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Button asChild variant="default">
             <Link to="/">Return to Home</Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/profile">Go to Profile</Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link to="/become-admin">Become Admin</Link>
           </Button>
         </div>
       </div>
