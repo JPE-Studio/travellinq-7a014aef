@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Flag } from 'lucide-react';
+import { MessageSquare, Flag, ThumbsUp, ThumbsDown, Languages } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import { reportPost } from '@/services/adminService';
 
 interface PostInteractionsProps {
   postId: string;
-  authorId: string; // Added authorId property to fix the type error
+  authorId: string;
   commentCount: number;
   onCommentClick?: () => void;
   votes?: number;
@@ -33,15 +33,15 @@ interface PostInteractionsProps {
 
 const PostInteractions: React.FC<PostInteractionsProps> = ({ 
   postId,
-  authorId, // Added authorId parameter
+  authorId,
   commentCount,
   onCommentClick = () => {},
-  votes,
+  votes = 0,
   userVote,
   handleVote,
-  loading,
+  loading = false,
   translatedText,
-  isTranslating,
+  isTranslating = false,
   handleTranslate,
   showTranslateButton = false,
   translationAvailable = false,
@@ -90,6 +90,32 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
   return (
     <>
       <div className="flex items-center mt-2 space-x-2">
+        {/* Voting buttons */}
+        {handleVote && (
+          <div className="flex items-center mr-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`p-1 ${userVote === 1 ? 'text-primary' : 'text-muted-foreground'}`}
+              onClick={() => handleVote('up')}
+              disabled={loading}
+            >
+              <ThumbsUp className="h-4 w-4" />
+            </Button>
+            <span className="mx-1 text-sm font-medium">{votes}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`p-1 ${userVote === -1 ? 'text-primary' : 'text-muted-foreground'}`}
+              onClick={() => handleVote('down')}
+              disabled={loading}
+            >
+              <ThumbsDown className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Comment button */}
         <Button 
           variant="ghost" 
           size="sm" 
@@ -100,6 +126,21 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
           {commentCount} {commentCount === 1 ? 'Comment' : 'Comments'}
         </Button>
         
+        {/* Translate button */}
+        {showTranslateButton && handleTranslate && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={handleTranslate}
+            disabled={isTranslating || !translationAvailable}
+          >
+            <Languages className="h-4 w-4 mr-1" />
+            {isTranslating ? 'Translating...' : translatedText ? 'Show Original' : 'Translate'}
+          </Button>
+        )}
+        
+        {/* Report button */}
         <Button
           variant="ghost"
           size="sm"
@@ -109,6 +150,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
           <Flag className="h-4 w-4 mr-1" /> Report
         </Button>
 
+        {/* Delete button */}
         {onDelete && (
           <Button
             variant="ghost"
@@ -121,6 +163,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
         )}
       </div>
 
+      {/* Report dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
         <DialogContent>
           <DialogHeader>
