@@ -15,6 +15,12 @@ import Auth from "./pages/Auth";
 import NewChat from "./pages/NewChat";
 import UserDetail from "./pages/UserDetail";
 import Notifications from "./pages/Notifications";
+import Unauthorized from "./pages/Unauthorized";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserManagement from "./pages/admin/UserManagement";
+import ReportsManagement from "./pages/admin/ReportsManagement";
+import DataExport from "./pages/admin/DataExport";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
 import { setupRlsPolicies } from "./utils/setupRlsPolicies";
 import OnboardingCheck from "./components/OnboardingCheck";
@@ -69,6 +75,42 @@ const App = () => (
             <Route path="/users/:userId" element={<UserDetail />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            
+            {/* Admin Routes - Protected by role */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute minimumRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/users" 
+              element={
+                <ProtectedRoute minimumRole="admin">
+                  <UserManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/reports" 
+              element={
+                <ProtectedRoute minimumRole="moderator">
+                  <ReportsManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/data" 
+              element={
+                <ProtectedRoute minimumRole="admin">
+                  <DataExport />
+                </ProtectedRoute>
+              } 
+            />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

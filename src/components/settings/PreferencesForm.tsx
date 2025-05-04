@@ -8,12 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { setGhostMode } from '@/services/adminService';
 
 interface PreferencesFormProps {
   autoTranslate: boolean;
   setAutoTranslate: (value: boolean) => void;
   locationSharing: boolean;
   setLocationSharing: (value: boolean) => void;
+  ghostMode?: boolean;
+  setGhostMode?: (value: boolean) => void;
 }
 
 const PreferencesForm: React.FC<PreferencesFormProps> = ({
@@ -21,8 +25,11 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
   setAutoTranslate,
   locationSharing,
   setLocationSharing,
+  ghostMode = false,
+  setGhostMode: setParentGhostMode,
 }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { isPaidUser } = useUserRole();
   const {
     permissionStatus,
     pushEnabled,
@@ -69,6 +76,35 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
       toast({
         title: "Registration successful",
         description: "Push notifications have been enabled",
+      });
+    }
+  };
+
+  const handleToggleGhostMode = async (value: boolean) => {
+    if (!user) return;
+    
+    try {
+      const success = await setGhostMode(user.id, value);
+      
+      if (success) {
+        if (setParentGhostMode) {
+          setParentGhostMode(value);
+        }
+        
+        toast({
+          title: value ? "Ghost mode enabled" : "Ghost mode disabled",
+          description: value 
+            ? "Your location is now hidden from other users" 
+            : "Your location is now visible to other users",
+        });
+      } else {
+        throw new Error("Failed to update ghost mode");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Failed to update ghost mode",
+        description: error.message || "An error occurred",
+        variant: "destructive",
       });
     }
   };
@@ -158,6 +194,23 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
             onCheckedChange={setLocationSharing}
           />
         </div>
+
+        {/* Ghost mode - only visible to paid users */}
+        {isPaidUser && (
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              <p className="font-medium">Ghost Mode</p>
+              <p className="text-sm text-muted-foreground">
+                Hide your location from other users (premium feature)
+              </p>
+            </div>
+            <Switch 
+              id="ghost-mode"
+              checked={ghostMode}
+              onCheckedChange={handleToggleGhostMode}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

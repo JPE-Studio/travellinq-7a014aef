@@ -1,106 +1,128 @@
 
-import React from 'react';
-import { ThumbsUp, ThumbsDown, MessageSquare, Loader2, Languages, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { MessageSquare, Flag } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { reportPost } from '@/services/adminService';
 
 interface PostInteractionsProps {
   postId: string;
-  authorId: string;
-  votes: number;
   commentCount: number;
-  userVote: 1 | -1 | null;
-  handleVote: (direction: 'up' | 'down') => void;
-  loading: boolean;
-  translatedText: string | null;
-  isTranslating: boolean;
-  handleTranslate: () => void;
-  showTranslateButton?: boolean;
-  translationAvailable?: boolean;
-  onDelete?: () => void;
+  onCommentClick: () => void;
 }
 
-const PostInteractions: React.FC<PostInteractionsProps> = ({
-  postId,
-  authorId,
-  votes,
+const PostInteractions: React.FC<PostInteractionsProps> = ({ 
+  postId, 
   commentCount,
-  userVote,
-  handleVote,
-  loading,
-  translatedText,
-  isTranslating,
-  handleTranslate,
-  showTranslateButton = true,
-  translationAvailable = true,
-  onDelete,
+  onCommentClick,
 }) => {
-  const { user } = useAuth();
-  const isAuthor = user?.id === authorId;
-  
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleReport = async () => {
+    if (!reportReason.trim()) {
+      toast({
+        title: "Report incomplete",
+        description: "Please provide a reason for your report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const success = await reportPost(postId, reportReason.trim());
+      
+      if (success) {
+        toast({
+          title: "Report submitted",
+          description: "Thank you for helping keep the community safe.",
+        });
+        setReportDialogOpen(false);
+        setReportReason('');
+      } else {
+        throw new Error("Failed to submit report");
+      }
+    } catch (err: any) {
+      console.error("Error reporting post:", err);
+      toast({
+        title: "Report failed",
+        description: err.message || "An error occurred while submitting your report.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between text-sm mt-3 pb-1">
-      <div className="flex items-center space-x-4">
-        <button 
-          className={`flex items-center transition-colors ${userVote === 1 ? 'text-blue-500' : 'hover:text-foreground text-muted-foreground'}`}
-          onClick={() => handleVote('up')}
-          disabled={loading}
+    <>
+      <div className="flex items-center mt-2 space-x-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-muted-foreground" 
+          onClick={onCommentClick}
         >
-          <ThumbsUp className="h-4 w-4 mr-1" />
-          <span>{votes}</span>
-        </button>
-        <button 
-          className={`flex items-center transition-colors ${userVote === -1 ? 'text-red-500' : 'hover:text-foreground text-muted-foreground'}`}
-          onClick={() => handleVote('down')}
-          disabled={loading}
-        >
-          <ThumbsDown className="h-4 w-4" />
-        </button>
-      </div>
-      
-      <div className="flex items-center">
-        {showTranslateButton && (
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className={`text-muted-foreground p-1 h-auto ${!translationAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={handleTranslate}
-            disabled={isTranslating || loading || !translationAvailable}
-            title={!translationAvailable ? "Translation service is currently unavailable" : "Translate"}
-          >
-            {isTranslating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Languages className="h-4 w-4" />
-            )}
-          </Button>
-        )}
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <Link 
-          to={`/post/${postId}`}
-          className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <MessageSquare className="h-4 w-4 mr-1" />
-          <span>{commentCount}</span>
-        </Link>
+          <MessageSquare className="h-4 w-4 mr-1" /> 
+          {commentCount} {commentCount === 1 ? 'Comment' : 'Comments'}
+        </Button>
         
-        {isAuthor && onDelete && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground hover:text-destructive p-1 h-auto"
-            onClick={onDelete}
-            disabled={loading}
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete</span>
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => setReportDialogOpen(true)}
+        >
+          <Flag className="h-4 w-4 mr-1" /> Report
+        </Button>
       </div>
-    </div>
+
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report Post</DialogTitle>
+            <DialogDescription>
+              Please provide details about why you're reporting this post.
+              Our moderators will review your report.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Textarea
+            placeholder="What's the issue with this post?"
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            className="min-h-[100px]"
+          />
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setReportDialogOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleReport}
+              disabled={submitting || !reportReason.trim()}
+            >
+              {submitting ? "Submitting..." : "Submit Report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

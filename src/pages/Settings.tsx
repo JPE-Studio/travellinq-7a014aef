@@ -20,6 +20,7 @@ const Settings: React.FC = () => {
   const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [locationSharing, setLocationSharing] = useState(true);
+  const [ghostMode, setGhostMode] = useState(false);
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -100,7 +101,8 @@ const Settings: React.FC = () => {
           location: location,
           preferred_language: preferredLanguage,
           auto_translate: autoTranslate,
-          location_sharing: locationSharing
+          location_sharing: locationSharing,
+          ghost_mode: ghostMode
         })
         .eq('id', user.id);
       
@@ -166,6 +168,8 @@ const Settings: React.FC = () => {
           setAutoTranslate={setAutoTranslate}
           locationSharing={locationSharing}
           setLocationSharing={setLocationSharing}
+          ghostMode={ghostMode}
+          setGhostMode={setGhostMode}
         />
         
         <FormActions 

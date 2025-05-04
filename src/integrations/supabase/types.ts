@@ -134,6 +134,24 @@ export type Database = {
         }
         Relationships: []
       }
+      hashtags: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -213,6 +231,42 @@ export type Database = {
           },
         ]
       }
+      post_hashtags: {
+        Row: {
+          created_at: string | null
+          hashtag_id: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          hashtag_id: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string | null
+          hashtag_id?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_hashtags_hashtag_id_fkey"
+            columns: ["hashtag_id"]
+            isOneToOne: false
+            referencedRelation: "hashtags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_hashtags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_images: {
         Row: {
           created_at: string
@@ -238,6 +292,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "post_images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reports: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          reason: string
+          reporter_id: string | null
+          resolution_action: string | null
+          resolution_notes: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          reason: string
+          reporter_id?: string | null
+          resolution_action?: string | null
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          reason?: string
+          reporter_id?: string | null
+          resolution_action?: string | null
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reports_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
@@ -315,7 +416,10 @@ export type Database = {
           auto_translate: boolean
           avatar: string | null
           bio: string | null
+          feed_radius: number | null
+          ghost_mode: boolean | null
           id: string
+          is_blocked: boolean | null
           joined_at: string
           latitude: number | null
           location: string | null
@@ -329,7 +433,10 @@ export type Database = {
           auto_translate?: boolean
           avatar?: string | null
           bio?: string | null
+          feed_radius?: number | null
+          ghost_mode?: boolean | null
           id: string
+          is_blocked?: boolean | null
           joined_at?: string
           latitude?: number | null
           location?: string | null
@@ -343,7 +450,10 @@ export type Database = {
           auto_translate?: boolean
           avatar?: string | null
           bio?: string | null
+          feed_radius?: number | null
+          ghost_mode?: boolean | null
           id?: string
+          is_blocked?: boolean | null
           joined_at?: string
           latitude?: number | null
           location?: string | null
@@ -419,11 +529,47 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      add_hashtags_to_post: {
+        Args: { post_id: string; hashtag_names: string[] }
+        Returns: {
+          created_at: string | null
+          hashtag_id: string
+          id: string
+          post_id: string
+        }[]
+      }
       create_conversation_for_user: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -435,8 +581,27 @@ export type Database = {
         Args: { current_user_id: string; other_user_id: string }
         Returns: string
       }
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      has_any_role: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       is_conversation_participant: {
         Args: { conversation_id: string; user_id: string }
+        Returns: boolean
+      }
+      is_user_blocked: {
+        Args: { _user_id: string }
         Returns: boolean
       }
       setup_chat_policies: {
@@ -445,6 +610,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "user" | "paid_user" | "moderator" | "admin" | "superadmin"
       post_category: "campsite" | "service" | "question" | "general"
     }
     CompositeTypes: {
@@ -561,6 +727,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["user", "paid_user", "moderator", "admin", "superadmin"],
       post_category: ["campsite", "service", "question", "general"],
     },
   },
