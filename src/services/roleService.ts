@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UserRole } from "@/types/roles";
 
@@ -26,12 +25,11 @@ export const hasRole = async (userId: string, role: UserRole): Promise<boolean> 
 // Check if a user has any of the specified roles
 export const hasAnyRole = async (userId: string, roles: UserRole[]): Promise<boolean> => {
   try {
-    // Modify the parameters to match what the database function expects
-    // The function likely expects a variadic array parameter
+    // The database function expects a parameter named _roles
     const { data, error } = await supabase
       .rpc('has_any_role', { 
         _user_id: userId,
-        roles: roles // Changed from _roles to roles to match the expected parameter name
+        _roles: roles // Use _roles to match the expected parameter name in the database function
       });
     
     if (error) {
