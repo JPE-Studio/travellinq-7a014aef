@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,7 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) => {
   const { pathname } = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [open, setOpen] = useState(false);
 
   const routes = [
@@ -112,10 +113,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) =>
         <div className="p-4 border-t">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              {user?.pseudonym?.charAt(0).toUpperCase() || 'A'}
+              {profile?.pseudonym?.charAt(0).toUpperCase() || 'A'}
             </div>
             <div>
-              <p className="font-medium text-sm">{user?.pseudonym || 'Admin'}</p>
+              <p className="font-medium text-sm">{profile?.pseudonym || 'Admin'}</p>
               <p className="text-xs text-muted-foreground">Administrator</p>
             </div>
           </div>
@@ -168,10 +169,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) =>
           <div className="p-4 border-t mt-auto">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                {user?.pseudonym?.charAt(0).toUpperCase() || 'A'}
+                {profile?.pseudonym?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div>
-                <p className="font-medium text-sm">{user?.pseudonym || 'Admin'}</p>
+                <p className="font-medium text-sm">{profile?.pseudonym || 'Admin'}</p>
                 <p className="text-xs text-muted-foreground">Administrator</p>
               </div>
             </div>

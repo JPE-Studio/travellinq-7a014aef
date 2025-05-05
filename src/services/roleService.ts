@@ -26,7 +26,7 @@ export const hasRole = async (userId: string, role: UserRole): Promise<boolean> 
 // Check if a user has any of the specified roles
 export const hasAnyRole = async (userId: string, roles: UserRole[]): Promise<boolean> => {
   try {
-    // The database function expects an array named _roles
+    // Fix: The parameter should be _roles not _role
     const { data, error } = await supabase
       .rpc('has_any_role', { 
         _user_id: userId,
