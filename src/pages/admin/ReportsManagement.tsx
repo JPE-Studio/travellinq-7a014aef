@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -38,7 +39,9 @@ const ReportsManagement: React.FC = () => {
   const loadReports = async (status: string = '') => {
     try {
       setLoading(true);
-      const data = await fetchPostReports(status || undefined);
+      console.log("Loading reports with status:", status || "all");
+      const data = await fetchPostReports(status);
+      console.log("Reports loaded:", data);
       setReports(data);
       setError(null);
     } catch (err: any) {
@@ -50,6 +53,7 @@ const ReportsManagement: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log("Active tab changed to:", activeTab);
     loadReports(activeTab !== 'all' ? activeTab : '');
   }, [activeTab]);
 
@@ -138,7 +142,7 @@ const ReportsManagement: React.FC = () => {
             </div>
           ) : reports.length === 0 ? (
             <div className="text-center p-12 text-muted-foreground">
-              <p>No reports found.</p>
+              <p>No reports found. You may need to create some reports first.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

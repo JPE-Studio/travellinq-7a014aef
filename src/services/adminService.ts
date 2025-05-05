@@ -6,15 +6,18 @@ import { User } from "@/types";
 // Fetch post reports for moderation
 export const fetchPostReports = async (status?: string): Promise<PostReport[]> => {
   try {
+    console.log("Fetching post reports with status:", status || "all");
+    
     let query = supabase
       .from('post_reports')
       .select(`
         *,
         post:posts(*),
-        reporter:profiles!reporter_id(id, pseudonym, avatar)
+        reporter:profiles!reporter_id(*)
       `);
     
-    if (status) {
+    if (status && status !== 'all') {
+      console.log("Filtering by status:", status);
       query = query.eq('status', status);
     }
     
@@ -25,8 +28,10 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
       throw error;
     }
     
+    console.log("Fetched post reports:", data?.length || 0, "reports");
+    
     // Ensure the status is cast to the correct type
-    return (data as any[]).map(report => ({
+    return (data as any[] || []).map(report => ({
       ...report,
       status: report.status as 'pending' | 'resolved' | 'rejected'
     }));
