@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { PostReport, AppMetrics, UserExport, HashtagData } from "@/types/roles";
 import { User } from "@/types";
@@ -11,7 +10,7 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
       .select(`
         *,
         post:posts(*),
-        reporter:profiles!reporter_id(id, pseudonym, avatar)
+        reporter:profiles(id, pseudonym, avatar)
       `)
       .order('created_at', { ascending: false });
     
@@ -324,6 +323,44 @@ export const reportPost = async (
     return true;
   } catch (error) {
     console.error("Error in reportPost:", error);
+    return false;
+  }
+};
+
+// Add a function to get location name from coordinates
+export const getLocationNameFromCoordinates = async (latitude: number, longitude: number): Promise<string | null> => {
+  try {
+    const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=506b67e0cc0142e6a6504c5dbe689824&language=de&no_annotations=1`);
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      // Return formatted address
+      return data.results[0].formatted;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error fetching location name:", error);
+    return null;
+  }
+};
+
+// Update user location based on coordinates
+export const updateUserLocation = async (userId: string, locationName: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ location: locationName })
+      .eq('id', userId);
+    
+    if (error) {
+      console.error("Error updating user location:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in updateUserLocation:", error);
     return false;
   }
 };

@@ -30,7 +30,7 @@ export const hasAnyRole = async (userId: string, roles: UserRole[]): Promise<boo
     const { data, error } = await supabase
       .rpc('has_any_role', { 
         _user_id: userId,
-        roles: roles // Match the parameter name expected by the database function
+        _roles: roles // Match the parameter name expected by the database function
       });
     
     if (error) {

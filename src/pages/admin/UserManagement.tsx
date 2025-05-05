@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, Search, Shield, Check, X } from 'lucide-react';
+import { Loader2, Search, Shield, Check, X, MapPin } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import {
   Table,
@@ -29,8 +29,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import DashboardLayout from '@/components/admin/DashboardLayout';
 import { getUsersWithRoles, assignRole, removeRole } from '@/services/roleService';
-import { blockUser, setGhostMode, updateFeedRadius } from '@/services/adminService';
+import { blockUser, setGhostMode, updateFeedRadius, getLocationNameFromCoordinates, updateUserLocation } from '@/services/adminService';
 import { UserRole } from '@/types/roles';
+import { Card } from '@/components/ui/card';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -42,6 +43,7 @@ const UserManagement: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedRadius, setFeedRadius] = useState(20);
+  const [locationLoading, setLocationLoading] = useState<{[key: string]: boolean}>({});
 
   const loadUsers = async () => {
     try {
@@ -180,6 +182,51 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleGetLocationName = async (userId: string, latitude: number, longitude: number) => {
+    if (!latitude || !longitude) {
+      toast({
+        title: "Location error",
+        description: "No coordinates available for this user",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLocationLoading(prev => ({ ...prev, [userId]: true }));
+      const locationName = await getLocationNameFromCoordinates(latitude, longitude);
+      
+      if (locationName) {
+        const success = await updateUserLocation(userId, locationName);
+        
+        if (success) {
+          toast({
+            title: "Location updated",
+            description: `Location name retrieved: ${locationName}`
+          });
+          await loadUsers();
+        } else {
+          throw new Error("Failed to update user location");
+        }
+      } else {
+        toast({
+          title: "Location error",
+          description: "Could not retrieve location name from coordinates",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error("Error getting location name:", err);
+      toast({
+        title: "Action failed",
+        description: err.message || "Failed to get location name",
+        variant: "destructive",
+      });
+    } finally {
+      setLocationLoading(prev => ({ ...prev, [userId]: false }));
+    }
+  };
+
   const getRoleBadges = (roles: UserRole[]) => {
     return roles.map(role => {
       let className = "";
@@ -223,129 +270,147 @@ const UserManagement: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center p-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : error ? (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          <p>{error}</p>
-        </div>
-      ) : filteredUsers.length === 0 ? (
-        <div className="text-center p-12 text-muted-foreground">
-          <p>No users found.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      {user.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt={user.pseudonym}
-                          className="h-8 w-8 rounded-full"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                          {user.pseudonym.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span>{user.pseudonym}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.location || 'Unknown'}</TableCell>
-                  <TableCell>{getRoleBadges(user.roles || ['user'])}</TableCell>
-                  <TableCell>{new Date(user.joined_at).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {user.is_blocked ? (
-                      <Badge variant="outline" className="bg-red-50 text-red-800 border-red-200">
-                        Blocked
-                      </Badge>
-                    ) : user.ghost_mode ? (
-                      <Badge variant="outline" className="bg-gray-50 text-gray-800 border-gray-200">
-                        Ghost Mode
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">
-                        Active
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-1">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditUser(user)}
-                        title="Edit user settings"
-                      >
-                        Edit
-                      </Button>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Shield className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            disabled={user.roles?.includes('paid_user')}
-                            onClick={() => handleRoleChange(user.id, 'paid_user', true)}
-                          >
-                            Assign Paid User
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            disabled={!user.roles?.includes('paid_user')}
-                            onClick={() => handleRoleChange(user.id, 'paid_user', false)}
-                          >
-                            Remove Paid User
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            disabled={user.roles?.includes('moderator')}
-                            onClick={() => handleRoleChange(user.id, 'moderator', true)}
-                          >
-                            Assign Moderator
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            disabled={!user.roles?.includes('moderator')}
-                            onClick={() => handleRoleChange(user.id, 'moderator', false)}
-                          >
-                            Remove Moderator
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      
-                      <Button
-                        variant={user.is_blocked ? "default" : "destructive"}
-                        size="sm"
-                        title={user.is_blocked ? "Unblock user" : "Block user"}
-                        onClick={() => handleBlockUser(user.id, !user.is_blocked)}
-                      >
-                        {user.is_blocked ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </TableCell>
+      <Card className="p-4 md:p-6">
+        {loading ? (
+          <div className="flex justify-center items-center p-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : error ? (
+          <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+            <p>{error}</p>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="text-center p-12 text-muted-foreground">
+            <p>No users found.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Roles</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        {user.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt={user.pseudonym}
+                            className="h-8 w-8 rounded-full"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                            {user.pseudonym.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span>{user.pseudonym}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <span className="mr-2">{user.location || 'Unknown'}</span>
+                        {user.latitude && user.longitude && !user.location && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 w-7 p-0"
+                            onClick={() => handleGetLocationName(user.id, user.latitude, user.longitude)}
+                            disabled={locationLoading[user.id]}
+                            title="Get location name from coordinates"
+                          >
+                            {locationLoading[user.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{getRoleBadges(user.roles || ['user'])}</TableCell>
+                    <TableCell>{new Date(user.joined_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {user.is_blocked ? (
+                        <Badge variant="outline" className="bg-red-50 text-red-800 border-red-200">
+                          Blocked
+                        </Badge>
+                      ) : user.ghost_mode ? (
+                        <Badge variant="outline" className="bg-gray-50 text-gray-800 border-gray-200">
+                          Ghost Mode
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">
+                          Active
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                          title="Edit user settings"
+                        >
+                          Edit
+                        </Button>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Shield className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              disabled={user.roles?.includes('paid_user')}
+                              onClick={() => handleRoleChange(user.id, 'paid_user', true)}
+                            >
+                              Assign Paid User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              disabled={!user.roles?.includes('paid_user')}
+                              onClick={() => handleRoleChange(user.id, 'paid_user', false)}
+                            >
+                              Remove Paid User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              disabled={user.roles?.includes('moderator')}
+                              onClick={() => handleRoleChange(user.id, 'moderator', true)}
+                            >
+                              Assign Moderator
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              disabled={!user.roles?.includes('moderator')}
+                              onClick={() => handleRoleChange(user.id, 'moderator', false)}
+                            >
+                              Remove Moderator
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <Button
+                          variant={user.is_blocked ? "default" : "destructive"}
+                          size="sm"
+                          title={user.is_blocked ? "Unblock user" : "Block user"}
+                          onClick={() => handleBlockUser(user.id, !user.is_blocked)}
+                        >
+                          {user.is_blocked ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
 
       {selectedUser && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

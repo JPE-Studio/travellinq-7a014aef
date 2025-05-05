@@ -19,7 +19,11 @@ import Unauthorized from "./pages/Unauthorized";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import ReportsManagement from "./pages/admin/ReportsManagement";
+import ContentManagement from "./pages/admin/ContentManagement";
+import RolesManagement from "./pages/admin/RolesManagement";
 import DataExport from "./pages/admin/DataExport";
+import AnalyticsPage from "./pages/admin/AnalyticsPage";
+import SettingsPage from "./pages/admin/SettingsPage";
 import BecomeAdmin from "./pages/BecomeAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
@@ -105,10 +109,42 @@ const App = () => (
               } 
             />
             <Route 
+              path="/admin/content" 
+              element={
+                <ProtectedRoute minimumRole="moderator">
+                  <ContentManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/roles" 
+              element={
+                <ProtectedRoute minimumRole="admin">
+                  <RolesManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/admin/data" 
               element={
                 <ProtectedRoute minimumRole="admin">
                   <DataExport />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/analytics" 
+              element={
+                <ProtectedRoute minimumRole="superadmin">
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/settings" 
+              element={
+                <ProtectedRoute minimumRole="admin">
+                  <SettingsPage />
                 </ProtectedRoute>
               } 
             />
