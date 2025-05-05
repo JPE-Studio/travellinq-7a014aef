@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UserRole } from "@/types/roles";
 
@@ -26,14 +25,14 @@ export const hasRole = async (userId: string, role: UserRole): Promise<boolean> 
 // Check if a user has any of the specified roles
 export const hasAnyRole = async (userId: string, roles: UserRole[]): Promise<boolean> => {
   try {
+    // Use an explicit cast for the parameters to avoid TypeScript errors
+    const params: any = { 
+      _user_id: userId,
+      _roles: roles 
+    };
+    
     const { data, error } = await supabase
-      .rpc('has_any_role', { 
-        _user_id: userId,
-        _roles: roles 
-      }, {
-        // Explicitly defining the response type to avoid TypeScript errors
-        count: 'exact'
-      });
+      .rpc('has_any_role', params);
     
     if (error) {
       console.error("Error checking roles:", error);

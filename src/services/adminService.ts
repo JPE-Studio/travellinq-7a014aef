@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { PostReport, AppMetrics, UserExport, HashtagData } from "@/types/roles";
 import { User } from "@/types";
@@ -10,15 +11,14 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
       .select(`
         *,
         post:posts(*),
-        reporter:profiles(id, pseudonym, avatar)
-      `)
-      .order('created_at', { ascending: false });
+        reporter:profiles!reporter_id(id, pseudonym, avatar)
+      `);
     
     if (status) {
       query = query.eq('status', status);
     }
     
-    const { data, error } = await query;
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error("Error fetching post reports:", error);
