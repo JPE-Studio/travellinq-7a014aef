@@ -129,7 +129,7 @@ const RolesManagement: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Current Roles</TableHead>
+                <TableHead className="hidden md:table-cell">Current Roles</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -151,8 +151,13 @@ const RolesManagement: React.FC = () => {
                       )}
                       <span>{user.pseudonym}</span>
                     </div>
+                    <div className="md:hidden mt-2">
+                      {getRoleBadges(user.roles || ['user'])}
+                    </div>
                   </TableCell>
-                  <TableCell>{getRoleBadges(user.roles || ['user'])}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {getRoleBadges(user.roles || ['user'])}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-2">
                       <Button 

@@ -1,157 +1,205 @@
-
-import React, { ReactNode, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Edit, 
-  Shield, 
-  Database,
-  BarChart2,
-  Settings,
-  Menu,
-  X
-} from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
 import { cn } from '@/lib/utils';
-import PageLayout from '@/components/PageLayout';
+import {
+  BarChart3,
+  Users,
+  Settings,
+  Flag,
+  FileText,
+  ShieldCheck,
+  Database,
+  Menu,
+  X,
+  Home
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
   title: string;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) => {
-  const location = useLocation();
-  const { isAtLeastRole } = useUserRole();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  const navItems = [
+  const { pathname } = useLocation();
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  const routes = [
     {
-      name: 'Overview',
-      path: '/admin',
-      icon: <LayoutDashboard className="h-5 w-5" />,
-      requiredRole: 'admin'
+      label: 'Overview',
+      icon: BarChart3,
+      href: '/admin',
+      active: pathname === '/admin',
     },
     {
-      name: 'Users',
-      path: '/admin/users',
-      icon: <Users className="h-5 w-5" />,
-      requiredRole: 'admin'
+      label: 'User Management',
+      icon: Users,
+      href: '/admin/users',
+      active: pathname === '/admin/users',
     },
     {
-      name: 'Reports',
-      path: '/admin/reports',
-      icon: <FileText className="h-5 w-5" />,
-      requiredRole: 'moderator'
+      label: 'Reports',
+      icon: Flag,
+      href: '/admin/reports',
+      active: pathname === '/admin/reports',
     },
     {
-      name: 'Content',
-      path: '/admin/content',
-      icon: <Edit className="h-5 w-5" />,
-      requiredRole: 'moderator'
+      label: 'Content',
+      icon: FileText,
+      href: '/admin/content',
+      active: pathname === '/admin/content',
     },
     {
-      name: 'Roles',
-      path: '/admin/roles',
-      icon: <Shield className="h-5 w-5" />,
-      requiredRole: 'admin'
+      label: 'Roles',
+      icon: ShieldCheck,
+      href: '/admin/roles',
+      active: pathname === '/admin/roles',
     },
     {
-      name: 'Data',
-      path: '/admin/data',
-      icon: <Database className="h-5 w-5" />,
-      requiredRole: 'admin'
+      label: 'Data Export',
+      icon: Database,
+      href: '/admin/data',
+      active: pathname === '/admin/data',
     },
     {
-      name: 'Analytics',
-      path: '/admin/analytics',
-      icon: <BarChart2 className="h-5 w-5" />,
-      requiredRole: 'superadmin'
+      label: 'Analytics',
+      icon: BarChart3,
+      href: '/admin/analytics',
+      active: pathname === '/admin/analytics',
     },
     {
-      name: 'Settings',
-      path: '/admin/settings',
-      icon: <Settings className="h-5 w-5" />,
-      requiredRole: 'admin'
+      label: 'Settings',
+      icon: Settings,
+      href: '/admin/settings',
+      active: pathname === '/admin/settings',
     },
   ];
 
-  const NavLinks = () => (
-    <nav className="space-y-1">
-      {navItems.map((item) => {
-        // Only show nav items the user has access to
-        if (!isAtLeastRole(item.requiredRole as any)) {
-          return null;
-        }
-        
-        const isActive = location.pathname === item.path;
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={cn(
-              "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-              isActive
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted text-foreground"
-            )}
-            onClick={() => setSidebarOpen(false)}
-          >
-            <span className="mr-3">{item.icon}</span>
-            {item.name}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">{title}</h1>
-          
-          <div className="md:hidden">
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar for desktop */}
+      <aside className="hidden md:flex flex-col w-64 border-r bg-card">
+        <div className="p-6">
+          <Link to="/" className="flex items-center gap-2 font-semibold">
+            <Home className="h-6 w-6" />
+            <span className="text-xl font-bold">Admin</span>
+          </Link>
+        </div>
+        <ScrollArea className="flex-1 px-3">
+          <div className="space-y-1 py-2">
+            {routes.map((route) => (
+              <Button
+                key={route.href}
+                variant={route.active ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  route.active ? "bg-secondary" : "hover:bg-secondary/50"
+                )}
+                asChild
+              >
+                <Link to={route.href}>
+                  <route.icon className="mr-2 h-5 w-5" />
+                  {route.label}
+                </Link>
+              </Button>
+            ))}
+          </div>
+        </ScrollArea>
+        <div className="p-4 border-t">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              {user?.pseudonym?.charAt(0).toUpperCase() || 'A'}
+            </div>
+            <div>
+              <p className="font-medium text-sm">{user?.pseudonym || 'Admin'}</p>
+              <p className="text-xs text-muted-foreground">Administrator</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile sidebar */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden fixed top-4 left-4 z-40"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-72 p-0">
+          <div className="p-6 border-b flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2 font-semibold" onClick={() => setOpen(false)}>
+              <Home className="h-6 w-6" />
+              <span className="text-xl font-bold">Admin</span>
+            </Link>
+            <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <ScrollArea className="h-[calc(100vh-8rem)]">
+            <div className="space-y-1 p-3">
+              {routes.map((route) => (
+                <Button
+                  key={route.href}
+                  variant={route.active ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start",
+                    route.active ? "bg-secondary" : "hover:bg-secondary/50"
+                  )}
+                  asChild
+                  onClick={() => setOpen(false)}
+                >
+                  <Link to={route.href}>
+                    <route.icon className="mr-2 h-5 w-5" />
+                    {route.label}
+                  </Link>
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold">Admin Menu</h3>
-                  <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
-                    <X className="h-5 w-5" />
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="p-4 border-t mt-auto">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                {user?.pseudonym?.charAt(0).toUpperCase() || 'A'}
+              </div>
+              <div>
+                <p className="font-medium text-sm">{user?.pseudonym || 'Admin'}</p>
+                <p className="text-xs text-muted-foreground">Administrator</p>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Main content */}
+      <main className="flex-1">
+        <div className="flex flex-col min-h-screen">
+          <header className="sticky top-0 z-30 bg-background border-b">
+            <div className="container flex h-16 items-center justify-between py-4">
+              <h1 className="text-2xl font-bold">{title}</h1>
+              <div className="flex items-center gap-4">
+                <Link to="/">
+                  <Button variant="outline" size="sm">
+                    Back to App
                   </Button>
-                </div>
-                <NavLinks />
-              </SheetContent>
-            </Sheet>
+                </Link>
+              </div>
+            </div>
+          </header>
+          <div className="flex-1 container py-6 md:py-8">
+            {children}
           </div>
         </div>
-        
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Desktop Sidebar */}
-          <div className="hidden md:block w-full md:w-64 shrink-0">
-            <div className="bg-card rounded-lg shadow-sm p-4 sticky top-20">
-              <NavLinks />
-            </div>
-          </div>
-          
-          {/* Main content */}
-          <div className="flex-1">
-            <div className="bg-card rounded-lg shadow-sm p-4 md:p-6 overflow-x-auto w-full">
-              {children}
-            </div>
-          </div>
-        </div>
-      </div>
-    </PageLayout>
+      </main>
+    </div>
   );
 };
 
