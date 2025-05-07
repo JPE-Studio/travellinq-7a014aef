@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Flag, ThumbsUp, ThumbsDown, Languages } from 'lucide-react';
+import { MessageSquare, ThumbsUp, ThumbsDown, Languages, MoreHorizontal, Flag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { reportPost } from '@/services/adminService';
 
@@ -89,78 +95,91 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
 
   return (
     <>
-      <div className="flex items-center mt-2 gap-x-3">
-        {/* Voting buttons */}
-        {handleVote && (
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-0 ${userVote === 1 ? 'text-primary' : 'text-muted-foreground'} hover:bg-transparent`}
-              onClick={() => handleVote('up')}
-              disabled={loading}
-            >
-              <ThumbsUp className="h-4 w-4" />
-            </Button>
-            <span className="mx-1 text-sm font-medium">{votes}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-0 ${userVote === -1 ? 'text-primary' : 'text-muted-foreground'} hover:bg-transparent`}
-              onClick={() => handleVote('down')}
-              disabled={loading}
-            >
-              <ThumbsDown className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-x-3">
+          {/* Voting buttons */}
+          {handleVote && (
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`p-0 ${userVote === 1 ? 'text-primary' : 'text-muted-foreground'} hover:bg-transparent`}
+                onClick={() => handleVote('up')}
+                disabled={loading}
+              >
+                <ThumbsUp className="h-4 w-4" />
+              </Button>
+              <span className="mx-1 text-sm font-medium">{votes}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`p-0 ${userVote === -1 ? 'text-primary' : 'text-muted-foreground'} hover:bg-transparent`}
+                onClick={() => handleVote('down')}
+                disabled={loading}
+              >
+                <ThumbsDown className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
-        {/* Comment button */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-muted-foreground p-0 hover:bg-transparent" 
-          onClick={onCommentClick}
-        >
-          <MessageSquare className="h-4 w-4 mr-1" /> 
-          {commentCount}
-        </Button>
-        
-        {/* Translate button */}
-        {showTranslateButton && handleTranslate && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground p-0 hover:bg-transparent"
-            onClick={handleTranslate}
-            disabled={isTranslating || !translationAvailable}
+          {/* Comment button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground p-0 hover:bg-transparent" 
+            onClick={onCommentClick}
           >
-            <Languages className="h-4 w-4 mr-1" />
-            {isTranslating ? 'Translating...' : translatedText ? 'Original' : 'Translate'}
+            <MessageSquare className="h-4 w-4 mr-1" /> 
+            {commentCount}
           </Button>
-        )}
+        </div>
         
-        {/* Report button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground p-0 hover:bg-transparent ml-auto"
-          onClick={() => setReportDialogOpen(true)}
-        >
-          <Flag className="h-4 w-4 mr-1" /> Report
-        </Button>
-
-        {/* Delete button */}
-        {onDelete && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive p-0 hover:bg-transparent"
-            onClick={onDelete}
-          >
-            Delete
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Translate button - smaller with border */}
+          {showTranslateButton && handleTranslate && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs px-2 py-0 h-6 text-muted-foreground border border-muted"
+              onClick={handleTranslate}
+              disabled={isTranslating || !translationAvailable}
+            >
+              <Languages className="h-3 w-3 mr-1" />
+              {isTranslating ? 'Translating...' : translatedText ? 'Original' : 'Translate'}
+            </Button>
+          )}
+          
+          {/* Ellipsis menu for Report and Delete */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground p-0 hover:bg-transparent"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem 
+                className="flex items-center cursor-pointer"
+                onClick={() => setReportDialogOpen(true)}
+              >
+                <Flag className="h-4 w-4 mr-2" />
+                Report
+              </DropdownMenuItem>
+              
+              {onDelete && (
+                <DropdownMenuItem 
+                  className="flex items-center text-destructive cursor-pointer"
+                  onClick={onDelete}
+                >
+                  Delete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Report dialog */}

@@ -3,8 +3,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ProfileButton from './ProfileButton';
-import { MapPin } from 'lucide-react';
+import { MapPin, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import NotificationCenter from './notifications/NotificationCenter';
 
 const Header: React.FC = () => {
@@ -21,7 +26,20 @@ const Header: React.FC = () => {
         </Link>
         
         <div className="flex items-center gap-4">
-          {user && <NotificationCenter />}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="p-2">
+                  <MoreHorizontal className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-2">
+                  <NotificationCenter />
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           
           {user ? (
             <ProfileButton />

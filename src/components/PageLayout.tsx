@@ -59,7 +59,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex flex-col w-full bg-background overflow-hidden">
+      <div className="min-h-screen flex flex-col w-full bg-background">
         {showHeader && <Header />}
         
         <div className="flex flex-row w-full flex-1">
@@ -82,12 +82,10 @@ const PageLayout: React.FC<PageLayoutProps> = ({
             </SidebarContent>
           </Sidebar>
           
-          {/* Main content - adjusted to give more space */}
-          <div className="flex-grow flex flex-col overflow-auto pb-16 md:pb-0 w-full max-w-screen-xl mx-auto">
-            <div className="px-4 py-6 md:p-8">
-              {children}
-            </div>
-          </div>
+          {/* Main content */}
+          <main className="flex-grow flex flex-col w-full max-w-2xl mx-auto">
+            {children}
+          </main>
         </div>
         
         {/* Bottom navigation for mobile only */}

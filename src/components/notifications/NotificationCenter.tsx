@@ -2,11 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from '@/components/ui/popover';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationsList from './NotificationsList';
@@ -20,7 +15,6 @@ import {
 
 const NotificationCenter: React.FC = () => {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -77,49 +71,44 @@ const NotificationCenter: React.FC = () => {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center">
+          <Bell className="h-4 w-4 mr-2" />
+          <h3 className="font-medium">Notifications</h3>
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {unreadCount}
             </span>
           )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-medium">Notifications</h3>
-          {notifications.some(n => !n.read) && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-xs"
-              onClick={handleMarkAllAsRead}
-            >
-              Mark all as read
-            </Button>
-          )}
         </div>
-        
-        <NotificationsList 
-          notifications={notifications} 
-          onMarkAsRead={handleMarkAsRead}
-          loading={loading} 
-        />
-        
-        <div className="p-2 border-t">
-          <Link 
-            to="/notifications" 
-            className="block text-center text-sm text-primary hover:underline p-2"
-            onClick={() => setOpen(false)}
+        {notifications.some(n => !n.read) && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs"
+            onClick={handleMarkAllAsRead}
           >
-            View all notifications
-          </Link>
-        </div>
-      </PopoverContent>
-    </Popover>
+            Mark all as read
+          </Button>
+        )}
+      </div>
+      
+      <NotificationsList 
+        notifications={notifications} 
+        onMarkAsRead={handleMarkAsRead}
+        loading={loading} 
+      />
+      
+      <div className="pt-2 mt-2 border-t">
+        <Link 
+          to="/notifications" 
+          className="block text-center text-sm text-primary hover:underline py-1"
+        >
+          View all notifications
+        </Link>
+      </div>
+    </div>
   );
 };
 

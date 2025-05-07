@@ -9,6 +9,7 @@ import { deletePost } from '@/services/postService';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,9 +26,10 @@ import PostInteractions from '@/components/post/PostInteractions';
 
 interface PostCardProps {
   post: Post;
+  isLast?: boolean;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, isLast = false }) => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -83,8 +85,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   
   return (
     <>
-      <div className="bg-card rounded-lg shadow mb-4 overflow-hidden">
-        <div className="p-4">
+      <div className="py-4 w-full">
+        <div className="px-4">
           {/* Post header with user info and subscribe button */}
           <PostHeader 
             post={post}
@@ -117,6 +119,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             onDelete={profile?.id === post.author.id ? handleDeleteClick : undefined}
           />
         </div>
+        
+        {!isLast && <Separator className="mt-2" />}
       </div>
       
       {/* Delete confirmation dialog */}
