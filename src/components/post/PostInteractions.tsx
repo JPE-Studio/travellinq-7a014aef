@@ -89,14 +89,14 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
 
   return (
     <>
-      <div className="flex items-center mt-2 space-x-2">
+      <div className="flex items-center mt-2 gap-x-3">
         {/* Voting buttons */}
         {handleVote && (
-          <div className="flex items-center mr-2">
+          <div className="flex items-center">
             <Button
               variant="ghost"
               size="sm"
-              className={`p-1 ${userVote === 1 ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`p-0 ${userVote === 1 ? 'text-primary' : 'text-muted-foreground'} hover:bg-transparent`}
               onClick={() => handleVote('up')}
               disabled={loading}
             >
@@ -106,7 +106,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className={`p-1 ${userVote === -1 ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`p-0 ${userVote === -1 ? 'text-primary' : 'text-muted-foreground'} hover:bg-transparent`}
               onClick={() => handleVote('down')}
               disabled={loading}
             >
@@ -119,11 +119,11 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-muted-foreground" 
+          className="text-muted-foreground p-0 hover:bg-transparent" 
           onClick={onCommentClick}
         >
           <MessageSquare className="h-4 w-4 mr-1" /> 
-          {commentCount} {commentCount === 1 ? 'Comment' : 'Comments'}
+          {commentCount}
         </Button>
         
         {/* Translate button */}
@@ -131,12 +131,12 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground"
+            className="text-muted-foreground p-0 hover:bg-transparent"
             onClick={handleTranslate}
             disabled={isTranslating || !translationAvailable}
           >
             <Languages className="h-4 w-4 mr-1" />
-            {isTranslating ? 'Translating...' : translatedText ? 'Show Original' : 'Translate'}
+            {isTranslating ? 'Translating...' : translatedText ? 'Original' : 'Translate'}
           </Button>
         )}
         
@@ -144,7 +144,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground"
+          className="text-muted-foreground p-0 hover:bg-transparent ml-auto"
           onClick={() => setReportDialogOpen(true)}
         >
           <Flag className="h-4 w-4 mr-1" /> Report
@@ -155,7 +155,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="text-destructive"
+            className="text-destructive p-0 hover:bg-transparent"
             onClick={onDelete}
           >
             Delete
@@ -165,7 +165,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
 
       {/* Report dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Report Post</DialogTitle>
             <DialogDescription>
@@ -181,7 +181,7 @@ const PostInteractions: React.FC<PostInteractionsProps> = ({
             className="min-h-[100px]"
           />
           
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button 
               variant="outline" 
               onClick={() => setReportDialogOpen(false)}

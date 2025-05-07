@@ -71,9 +71,9 @@ const PageLayout: React.FC<PageLayoutProps> = ({
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       onClick={() => navigate(item.path)}
-                      className={item.active ? "bg-accent text-accent-foreground" : ""}
+                      className={`${item.active ? "bg-secondary text-foreground font-medium" : "text-muted-foreground"} hover:bg-secondary/50`}
                     >
-                      <item.icon className="h-5 w-5 mr-3" />
+                      <item.icon className="h-5 w-5 mr-2" />
                       {item.label}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -82,9 +82,11 @@ const PageLayout: React.FC<PageLayoutProps> = ({
             </SidebarContent>
           </Sidebar>
           
-          {/* Main content - adjusted to give more space on desktop */}
-          <div className="flex-grow flex flex-col overflow-auto pb-16 md:pb-0 w-full">
-            {children}
+          {/* Main content - adjusted to give more space */}
+          <div className="flex-grow flex flex-col overflow-auto pb-16 md:pb-0 w-full max-w-screen-xl mx-auto">
+            <div className="px-4 py-6 md:p-8">
+              {children}
+            </div>
           </div>
         </div>
         
