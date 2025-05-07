@@ -12,7 +12,7 @@ import AdminDashboardLink from '@/components/AdminDashboardLink';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import PostCard from '@/components/PostCard';
-import Comment from '@/components/Comment';
+import { Comment, Post } from '@/types';
 
 interface UserPost {
   id: string;
@@ -33,6 +33,8 @@ interface UserComment {
     id: string;
     text: string;
   };
+  votes: number; // Adding votes to properly match the Comment type
+  parentCommentId?: string; // Adding parent comment id
 }
 
 interface UpvotedPost {
@@ -51,7 +53,7 @@ interface UpvotedPost {
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
   const [loading, setLoading] = useState(false);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
@@ -75,6 +77,7 @@ const Profile: React.FC = () => {
       try {
         // Fetch based on active tab to avoid unnecessary queries
         if (activeTab === 'posts') {
+          console.log("Fetching user posts");
           const { data: posts, error: postsError } = await supabase
             .from('posts')
             .select(`
@@ -90,16 +93,24 @@ const Profile: React.FC = () => {
             .eq('author_id', user.id)
             .order('created_at', { ascending: false });
 
-          if (postsError) throw postsError;
+          if (postsError) {
+            console.error("Error fetching posts:", postsError);
+            throw postsError;
+          }
+          
+          console.log("Posts fetched:", posts);
           setUserPosts(posts || []);
         } 
         else if (activeTab === 'comments') {
+          console.log("Fetching user comments");
           const { data: comments, error: commentsError } = await supabase
             .from('comments')
             .select(`
               id, 
               text, 
               created_at,
+              votes,
+              parent_comment_id,
               post:posts!post_id (
                 id,
                 text
@@ -108,10 +119,23 @@ const Profile: React.FC = () => {
             .eq('author_id', user.id)
             .order('created_at', { ascending: false });
 
-          if (commentsError) throw commentsError;
-          setUserComments(comments || []);
+          if (commentsError) {
+            console.error("Error fetching comments:", commentsError);
+            throw commentsError;
+          }
+          
+          console.log("Comments fetched:", comments);
+          setUserComments(comments ? comments.map(c => ({
+            id: c.id,
+            text: c.text,
+            created_at: c.created_at,
+            votes: c.votes,
+            parentCommentId: c.parent_comment_id,
+            post: c.post
+          })) : []);
         } 
         else if (activeTab === 'upvoted') {
+          console.log("Fetching upvoted posts");
           const { data: upvoted, error: upvotedError } = await supabase
             .from('user_post_votes')
             .select(`
@@ -131,7 +155,12 @@ const Profile: React.FC = () => {
             .eq('vote_type', 1)
             .order('created_at', { ascending: false });
 
-          if (upvotedError) throw upvotedError;
+          if (upvotedError) {
+            console.error("Error fetching upvoted posts:", upvotedError);
+            throw upvotedError;
+          }
+          
+          console.log("Upvoted posts fetched:", upvoted);
           setUpvotedPosts(upvoted || []);
         }
       } catch (error) {
@@ -242,15 +271,15 @@ const Profile: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {userPosts.map(post => (
-                  <PostCard
-                    key={post.id}
-                    id={post.id}
-                    content={post.text}
-                    authorName={post.author?.pseudonym}
-                    authorAvatar={post.author?.avatar || undefined}
-                    createdAt={new Date(post.created_at)}
-                    votes={post.votes}
-                  />
+                  <div key={post.id} className="border rounded-lg p-4">
+                    <Link to={`/post/${post.id}`} className="font-medium hover:underline">
+                      {post.text.length > 200 ? `${post.text.slice(0, 200)}...` : post.text}
+                    </Link>
+                    <div className="flex justify-between text-sm text-muted-foreground mt-2">
+                      <span>Votes: {post.votes}</span>
+                      <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -276,15 +305,11 @@ const Profile: React.FC = () => {
                     <Link to={`/post/${comment.post.id}`} className="text-sm font-medium hover:underline mb-1 block">
                       On post: {comment.post.text.length > 100 ? `${comment.post.text.slice(0, 100)}...` : comment.post.text}
                     </Link>
-                    <Comment
-                      id={comment.id}
-                      text={comment.text}
-                      authorId={user.id}
-                      authorName={profile.pseudonym}
-                      authorAvatar={profile.avatar || undefined}
-                      createdAt={new Date(comment.created_at)}
-                      showActions={false}
-                    />
+                    <p className="text-sm mt-1">{comment.text}</p>
+                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                      <span>Votes: {comment.votes}</span>
+                      <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -311,15 +336,15 @@ const Profile: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {upvotedPosts.map(item => (
-                  <PostCard
-                    key={item.post.id}
-                    id={item.post.id}
-                    content={item.post.text}
-                    authorName={item.post.author?.pseudonym}
-                    authorAvatar={item.post.author?.avatar || undefined}
-                    createdAt={new Date(item.post.created_at)}
-                    votes={item.post.votes}
-                  />
+                  <div key={item.post_id} className="border rounded-lg p-4">
+                    <Link to={`/post/${item.post.id}`} className="font-medium hover:underline">
+                      {item.post.text.length > 200 ? `${item.post.text.slice(0, 200)}...` : item.post.text}
+                    </Link>
+                    <div className="flex justify-between text-sm text-muted-foreground mt-2">
+                      <span>By: {item.post.author?.pseudonym || 'Unknown'}</span>
+                      <span>{new Date(item.post.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

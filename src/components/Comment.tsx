@@ -24,14 +24,14 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, depth = 0 }) => {
   const { user } = useAuth();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [userVote, setUserVote] = useState<1 | -1 | null>(null);
-  const [votes, setVotes] = useState(comment.votes);
+  const [votes, setVotes] = useState(comment?.votes || 0); // Add fallback for votes
   const [loading, setLoading] = useState(false);
   
   const isNestedDeep = depth > 0;
   const isMaxNestingDepth = depth >= MAX_NESTING_DEPTH;
   
   React.useEffect(() => {
-    if (!user) return;
+    if (!user || !comment) return;
     
     // Check if user has already voted on this comment
     const checkUserVote = async () => {
@@ -53,7 +53,13 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, depth = 0 }) => {
     };
     
     checkUserVote();
-  }, [comment.id, user]);
+  }, [comment?.id, user]);
+  
+  // Guard against undefined comment
+  if (!comment) {
+    console.error("Comment is undefined or null");
+    return null;
+  }
   
   const handleVote = async (direction: 'up' | 'down') => {
     if (!user) {
