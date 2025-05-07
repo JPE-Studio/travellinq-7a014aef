@@ -24,11 +24,17 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, depth = 0 }) => {
   const { user } = useAuth();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [userVote, setUserVote] = useState<1 | -1 | null>(null);
-  const [votes, setVotes] = useState(comment?.votes || 0); // Add fallback for votes
+  const [votes, setVotes] = useState(comment?.votes ?? 0); // Fix: Add null check with fallback default
   const [loading, setLoading] = useState(false);
   
   const isNestedDeep = depth > 0;
   const isMaxNestingDepth = depth >= MAX_NESTING_DEPTH;
+  
+  // Guard against undefined comment
+  if (!comment) {
+    console.error("Comment is undefined or null");
+    return null;
+  }
   
   React.useEffect(() => {
     if (!user || !comment) return;
@@ -55,11 +61,12 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, depth = 0 }) => {
     checkUserVote();
   }, [comment?.id, user]);
   
-  // Guard against undefined comment
-  if (!comment) {
-    console.error("Comment is undefined or null");
-    return null;
-  }
+  // Update votes state when comment.votes changes
+  React.useEffect(() => {
+    if (comment?.votes !== undefined) {
+      setVotes(comment.votes);
+    }
+  }, [comment?.votes]);
   
   const handleVote = async (direction: 'up' | 'down') => {
     if (!user) {

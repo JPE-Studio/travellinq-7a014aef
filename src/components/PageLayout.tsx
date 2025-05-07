@@ -63,8 +63,8 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         {showHeader && <Header />}
         
         <div className="flex flex-row w-full flex-1">
-          {/* Left Sidebar for Desktop Navigation */}
-          <Sidebar className="border-r hidden md:flex">
+          {/* Left Sidebar for Desktop Navigation - Always shown on desktop */}
+          <Sidebar className="border-r hidden md:flex h-[calc(100vh-64px)] sticky top-16">
             <SidebarContent>
               <SidebarMenu>
                 {navigationItems.map((item) => (
@@ -82,8 +82,8 @@ const PageLayout: React.FC<PageLayoutProps> = ({
             </SidebarContent>
           </Sidebar>
           
-          {/* Main content */}
-          <div className="flex-grow flex flex-col overflow-auto pb-16 md:pb-0">
+          {/* Main content - adjusted to give more space on desktop */}
+          <div className="flex-grow flex flex-col overflow-auto pb-16 md:pb-0 w-full">
             {children}
           </div>
         </div>

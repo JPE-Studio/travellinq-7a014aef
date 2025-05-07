@@ -33,8 +33,8 @@ interface UserComment {
     id: string;
     text: string;
   };
-  votes: number; // Adding votes to properly match the Comment type
-  parentCommentId?: string; // Adding parent comment id
+  votes: number;
+  parentCommentId?: string;
 }
 
 interface UpvotedPost {
@@ -53,7 +53,7 @@ interface UpvotedPost {
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth(); // Fix: use signOut from useAuth
   const [activeTab, setActiveTab] = useState('posts');
   const [loading, setLoading] = useState(false);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
@@ -78,6 +78,7 @@ const Profile: React.FC = () => {
         // Fetch based on active tab to avoid unnecessary queries
         if (activeTab === 'posts') {
           console.log("Fetching user posts");
+          // Fix: Update the query to avoid relation errors by selecting fields directly
           const { data: posts, error: postsError } = await supabase
             .from('posts')
             .select(`
@@ -85,10 +86,7 @@ const Profile: React.FC = () => {
               text, 
               created_at, 
               votes,
-              author:profiles!author_id (
-                pseudonym,
-                avatar
-              )
+              author_id
             `)
             .eq('author_id', user.id)
             .order('created_at', { ascending: false });
@@ -99,7 +97,24 @@ const Profile: React.FC = () => {
           }
           
           console.log("Posts fetched:", posts);
-          setUserPosts(posts || []);
+          
+          // Fix: Transform posts to include author info from profile
+          if (posts && posts.length > 0) {
+            // Use existing profile data since these are the user's own posts
+            const transformedPosts = posts.map(post => ({
+              id: post.id,
+              text: post.text,
+              created_at: post.created_at,
+              votes: post.votes,
+              author: {
+                pseudonym: profile?.pseudonym || 'Unknown',
+                avatar: profile?.avatar || null
+              }
+            }));
+            setUserPosts(transformedPosts);
+          } else {
+            setUserPosts([]);
+          }
         } 
         else if (activeTab === 'comments') {
           console.log("Fetching user comments");
@@ -136,6 +151,7 @@ const Profile: React.FC = () => {
         } 
         else if (activeTab === 'upvoted') {
           console.log("Fetching upvoted posts");
+          // Fix: Update the query to avoid relation errors
           const { data: upvoted, error: upvotedError } = await supabase
             .from('user_post_votes')
             .select(`
@@ -145,10 +161,7 @@ const Profile: React.FC = () => {
                 text, 
                 created_at, 
                 votes,
-                author:profiles!author_id (
-                  pseudonym,
-                  avatar
-                )
+                author_id
               )
             `)
             .eq('user_id', user.id)
@@ -161,7 +174,48 @@ const Profile: React.FC = () => {
           }
           
           console.log("Upvoted posts fetched:", upvoted);
-          setUpvotedPosts(upvoted || []);
+          
+          // Fix: For upvoted posts, we need to fetch author info separately
+          if (upvoted && upvoted.length > 0) {
+            const transformedUpvoted = await Promise.all(upvoted.map(async (item) => {
+              // Get author info for each post
+              let authorInfo = {
+                pseudonym: 'Unknown',
+                avatar: null
+              };
+              
+              try {
+                if (item.post?.author_id) {
+                  const { data: authorProfile } = await supabase
+                    .from('profiles')
+                    .select('pseudonym, avatar')
+                    .eq('id', item.post.author_id)
+                    .single();
+                    
+                  if (authorProfile) {
+                    authorInfo = {
+                      pseudonym: authorProfile.pseudonym,
+                      avatar: authorProfile.avatar
+                    };
+                  }
+                }
+              } catch (err) {
+                console.error("Error fetching post author:", err);
+              }
+              
+              return {
+                post_id: item.post_id,
+                post: {
+                  ...item.post,
+                  author: authorInfo
+                }
+              };
+            }));
+            
+            setUpvotedPosts(transformedUpvoted);
+          } else {
+            setUpvotedPosts([]);
+          }
         }
       } catch (error) {
         console.error('Error fetching user content:', error);
@@ -171,7 +225,7 @@ const Profile: React.FC = () => {
     };
 
     fetchUserContent();
-  }, [user?.id, activeTab]);
+  }, [user?.id, activeTab, profile]);
 
   if (!user || !profile) {
     navigate('/auth');
