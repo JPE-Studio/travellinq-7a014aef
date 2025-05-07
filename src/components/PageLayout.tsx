@@ -19,6 +19,13 @@ interface PageLayoutProps {
   showHeader?: boolean;
 }
 
+interface NavigationItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  active: boolean;
+}
+
 const PageLayout: React.FC<PageLayoutProps> = ({
   children,
   showHeader = true
@@ -31,7 +38,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
     return location.pathname === path;
   };
   
-  const navigationItems = [
+  const navigationItems: NavigationItem[] = [
     {
       icon: Home,
       label: "Home",
@@ -74,11 +81,11 @@ const PageLayout: React.FC<PageLayoutProps> = ({
             <SidebarContent>
               <SidebarMenu>
                 {navigationItems.map((item) => (
-                  <SidebarMenuItem key={item.path} active={item.active}>
+                  <SidebarMenuItem key={item.path} className={item.active ? "bg-accent" : ""}>
                     <SidebarMenuButton
                       onClick={() => navigate(item.path)}
-                      icon={<item.icon className="h-5 w-5" />}
                     >
+                      {<item.icon className="h-5 w-5 mr-2" />}
                       {item.label}
                     </SidebarMenuButton>
                   </SidebarMenuItem>

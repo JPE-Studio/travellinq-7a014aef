@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, MoreVertical, ExternalLink } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -18,13 +18,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import DashboardLayout from '@/components/admin/DashboardLayout';
 import { fetchPostReports, updatePostReport, blockUser } from '@/services/adminService';
 import { PostReport } from '@/types/roles';
+import { useMediaQuery } from '@/hooks/use-mobile';
 
 const ReportsManagement: React.FC = () => {
   const [reports, setReports] = useState<PostReport[]>([]);
@@ -36,6 +51,7 @@ const ReportsManagement: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('pending');
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const loadReports = async (status: string = '') => {
     try {
@@ -161,7 +177,45 @@ const ReportsManagement: React.FC = () => {
             <div className="text-center p-12 text-muted-foreground">
               <p>No reports found with status: {activeTab === 'all' ? 'any' : activeTab}</p>
             </div>
+          ) : isMobile ? (
+            // Card layout for mobile
+            <div className="space-y-4">
+              {reports.map((report) => (
+                <Card key={report.id} className="overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(report.created_at).toLocaleDateString()}
+                        </div>
+                        <CardTitle className="text-lg mt-1">
+                          {report.reporter?.pseudonym || 'Anonymous'}
+                        </CardTitle>
+                      </div>
+                      <div>{getStatusBadge(report.status)}</div>
+                    </div>
+                  </CardHeader>
+                  <Separator />
+                  <CardContent className="pt-4">
+                    <p className="text-sm truncate font-medium">Reason:</p>
+                    <p className="text-sm mb-4">{report.reason}</p>
+                  </CardContent>
+                  <CardFooter className="flex justify-end pt-0">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewReport(report)}
+                      className="flex items-center"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      View Details
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           ) : (
+            // Table layout for desktop
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>

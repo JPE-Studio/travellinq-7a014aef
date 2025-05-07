@@ -63,7 +63,25 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
       } else if (profiles) {
         // Create a map of user id -> profile
         reporterProfiles = profiles.reduce((acc, profile) => {
-          acc[profile.id] = profile as User;
+          // Convert from database schema to User type
+          const user: User = {
+            id: profile.id,
+            pseudonym: profile.pseudonym,
+            avatar: profile.avatar,
+            bio: profile.bio,
+            website: profile.website,
+            location: profile.location,
+            latitude: profile.latitude,
+            longitude: profile.longitude,
+            preferred_language: profile.preferred_language,
+            auto_translate: profile.auto_translate,
+            location_sharing: profile.location_sharing,
+            ghost_mode: profile.ghost_mode,
+            is_blocked: profile.is_blocked,
+            feed_radius: profile.feed_radius,
+            joinedAt: profile.joined_at,
+          };
+          acc[profile.id] = user;
           return acc;
         }, {} as Record<string, User>);
       }
