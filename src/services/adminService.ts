@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { PostReport, AppMetrics, UserExport, HashtagData } from "@/types/roles";
 import { User } from "@/types";
@@ -8,12 +7,21 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
   try {
     console.log("Fetching post reports with status:", status || "all");
     
+    // First, fetch the post reports
     let query = supabase
       .from('post_reports')
       .select(`
-        *,
-        post:posts(*),
-        reporter:profiles!reporter_id(*)
+        id,
+        post_id,
+        reporter_id,
+        reason,
+        status,
+        created_at,
+        updated_at,
+        resolved_by,
+        resolution_notes,
+        resolution_action,
+        post:posts(*)
       `);
     
     if (status && status !== 'all') {
@@ -21,20 +29,54 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
       query = query.eq('status', status);
     }
     
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data: reports, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error("Error fetching post reports:", error);
       throw error;
     }
+
+    console.log("Fetched post reports:", reports?.length || 0, "reports");
+
+    // If no reports found, return empty array
+    if (!reports || reports.length === 0) {
+      return [];
+    }
+
+    // Get unique reporter IDs (filtering out nulls)
+    const reporterIds = reports
+      .map(report => report.reporter_id)
+      .filter((id): id is string => id !== null);
+
+    // If there are reporter IDs, fetch their profiles
+    let reporterProfiles: Record<string, User> = {};
     
-    console.log("Fetched post reports:", data?.length || 0, "reports");
+    if (reporterIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', reporterIds);
+      
+      if (profilesError) {
+        console.error("Error fetching reporter profiles:", profilesError);
+        // Continue anyway, we'll just have reports without reporter info
+      } else if (profiles) {
+        // Create a map of user id -> profile
+        reporterProfiles = profiles.reduce((acc, profile) => {
+          acc[profile.id] = profile as User;
+          return acc;
+        }, {} as Record<string, User>);
+      }
+    }
     
-    // Ensure the status is cast to the correct type
-    return (data as any[] || []).map(report => ({
+    // Combine the data
+    const enhancedReports: PostReport[] = reports.map(report => ({
       ...report,
+      reporter: report.reporter_id ? reporterProfiles[report.reporter_id] : undefined,
       status: report.status as 'pending' | 'resolved' | 'rejected'
     }));
+    
+    return enhancedReports;
   } catch (error) {
     console.error("Error in fetchPostReports:", error);
     throw error;

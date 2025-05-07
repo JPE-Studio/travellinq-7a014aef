@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import DashboardLayout from '@/components/admin/DashboardLayout';
 import { fetchPostReports, updatePostReport, blockUser } from '@/services/adminService';
 import { PostReport } from '@/types/roles';
@@ -39,14 +40,19 @@ const ReportsManagement: React.FC = () => {
   const loadReports = async (status: string = '') => {
     try {
       setLoading(true);
+      setError(null);
       console.log("Loading reports with status:", status || "all");
       const data = await fetchPostReports(status);
       console.log("Reports loaded:", data);
       setReports(data);
-      setError(null);
     } catch (err: any) {
       console.error("Error loading reports:", err);
       setError(err.message || "Failed to load reports");
+      toast({
+        variant: "destructive",
+        title: "Error loading reports",
+        description: err.message || "There was a problem loading the reports. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -108,6 +114,10 @@ const ReportsManagement: React.FC = () => {
     }
   };
 
+  const handleRetry = () => {
+    loadReports(activeTab !== 'all' ? activeTab : '');
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -137,12 +147,19 @@ const ReportsManagement: React.FC = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : error ? (
-            <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-              <p>{error}</p>
-            </div>
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                <p className="mb-2">{error}</p>
+                <Button onClick={handleRetry} size="sm" variant="outline">
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
           ) : reports.length === 0 ? (
             <div className="text-center p-12 text-muted-foreground">
-              <p>No reports found. You may need to create some reports first.</p>
+              <p>No reports found with status: {activeTab === 'all' ? 'any' : activeTab}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
