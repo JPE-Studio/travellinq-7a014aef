@@ -1,16 +1,18 @@
-
 import React, { useEffect, useRef } from 'react';
 import { Post } from '../types';
 import PostCard from './PostCard';
-
 interface PostListProps {
   posts: Post[];
   loading: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
 }
-
-const PostList: React.FC<PostListProps> = ({ posts, loading, hasMore, onLoadMore }) => {
+const PostList: React.FC<PostListProps> = ({
+  posts,
+  loading,
+  hasMore,
+  onLoadMore
+}) => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -36,39 +38,25 @@ const PostList: React.FC<PostListProps> = ({ posts, loading, hasMore, onLoadMore
     if (loadMoreRef.current) {
       observerRef.current.observe(loadMoreRef.current);
     }
-
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
     };
   }, [hasMore, loading, onLoadMore]);
-
-  return (
-    <div className="w-full bg-background overflow-x-hidden">
+  return <div className="w-full bg-background overflow-x-hidden">
       {/* Content container with max width */}
-      <div className="max-w-3xl mx-auto px-4 py-4 scrollbar-hide pb-safe">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+      <div className="max-w-3xl mx-auto py-4 scrollbar-hide pb-safe px-0">
+        {posts.map(post => <PostCard key={post.id} post={post} />)}
         
         {/* Loading indicator or load more trigger */}
-        <div 
-          ref={loadMoreRef} 
-          className="py-4 flex justify-center"
-        >
-          {loading && (
-            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-          )}
-          {!loading && hasMore && (
-            <div className="h-8">
+        <div ref={loadMoreRef} className="py-4 flex justify-center">
+          {loading && <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>}
+          {!loading && hasMore && <div className="h-8">
               {/* Invisible element to trigger loading */}
-            </div>
-          )}
+            </div>}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default PostList;
