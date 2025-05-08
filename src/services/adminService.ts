@@ -327,7 +327,7 @@ export const exportTopContributors = async (limit: number = 50): Promise<UserExp
         votes: totalVotes,
         comments: userComments.length,
         location: profile.location,
-        joinedAt: profile.joined_at
+        joinedAt: profile.joined_at // This is already a string from the database
       };
     });
     
