@@ -79,7 +79,7 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
             ghost_mode: profile.ghost_mode,
             is_blocked: profile.is_blocked,
             feed_radius: profile.feed_radius,
-            joinedAt: profile.joined_at,
+            joinedAt: new Date(profile.joined_at), // Convert string to Date object
           };
           acc[profile.id] = user;
           return acc;
@@ -327,7 +327,7 @@ export const exportTopContributors = async (limit: number = 50): Promise<UserExp
         votes: totalVotes,
         comments: userComments.length,
         location: profile.location,
-        joinedAt: profile.joined_at // This is already a string from the database
+        joinedAt: new Date(profile.joined_at) // Convert string to Date object
       };
     });
     
