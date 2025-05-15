@@ -247,6 +247,7 @@ export const createPost = async (
     if (error) throw error;
     
     // If there are images, insert them
+    let postImages: PostImage[] = [];
     if (images && images.length > 0) {
       const imageEntries = images.map((url, index) => ({
         post_id: post.id,
@@ -261,24 +262,35 @@ export const createPost = async (
       if (imagesError) {
         console.error("Error inserting post images:", imagesError);
       }
+      
+      // Convert string URLs to PostImage objects
+      postImages = images.map((url, index) => ({
+        id: `temp-${index}`, // This will be replaced once we fetch the actual post
+        imageUrl: url,
+        orderIndex: index
+      }));
     }
     
     // Get author profile
     const author = await fetchUserProfile(session.session.user.id);
     
+    // Return the complete post object with properly typed images
     return {
       id: post.id,
       author,
       text: post.text,
-      images,
+      images: postImages,
       category: post.category,
-      location: {
-        lat: post.location_lat,
-        lng: post.location_lng
-      },
+      locationLat: post.location_lat,
+      locationLng: post.location_lng,
       votes: 0,
       createdAt: new Date(post.created_at),
-      commentCount: 0
+      updatedAt: new Date(post.created_at), // Same as created_at initially
+      commentCount: 0,
+      isHidden: false,
+      hiddenReason: null,
+      hiddenBy: null,
+      hiddenAt: null
     };
   } catch (error) {
     console.error("Error creating post:", error);

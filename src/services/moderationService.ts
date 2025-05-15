@@ -169,9 +169,10 @@ export const getUserWarnings = async (userId: string): Promise<UserWarning[]> =>
       throw error;
     }
     
-    // Handle moderator pseudonym access safely
+    // Handle moderator pseudonym access safely with fallback
     const warnings = data.map(warning => {
       const moderatorPseudonym = warning.profiles?.pseudonym || 'Unknown Moderator';
+      
       return {
         ...warning,
         moderator: {
@@ -234,21 +235,31 @@ export const getAllActiveWarnings = async (): Promise<UserWarning[]> => {
       throw error;
     }
     
-    // Handle user and moderator pseudonyms safely
+    // Process the data to ensure we handle potentially missing values
     const warnings = data.map(warning => {
       const userPseudonym = warning.user?.pseudonym || 'Unknown User';
       const moderatorPseudonym = warning.moderator?.pseudonym || 'Unknown Moderator';
       
-      return {
-        ...warning,
-        user_pseudonym: userPseudonym,
-        moderator: {
-          pseudonym: moderatorPseudonym
-        }
+      // Create a properly formatted warning object
+      const formattedWarning: UserWarning = {
+        id: warning.id,
+        user_id: warning.user_id,
+        moderator_id: warning.moderator_id,
+        reason: warning.reason,
+        severity: warning.severity,
+        related_post_id: warning.related_post_id,
+        related_comment_id: warning.related_comment_id,
+        created_at: warning.created_at,
+        expires_at: warning.expires_at,
+        is_active: warning.is_active,
+        user: { pseudonym: userPseudonym },
+        moderator: { pseudonym: moderatorPseudonym }
       };
+      
+      return formattedWarning;
     });
     
-    return warnings as UserWarning[];
+    return warnings;
   } catch (error) {
     console.error("Error in getAllActiveWarnings:", error);
     throw error;
@@ -433,7 +444,26 @@ export const getReports = async () => {
       throw error;
     }
     
-    return data;
+    // Handle potentially missing data
+    const processedData = data.map(report => {
+      return {
+        ...report,
+        reporter: {
+          pseudonym: report.reporter?.pseudonym || 'Anonymous'
+        },
+        resolver: report.resolver ? {
+          pseudonym: report.resolver?.pseudonym || 'Unknown Staff'
+        } : null,
+        post: report.post ? {
+          ...report.post,
+          profiles: {
+            pseudonym: report.post.profiles?.pseudonym || 'Unknown Author'
+          }
+        } : null
+      };
+    });
+    
+    return processedData;
   } catch (error) {
     console.error("Error in getReports:", error);
     throw error;
