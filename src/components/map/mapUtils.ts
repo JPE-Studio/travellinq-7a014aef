@@ -1,4 +1,3 @@
-
 import mapboxgl from 'mapbox-gl';
 import { Post, User } from '@/types';
 
@@ -45,29 +44,9 @@ export const addMarkersToMap = (
     bounds.extend([post.locationLng, post.locationLat]);
   });
   
-  // Add markers for buddies with location data
+  // Add buddies to bounds (but don't create markers - that's handled by BuddyMarker component)
   buddies.forEach(buddy => {
     if (buddy.latitude && buddy.longitude) {
-      // Use a distinctive color for buddy markers
-      const buddyMarker = new mapboxgl.Marker({
-        color: '#EC4899', // Pink color for buddies
-        scale: 0.9
-      })
-      .setLngLat([buddy.longitude, buddy.latitude])
-      .addTo(map);
-      
-      // Add popup with buddy name
-      const popup = new mapboxgl.Popup({ offset: 25, closeButton: false })
-        .setHTML(`
-          <div class="p-2">
-            <p class="font-semibold">${buddy.pseudonym}</p>
-            <p class="text-xs text-gray-600">Buddy</p>
-          </div>
-        `);
-        
-      buddyMarker.setPopup(popup);
-      markersRef.current.push(buddyMarker);
-      
       // Add to bounds
       bounds.extend([buddy.longitude, buddy.latitude]);
     }

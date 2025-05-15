@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useMap } from '@/hooks/use-map';
 import MapLegend from './map/MapLegend';
 import MapControls from './map/MapControls';
+import BuddyMarker from './map/BuddyMarker';
 
 interface MapProps {
   posts: Post[];
@@ -36,7 +37,7 @@ const Map: React.FC<MapProps> = ({
   const mapHeight = fullscreen ? 'h-full' : isMobile && expanded ? 'h-full' : expanded ? 'h-96' : 'h-48';
   
   // Use our custom hook for map functionality
-  const { mapLoaded, mapboxToken, handleMapResize, updateMapCenter } = useMap(
+  const { map, mapLoaded, mapboxToken, handleMapResize, updateMapCenter, markersRef } = useMap(
     mapContainer,
     currentLocation,
     posts,
@@ -63,7 +64,21 @@ const Map: React.FC<MapProps> = ({
           <p>Loading map...</p>
         </div>
       ) : (
-        <div ref={mapContainer} className="h-full w-full" />
+        <>
+          <div ref={mapContainer} className="h-full w-full" />
+          
+          {/* Render buddy markers */}
+          {mapLoaded && map && buddies.map(buddy => (
+            buddy.latitude && buddy.longitude ? (
+              <BuddyMarker 
+                key={buddy.id} 
+                buddy={buddy} 
+                map={map} 
+                markersRef={markersRef} 
+              />
+            ) : null
+          ))}
+        </>
       )}
       
       <MapControls 

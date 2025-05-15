@@ -110,10 +110,11 @@ export const useMap = (
   };
 
   return {
-    map,
+    map: map.current,
     mapLoaded,
     mapboxToken,
     handleMapResize,
-    updateMapCenter
+    updateMapCenter,
+    markersRef
   };
 };

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { User, Post } from '@/types';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface MapLegendProps {
   posts: Post[];
@@ -26,7 +27,11 @@ const MapLegend: React.FC<MapLegendProps> = ({ posts, buddies = [] }) => {
       )}
       {buddies?.length > 0 && (
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-[#EC4899]"></div>
+          <div className="w-4 h-4 rounded-full border-2 border-[#EC4899] bg-white flex items-center justify-center">
+            <Avatar className="h-3 w-3">
+              <AvatarFallback className="text-[6px]">BD</AvatarFallback>
+            </Avatar>
+          </div>
           <span>Buddies</span>
         </div>
       )}
