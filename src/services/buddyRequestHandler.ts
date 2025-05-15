@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BuddyConnection } from '@/types';
 
@@ -41,8 +42,8 @@ export const acceptBuddyRequest = async (buddyConnectionId: string): Promise<Bud
   }
 };
 
-// Decline buddy request
-export const declineBuddyRequest = async (buddyConnectionId: string): Promise<void> => {
+// Decline buddy request - renamed from "decline" to "reject" for consistency
+export const rejectBuddyRequest = async (buddyConnectionId: string): Promise<void> => {
   try {
     const { error } = await supabase
       .from('buddy_connections')

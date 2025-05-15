@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BuddyConnection } from '@/types';
 
@@ -44,6 +45,21 @@ export const updateBuddyNotificationSettings = async (
     return adaptBuddyConnection(data);
   } catch (error) {
     console.error('Error updating buddy notification settings:', error);
+    throw error;
+  }
+};
+
+// Disconnect from a buddy
+export const disconnectBuddy = async (buddyId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('buddy_connections')
+      .delete()
+      .or(`buddy_id.eq.${buddyId},user_id.eq.${buddyId}`);
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error disconnecting buddy:', error);
     throw error;
   }
 };

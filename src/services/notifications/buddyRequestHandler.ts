@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { acceptBuddyRequest, rejectBuddyRequest } from "../chatService";
+import { acceptBuddyRequest, rejectBuddyRequest } from "../buddyRequestHandler";
 import { markNotificationAsRead } from "./notificationStatus";
 
 /**

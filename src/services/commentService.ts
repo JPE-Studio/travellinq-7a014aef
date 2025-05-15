@@ -28,11 +28,13 @@ export const fetchComments = async (postId: string): Promise<Comment[]> => {
         userProfiles[authorId] = userProfile;
       } catch (err) {
         console.error(`Error fetching profile for author ${authorId}:`, err);
-        // Create placeholder user
+        // Create placeholder user with required properties
         userProfiles[authorId] = {
           id: authorId,
           pseudonym: "Unknown User",
-          joinedAt: new Date()
+          joinedAt: new Date(),
+          autoTranslate: false,
+          locationSharing: false
         };
       }
     }

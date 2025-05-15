@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Post, User } from "@/types";
+import { Post, User, PostImage } from "@/types";
 import { fetchUserProfile } from "./userService";
 
 // Fetch all posts with distance calculation and pagination
@@ -44,11 +44,13 @@ export const fetchPosts = async (
         userProfiles[authorId] = userProfile;
       } catch (err) {
         console.error(`Error fetching profile for author ${authorId}:`, err);
-        // Create placeholder user
+        // Create placeholder user with required properties
         userProfiles[authorId] = {
           id: authorId,
           pseudonym: "Unknown User",
-          joinedAt: new Date()
+          joinedAt: new Date(),
+          autoTranslate: false,
+          locationSharing: false
         };
       }
     }
@@ -94,22 +96,29 @@ export const fetchPosts = async (
       }
       
       // Prepare the post images
-      const images = post.post_images?.map(img => img.image_url) || [];
+      const images: PostImage[] = post.post_images?.map(img => ({
+        id: img.id,
+        imageUrl: img.image_url,
+        orderIndex: img.order_index
+      })) || [];
       
       return {
         id: post.id,
         author: userProfiles[post.author_id],
         text: post.text,
-        images: images.length > 0 ? images : undefined,
+        images: images,
         category: post.category,
-        location: {
-          lat: post.location_lat,
-          lng: post.location_lng
-        },
+        locationLat: post.location_lat,
+        locationLng: post.location_lng,
         distance: distance,
         votes: post.votes,
         createdAt: new Date(post.created_at),
-        commentCount: commentCountMap[post.id] || 0
+        updatedAt: new Date(post.updated_at),
+        commentCount: commentCountMap[post.id] || 0,
+        isHidden: post.is_hidden,
+        hiddenReason: post.hidden_reason,
+        hiddenBy: post.hidden_by,
+        hiddenAt: post.hidden_at
       };
     });
     
@@ -165,7 +174,9 @@ export const fetchPostById = async (postId: string): Promise<Post | null> => {
       author = {
         id: post.author_id,
         pseudonym: "Unknown User",
-        joinedAt: new Date()
+        joinedAt: new Date(),
+        autoTranslate: false,
+        locationSharing: false
       };
     }
     
@@ -180,21 +191,28 @@ export const fetchPostById = async (postId: string): Promise<Post | null> => {
     }
     
     // Prepare images array
-    const images = post.post_images?.map(img => img.image_url) || [];
+    const images: PostImage[] = post.post_images?.map(img => ({
+      id: img.id,
+      imageUrl: img.image_url,
+      orderIndex: img.order_index
+    })) || [];
     
     return {
       id: post.id,
       author,
       text: post.text,
-      images: images.length > 0 ? images : undefined,
+      images,
       category: post.category,
-      location: {
-        lat: post.location_lat,
-        lng: post.location_lng
-      },
+      locationLat: post.location_lat,
+      locationLng: post.location_lng,
       votes: post.votes,
       createdAt: new Date(post.created_at),
-      commentCount: count || 0
+      updatedAt: new Date(post.updated_at),
+      commentCount: count || 0,
+      isHidden: post.is_hidden,
+      hiddenReason: post.hidden_reason,
+      hiddenBy: post.hidden_by,
+      hiddenAt: post.hidden_at
     };
   } catch (error) {
     console.error(`Error fetching post ${postId}:`, error);

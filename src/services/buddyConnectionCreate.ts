@@ -1,5 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BuddyConnection } from '@/types';
+import { getCurrentUserId } from './buddyUtils';
 
 // Converts database model to application model
 const adaptBuddyConnection = (dbConnection: any): BuddyConnection => {
@@ -95,5 +97,5 @@ export const connectWithBuddy = async (buddyId: string): Promise<BuddyConnection
     throw error;
   }
   
-  return data as BuddyConnection;
+  return adaptBuddyConnection(data);
 };

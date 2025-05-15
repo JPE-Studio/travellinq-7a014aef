@@ -159,7 +159,7 @@ export const getUserWarnings = async (userId: string): Promise<UserWarning[]> =>
         created_at,
         expires_at,
         is_active,
-        moderator:profiles!moderator_id(pseudonym)
+        profiles!moderator_id(pseudonym)
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -169,7 +169,18 @@ export const getUserWarnings = async (userId: string): Promise<UserWarning[]> =>
       throw error;
     }
     
-    return data as unknown as UserWarning[];
+    // Handle moderator pseudonym access safely
+    const warnings = data.map(warning => {
+      const moderatorPseudonym = warning.profiles?.pseudonym || 'Unknown Moderator';
+      return {
+        ...warning,
+        moderator: {
+          pseudonym: moderatorPseudonym
+        }
+      };
+    });
+    
+    return warnings as UserWarning[];
   } catch (error) {
     console.error("Error in getUserWarnings:", error);
     throw error;
@@ -223,7 +234,21 @@ export const getAllActiveWarnings = async (): Promise<UserWarning[]> => {
       throw error;
     }
     
-    return data as unknown as UserWarning[];
+    // Handle user and moderator pseudonyms safely
+    const warnings = data.map(warning => {
+      const userPseudonym = warning.user?.pseudonym || 'Unknown User';
+      const moderatorPseudonym = warning.moderator?.pseudonym || 'Unknown Moderator';
+      
+      return {
+        ...warning,
+        user_pseudonym: userPseudonym,
+        moderator: {
+          pseudonym: moderatorPseudonym
+        }
+      };
+    });
+    
+    return warnings as UserWarning[];
   } catch (error) {
     console.error("Error in getAllActiveWarnings:", error);
     throw error;
@@ -274,21 +299,27 @@ export const getPostModerationHistory = async (postId: string): Promise<any[]> =
     const history = [];
     
     if (post && post.is_hidden) {
+      // Handle possibly null moderator safely
+      const moderatorPseudonym = post.moderator?.pseudonym || 'Unknown Moderator';
+      
       history.push({
         type: 'hide',
         reason: post.hidden_reason,
-        moderator: post.moderator?.pseudonym || 'Unknown Moderator',
+        moderator: moderatorPseudonym,
         timestamp: post.hidden_at,
       });
     }
     
     if (warnings) {
       warnings.forEach(warning => {
+        // Handle possibly null moderator safely
+        const moderatorPseudonym = warning.moderator?.pseudonym || 'Unknown Moderator';
+        
         history.push({
           type: 'warning',
           reason: warning.reason,
           severity: warning.severity,
-          moderator: warning.moderator?.pseudonym || 'Unknown Moderator',
+          moderator: moderatorPseudonym,
           timestamp: warning.created_at,
         });
       });
@@ -348,21 +379,27 @@ export const getCommentModerationHistory = async (commentId: string): Promise<an
     const history = [];
     
     if (comment && comment.is_hidden) {
+      // Handle possibly null moderator safely
+      const moderatorPseudonym = comment.moderator?.pseudonym || 'Unknown Moderator';
+      
       history.push({
         type: 'hide',
         reason: comment.hidden_reason,
-        moderator: comment.moderator?.pseudonym || 'Unknown Moderator',
+        moderator: moderatorPseudonym,
         timestamp: comment.hidden_at,
       });
     }
     
     if (warnings) {
       warnings.forEach(warning => {
+        // Handle possibly null moderator safely
+        const moderatorPseudonym = warning.moderator?.pseudonym || 'Unknown Moderator';
+        
         history.push({
           type: 'warning',
           reason: warning.reason,
           severity: warning.severity,
-          moderator: warning.moderator?.pseudonym || 'Unknown Moderator',
+          moderator: moderatorPseudonym,
           timestamp: warning.created_at,
         });
       });
@@ -374,6 +411,55 @@ export const getCommentModerationHistory = async (commentId: string): Promise<an
     );
   } catch (error) {
     console.error("Error in getCommentModerationHistory:", error);
+    throw error;
+  }
+};
+
+// Add getReports and resolveReport functions for ReportsManagement component
+export const getReports = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('post_reports')
+      .select(`
+        *,
+        reporter:profiles!reporter_id(pseudonym),
+        resolver:profiles!resolved_by(pseudonym),
+        post:posts(id, text, author_id, profiles:author_id(pseudonym))
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching reports:", error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in getReports:", error);
+    throw error;
+  }
+};
+
+export const resolveReport = async (reportId: string, action: string, notes: string) => {
+  try {
+    const { error } = await supabase
+      .from('post_reports')
+      .update({
+        status: 'resolved',
+        resolution_action: action,
+        resolution_notes: notes,
+        resolved_by: (await supabase.auth.getUser()).data.user?.id
+      })
+      .eq('id', reportId);
+    
+    if (error) {
+      console.error("Error resolving report:", error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in resolveReport:", error);
     throw error;
   }
 };
