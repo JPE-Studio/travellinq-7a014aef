@@ -39,9 +39,9 @@ const PostContent: React.FC<PostContentProps> = ({
   const { user } = useAuth();
   const isAuthor = user?.id === post.author.id;
   
-  // Convert direction to vote type
-  const handleVoteWrapper = (direction: 'up' | 'down') => {
-    const voteType = direction === 'up' ? 1 : -1;
+  // This function converts 'up'/'down' directions to numeric vote types
+  const handleVoteWrapper = (voteType: number) => {
+    const direction = voteType === 1 ? 'up' : 'down';
     handleVote(direction);
   };
   

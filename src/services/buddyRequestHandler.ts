@@ -1,76 +1,57 @@
+import { supabase } from '@/integrations/supabase/client';
+import { BuddyConnection } from '@/types';
 
-import { supabase } from "@/integrations/supabase/client";
-import { BuddyConnection } from "@/types";
-import { getCurrentUserId } from "./buddyUtils";
-
-// Accept a buddy connection request
-export const acceptBuddyRequest = async (requesterId: string): Promise<BuddyConnection> => {
-  const userId = await getCurrentUserId();
-  
-  if (!userId) {
-    throw new Error("You must be logged in to accept connection requests");
-  }
-  
-  // First, fetch the current record to ensure it exists
-  const { data: existingConnection, error: fetchError } = await supabase
-    .from('buddy_connections')
-    .select("*")
-    .eq("user_id", requesterId)
-    .eq("buddy_id", userId)
-    .eq("status", 'pending')
-    .single();
-  
-  if (fetchError || !existingConnection) {
-    console.error("Error fetching connection to accept:", fetchError);
-    throw new Error("Connection request not found or already processed");
-  }
-  
-  // Now update it using a properly typed update object
-  const { data, error } = await supabase
-    .from('buddy_connections')
-    .update({ status: 'active' })
-    .eq("id", existingConnection.id)
-    .select("*")
-    .single();
-  
-  if (error) {
-    console.error("Error accepting buddy request:", error);
-    throw error;
-  }
-  
-  return data as BuddyConnection;
+// Converts database model to application model
+const adaptBuddyConnection = (dbConnection: any): BuddyConnection => {
+  return {
+    id: dbConnection.id,
+    userId: dbConnection.user_id,
+    buddyId: dbConnection.buddy_id,
+    status: dbConnection.status,
+    createdAt: new Date(dbConnection.created_at),
+    // Keep both naming conventions for compatibility
+    user_id: dbConnection.user_id,
+    buddy_id: dbConnection.buddy_id,
+    created_at: dbConnection.created_at,
+    notifyAt20km: dbConnection.notify_at_20km,
+    notifyAt50km: dbConnection.notify_at_50km,
+    notifyAt100km: dbConnection.notify_at_100km,
+    notify_at_20km: dbConnection.notify_at_20km,
+    notify_at_50km: dbConnection.notify_at_50km,
+    notify_at_100km: dbConnection.notify_at_100km
+  };
 };
 
-// Reject a buddy connection request
-export const rejectBuddyRequest = async (requesterId: string): Promise<void> => {
-  const userId = await getCurrentUserId();
-  
-  if (!userId) {
-    throw new Error("You must be logged in to reject connection requests");
-  }
-  
-  // First, fetch the current record to ensure it exists
-  const { data: existingConnection, error: fetchError } = await supabase
-    .from('buddy_connections')
-    .select("*")
-    .eq("user_id", requesterId)
-    .eq("buddy_id", userId)
-    .eq("status", 'pending')
-    .single();
+// Accept buddy request
+export const acceptBuddyRequest = async (buddyConnectionId: string): Promise<BuddyConnection> => {
+  try {
+    const { data, error } = await supabase
+      .from('buddy_connections')
+      .update({ status: 'active' })
+      .eq('id', buddyConnectionId)
+      .select('*')
+      .single();
     
-  if (fetchError || !existingConnection) {
-    console.error("Error fetching connection to reject:", fetchError);
-    throw new Error("Connection request not found or already processed");
+    if (error) throw error;
+    
+    return adaptBuddyConnection(data);
+  } catch (error) {
+    console.error('Error accepting buddy request:', error);
+    throw error;
   }
-  
-  // Now update it using a properly typed update object
-  const { error } = await supabase
-    .from('buddy_connections')
-    .update({ status: 'rejected' })
-    .eq("id", existingConnection.id);
-  
-  if (error) {
-    console.error("Error rejecting buddy request:", error);
+};
+
+// Decline buddy request
+export const declineBuddyRequest = async (buddyConnectionId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('buddy_connections')
+      .update({ status: 'rejected' })
+      .eq('id', buddyConnectionId);
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error declining buddy request:', error);
     throw error;
   }
 };

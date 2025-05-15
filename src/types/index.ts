@@ -57,14 +57,22 @@ export interface PostImage {
   orderIndex: number;
 }
 
-// Add the missing BuddyConnection type
+// Update BuddyConnection to match both database and application naming
 export interface BuddyConnection {
   id: string;
   userId: string;
   buddyId: string;
   status: string;
   createdAt: Date;
+  // Database fields
+  user_id?: string;
+  buddy_id?: string;
+  created_at?: string;
+  // Notification settings with both naming conventions for compatibility
   notifyAt20km: boolean;
   notifyAt50km: boolean;
   notifyAt100km: boolean;
+  notify_at_20km?: boolean;
+  notify_at_50km?: boolean;
+  notify_at_100km?: boolean;
 }

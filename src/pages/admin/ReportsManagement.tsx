@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -32,8 +32,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertTriangle, CheckCircle, Eye, Loader2 } from "lucide-react";
 import DashboardLayout from '@/components/admin/DashboardLayout';
-import { getReports, resolveReport, hidePost, hideComment } from '@/services/moderationService';
+import { hideComment, hidePost } from '@/services/moderationService';
 import { formatDistanceToNow } from 'date-fns';
+
+// Mock functions for reports until they're implemented in moderationService
+const getReports = async (status: 'pending' | 'resolved') => {
+  // This is a placeholder until the real implementation
+  console.log(`Fetching ${status} reports`);
+  return [];
+};
+
+const resolveReport = async (reportId: string, action: string, notes: string) => {
+  // This is a placeholder until the real implementation
+  console.log(`Resolving report ${reportId} with action ${action} and notes: ${notes}`);
+  return true;
+};
 
 const ReportsManagement = () => {
   const { toast } = useToast();
@@ -75,7 +88,6 @@ const ReportsManagement = () => {
         // Hide the post
         await hidePost(
           selectedReport.post_id, 
-          true, 
           `Hidden due to report: ${selectedReport.reason}`
         );
         
@@ -88,7 +100,6 @@ const ReportsManagement = () => {
         // Hide the comment
         await hideComment(
           selectedReport.comment_id, 
-          true, 
           `Hidden due to report: ${selectedReport.reason}`
         );
         
@@ -260,7 +271,7 @@ const ReportsManagement = () => {
                     <h4 className="font-medium mb-1">Action Taken</h4>
                     <Badge variant={
                       selectedReport.resolution_action === "none" ? "outline" :
-                      selectedReport.resolution_action === "warn_user" ? "warning" :
+                      selectedReport.resolution_action === "warn_user" ? "secondary" :
                       "destructive"
                     }>
                       {selectedReport.resolution_action === "none" ? "No Action" :

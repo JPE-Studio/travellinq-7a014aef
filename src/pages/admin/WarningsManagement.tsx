@@ -26,7 +26,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertTriangle, Clock, Loader2, Trash2 } from "lucide-react";
 import DashboardLayout from '@/components/admin/DashboardLayout';
-import { getUserWarnings, removeUserWarning } from '@/services/moderationService';
+import { getAllActiveWarnings, removeWarning } from '@/services/moderationService';
 import { formatDistanceToNow } from 'date-fns';
 
 const WarningsManagement = () => {
@@ -41,7 +41,7 @@ const WarningsManagement = () => {
     error
   } = useQuery({
     queryKey: ['admin', 'warnings'],
-    queryFn: getUserWarnings
+    queryFn: getAllActiveWarnings
   });
   
   const handleRemoveWarning = async () => {
@@ -49,7 +49,7 @@ const WarningsManagement = () => {
     
     try {
       setIsRemoving(true);
-      await removeUserWarning(warningToRemove);
+      await removeWarning(warningToRemove);
       
       toast({
         title: "Warning Removed",
@@ -77,7 +77,7 @@ const WarningsManagement = () => {
       case 'minor':
         return <Badge variant="outline">Minor</Badge>;
       case 'moderate':
-        return <Badge variant="warning">Moderate</Badge>;
+        return <Badge variant="secondary">Moderate</Badge>;
       case 'severe':
         return <Badge variant="destructive">Severe</Badge>;
       default:
@@ -128,7 +128,7 @@ const WarningsManagement = () => {
               <TableBody>
                 {warnings.map((warning) => (
                   <TableRow key={warning.id}>
-                    <TableCell>{warning.user_pseudonym}</TableCell>
+                    <TableCell>{warning.user?.pseudonym || "Unknown"}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={warning.reason}>
                       {warning.reason}
                     </TableCell>

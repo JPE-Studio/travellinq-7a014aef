@@ -19,9 +19,9 @@ const UserNotificationSettings: React.FC<NotificationSettingsProps> = ({
 }) => {
   const { toast } = useToast();
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
-  const [notifyAt100km, setNotifyAt100km] = useState(buddyConnection.notify_at_100km);
-  const [notifyAt50km, setNotifyAt50km] = useState(buddyConnection.notify_at_50km);
-  const [notifyAt20km, setNotifyAt20km] = useState(buddyConnection.notify_at_20km);
+  const [notifyAt100km, setNotifyAt100km] = useState(buddyConnection.notifyAt100km || buddyConnection.notify_at_100km || false);
+  const [notifyAt50km, setNotifyAt50km] = useState(buddyConnection.notifyAt50km || buddyConnection.notify_at_50km || false);
+  const [notifyAt20km, setNotifyAt20km] = useState(buddyConnection.notifyAt20km || buddyConnection.notify_at_20km || false);
 
   // Update notification settings
   const handleNotificationSettingChange = async (settingName: string, value: boolean) => {

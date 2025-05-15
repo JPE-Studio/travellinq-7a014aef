@@ -127,6 +127,8 @@ const Comment: React.FC<CommentProps> = ({
                   <CommentReplyForm
                     postId={postId}
                     parentCommentId={comment.id}
+                    authorName={comment.author.pseudonym}
+                    onCancel={() => setShowReplyForm(false)}
                   />
                 )}
                 
