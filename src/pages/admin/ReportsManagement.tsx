@@ -1,20 +1,25 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, CheckCircle, X, AlertTriangle, Filter } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -23,337 +28,327 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AdminDashboardLayout from "@/components/admin/DashboardLayout";
-import { fetchPostReports, updatePostReport } from "@/services/adminService";
-import { hidePost, warnUser } from "@/services/moderationService";
-import { ModerationDialog } from '@/components/moderation/ModerationDialog';
-import { useUserRole } from '@/hooks/useUserRole';
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
+import { AlertTriangle, CheckCircle, Eye, Loader2 } from "lucide-react";
+import DashboardLayout from '@/components/admin/DashboardLayout';
+import { getReports, resolveReport, hidePost, hideComment } from '@/services/moderationService';
+import { formatDistanceToNow } from 'date-fns';
 
-const ReportsManagement: React.FC = () => {
-  const [statusFilter, setStatusFilter] = useState<string>('pending');
-  const [isHideDialogOpen, setIsHideDialogOpen] = useState(false);
-  const [isWarnDialogOpen, setIsWarnDialogOpen] = useState(false);
+const ReportsManagement = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState("pending");
+  
+  // Dialog states
   const [selectedReport, setSelectedReport] = useState<any>(null);
-  const navigate = useNavigate();
-  const { isAtLeastRole } = useUserRole();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [resolutionAction, setResolutionAction] = useState("none");
+  const [resolutionNotes, setResolutionNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const isModerator = isAtLeastRole('moderator');
-  
-  const { 
-    data: reports = [], 
-    isLoading, 
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ['reports', statusFilter],
-    queryFn: () => fetchPostReports(statusFilter),
+  // Get reports data
+  const { data: reports = [], isLoading, error } = useQuery({
+    queryKey: ['admin', 'reports', activeTab],
+    queryFn: () => getReports(activeTab as 'pending' | 'resolved'),
   });
-
-  const handleResolvingReport = async (
-    reportId: string, 
-    status: 'resolved' | 'rejected',
-    resolution_notes?: string,
-    resolution_action?: string
-  ) => {
+  
+  // Handle view report details click
+  const handleViewReport = (report: any) => {
+    setSelectedReport(report);
+    setIsDialogOpen(true);
+    setResolutionAction("none");
+    setResolutionNotes("");
+  };
+  
+  // Handle resolution submission
+  const handleResolveReport = async () => {
+    if (!selectedReport) return;
+    
     try {
-      const success = await updatePostReport(reportId, status, resolution_notes, resolution_action);
+      setIsSubmitting(true);
       
-      if (success) {
-        toast({
-          title: `Report ${status === 'resolved' ? 'resolved' : 'rejected'}`,
-          description: `The report has been marked as ${status}.`,
-        });
+      // Handle actions
+      if (resolutionAction === "hide_post") {
+        // Hide the post
+        await hidePost(
+          selectedReport.post_id, 
+          true, 
+          `Hidden due to report: ${selectedReport.reason}`
+        );
         
-        refetch();
-      } else {
         toast({
-          title: "Error",
-          description: "Failed to update the report status.",
-          variant: "destructive"
+          title: "Post Hidden",
+          description: "The post has been hidden successfully.",
         });
       }
+      else if (resolutionAction === "hide_comment") {
+        // Hide the comment
+        await hideComment(
+          selectedReport.comment_id, 
+          true, 
+          `Hidden due to report: ${selectedReport.reason}`
+        );
+        
+        toast({
+          title: "Comment Hidden",
+          description: "The comment has been hidden successfully.",
+        });
+      }
+      
+      // Resolve the report
+      await resolveReport(selectedReport.id, resolutionAction, resolutionNotes);
+      
+      // Success toast
+      toast({
+        title: "Report Resolved",
+        description: "The report has been successfully processed.",
+      });
+      
+      // Refresh data and close dialog
+      queryClient.invalidateQueries({ queryKey: ['admin', 'reports', activeTab] });
+      setIsDialogOpen(false);
     } catch (error) {
-      console.error(`Error ${status} report:`, error);
+      console.error("Error resolving report:", error);
       toast({
         title: "Error",
-        description: "Failed to update the report status.",
-        variant: "destructive"
+        description: "Failed to process the report. Please try again.",
+        variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
-  const handleHidePost = async (reason: string) => {
-    try {
-      if (!selectedReport || !selectedReport.post) return;
-      
-      const success = await hidePost(selectedReport.post.id, reason);
-      
-      if (success) {
-        toast({
-          title: "Post hidden",
-          description: "The post has been hidden from regular users.",
-        });
-        
-        // Resolve the report
-        await handleResolvingReport(
-          selectedReport.id, 
-          'resolved', 
-          `Post hidden: ${reason}`,
-          'hide_post'
-        );
-      } else {
-        toast({
-          title: "Action failed",
-          description: "Failed to hide the post.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Error hiding post:", error);
-      toast({
-        title: "Action failed",
-        description: "Failed to hide the post.",
-        variant: "destructive"
-      });
-    }
-    
-    setIsHideDialogOpen(false);
-    setSelectedReport(null);
-  };
+  // Determine if resolve button should be disabled
+  const isResolveDisabled = 
+    isSubmitting || 
+    (activeTab === "resolved") || 
+    (resolutionAction === "none" && !resolutionNotes);
   
-  const handleWarnUser = async (reason: string, severity: 'minor' | 'moderate' | 'severe') => {
-    try {
-      if (!selectedReport || !selectedReport.post) return;
-      
-      const success = await warnUser(
-        selectedReport.post.author_id,
-        reason,
-        severity,
-        selectedReport.post.id
-      );
-      
-      if (success) {
-        toast({
-          title: "Warning issued",
-          description: "The user has been warned for this post.",
-        });
-        
-        // Resolve the report
-        await handleResolvingReport(
-          selectedReport.id, 
-          'resolved', 
-          `User warned: ${reason} (${severity})`,
-          'warn_user'
-        );
-      } else {
-        toast({
-          title: "Action failed",
-          description: "Failed to warn the user.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Error warning user:", error);
-      toast({
-        title: "Action failed",
-        description: "Failed to warn the user.",
-        variant: "destructive"
-      });
-    }
-    
-    setIsWarnDialogOpen(false);
-    setSelectedReport(null);
-  };
-  
-  const handleRejectReport = async (reportId: string) => {
-    await handleResolvingReport(reportId, 'rejected', 'No action needed', 'none');
-  };
-
   return (
-    <AdminDashboardLayout>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Content Reports</h2>
-          <p className="text-muted-foreground">Review and manage reported content.</p>
-        </div>
-      </div>
-      
-      <Tabs defaultValue="posts" className="w-full">
-        <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="comments" disabled>Comments</TabsTrigger>
+    <DashboardLayout title="Reports Management">
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Content Reports</h1>
+        
+        <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="resolved">Resolved</TabsTrigger>
           </TabsList>
           
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="all">All Reports</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+          <TabsContent value="pending" className="mt-4">
+            <Card className="p-4">
+              <h2 className="font-semibold mb-4">Pending Reports</h2>
+              {renderReportsTable(reports, isLoading, error, handleViewReport, "pending")}
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="resolved" className="mt-4">
+            <Card className="p-4">
+              <h2 className="font-semibold mb-4">Resolved Reports</h2>
+              {renderReportsTable(reports, isLoading, error, handleViewReport, "resolved")}
+            </Card>
+          </TabsContent>
+        </Tabs>
         
-        <TabsContent value="posts">
-          {isLoading ? (
-            <div className="flex justify-center my-8">
-              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : error ? (
-            <div className="bg-destructive/10 text-destructive p-4 rounded-md flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 mt-0.5" />
-              <div>
-                <h3 className="font-semibold">Error Loading Reports</h3>
-                <p>Failed to load reports. Please try again.</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => refetch()} 
-                  className="mt-2"
-                >
-                  Retry
-                </Button>
-              </div>
-            </div>
-          ) : reports.length === 0 ? (
-            <div className="text-center p-8 border rounded-md bg-muted/30">
-              <CheckCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <h3 className="font-semibold text-lg">No Reports Found</h3>
-              <p className="text-muted-foreground">
-                {statusFilter === 'pending' 
-                  ? "There are no pending reports to review."
-                  : statusFilter === 'all' 
-                    ? "No reports have been submitted yet."
-                    : `No reports with status '${statusFilter}' found.`}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {reports.map(report => (
-                <Card key={report.id} className="p-4">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant={report.status === 'pending' ? 'outline' : (report.status === 'resolved' ? 'default' : 'secondary')}>
-                          {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          Reported {new Date(report.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      
-                      <h3 className="font-semibold text-lg cursor-pointer hover:underline" 
-                        onClick={() => report.post && navigate(`/post/${report.post.id}`)}
-                      >
-                        {report.post ? report.post.text?.substring(0, 100) + (report.post.text?.length > 100 ? '...' : '') : 'Post not found'}
-                      </h3>
-                      
-                      <div className="bg-muted p-3 rounded-md mt-2">
-                        <p className="text-sm font-medium">Report Reason:</p>
-                        <p className="text-sm">{report.reason}</p>
-                      </div>
-                      
-                      {report.resolution_notes && (
-                        <div className="bg-primary/10 p-3 rounded-md mt-2">
-                          <p className="text-sm font-medium">Resolution:</p>
-                          <p className="text-sm">{report.resolution_notes}</p>
-                        </div>
-                      )}
+        {/* Report Details Dialog */}
+        {selectedReport && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Report Details</DialogTitle>
+                <DialogDescription>
+                  Reported {selectedReport.post_id ? "post" : "comment"} by {selectedReport.reporter_pseudonym}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-1">Reason</h4>
+                  <p className="text-sm bg-muted p-2 rounded">{selectedReport.reason}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-1">Content</h4>
+                  <p className="text-sm bg-muted p-2 rounded">
+                    {selectedReport.post_content || selectedReport.comment_content}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-1">Author</h4>
+                  <p className="text-sm">{selectedReport.author_pseudonym}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-1">Reported</h4>
+                  <p className="text-sm">
+                    {formatDistanceToNow(new Date(selectedReport.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+                
+                {activeTab === "pending" && (
+                  <>
+                    <div>
+                      <label className="font-medium mb-1 block">Action</label>
+                      <Select value={resolutionAction} onValueChange={setResolutionAction}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select action" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Action Required</SelectItem>
+                          {selectedReport.post_id && (
+                            <SelectItem value="hide_post">Hide Post</SelectItem>
+                          )}
+                          {selectedReport.comment_id && (
+                            <SelectItem value="hide_comment">Hide Comment</SelectItem>
+                          )}
+                          <SelectItem value="warn_user">Warn User</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
-                    <div className="flex flex-col gap-2">
-                      {report.status === 'pending' && isModerator && (
-                        <>
-                          <Button 
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setIsHideDialogOpen(true);
-                            }}
-                          >
-                            <AlertTriangle className="mr-2 h-4 w-4" />
-                            Hide Post
-                          </Button>
-                          
-                          <Button 
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setIsWarnDialogOpen(true);
-                            }}
-                          >
-                            <AlertTriangle className="mr-2 h-4 w-4" />
-                            Warn User
-                          </Button>
-                          
-                          <Button 
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => handleRejectReport(report.id)}
-                          >
-                            <X className="mr-2 h-4 w-4" />
-                            Reject Report
-                          </Button>
-                        </>
-                      )}
-                      
-                      <Button 
-                        variant="secondary"
-                        className="w-full"
-                        onClick={() => report.post && navigate(`/post/${report.post.id}`)}
-                      >
-                        View Post
-                      </Button>
-                      
-                      {report.reporter && (
-                        <Button 
-                          variant="ghost"
-                          className="w-full"
-                          onClick={() => navigate(`/user/${report.reporter.id}`)}
-                        >
-                          View Reporter
-                        </Button>
-                      )}
+                    <div>
+                      <label className="font-medium mb-1 block">Notes</label>
+                      <Textarea
+                        placeholder="Add resolution notes here..."
+                        value={resolutionNotes}
+                        onChange={e => setResolutionNotes(e.target.value)}
+                        rows={3}
+                      />
                     </div>
+                    
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleResolveReport}
+                        disabled={isResolveDisabled}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          "Resolve Report"
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                )}
+                
+                {activeTab === "resolved" && selectedReport.resolution_notes && (
+                  <div>
+                    <h4 className="font-medium mb-1">Resolution Notes</h4>
+                    <p className="text-sm bg-muted p-2 rounded">
+                      {selectedReport.resolution_notes}
+                    </p>
                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="comments">
-          <div className="text-center p-8 border rounded-md bg-muted/30">
-            <h3 className="font-semibold text-lg">Coming Soon</h3>
-            <p className="text-muted-foreground">Comment reporting is not implemented yet.</p>
-          </div>
-        </TabsContent>
-      </Tabs>
-      
-      <ModerationDialog
-        type="hide"
-        contentType="post"
-        isOpen={isHideDialogOpen}
-        onOpenChange={setIsHideDialogOpen}
-        onAction={handleHidePost}
-      />
-      
-      <ModerationDialog
-        type="warn"
-        contentType="post"
-        isOpen={isWarnDialogOpen}
-        onOpenChange={setIsWarnDialogOpen}
-        onAction={handleWarnUser}
-      />
-    </AdminDashboardLayout>
+                )}
+                
+                {activeTab === "resolved" && selectedReport.resolution_action && (
+                  <div>
+                    <h4 className="font-medium mb-1">Action Taken</h4>
+                    <Badge variant={
+                      selectedReport.resolution_action === "none" ? "outline" :
+                      selectedReport.resolution_action === "warn_user" ? "warning" :
+                      "destructive"
+                    }>
+                      {selectedReport.resolution_action === "none" ? "No Action" :
+                       selectedReport.resolution_action === "hide_post" ? "Post Hidden" :
+                       selectedReport.resolution_action === "hide_comment" ? "Comment Hidden" :
+                       selectedReport.resolution_action === "warn_user" ? "User Warned" :
+                       selectedReport.resolution_action}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+};
+
+// Helper to render the reports table
+const renderReportsTable = (
+  reports: any[], 
+  isLoading: boolean, 
+  error: any, 
+  handleViewReport: (report: any) => void,
+  status: string
+) => {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="flex flex-col items-center py-8 text-destructive">
+        <AlertTriangle className="h-8 w-8 mb-2" />
+        <p>Failed to load reports. Please try again.</p>
+      </div>
+    );
+  }
+  
+  if (reports.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+        <p>No {status} reports found.</p>
+      </div>
+    );
+  }
+  
+  return (
+    <Table>
+      <TableCaption>List of {status} content reports.</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Type</TableHead>
+          <TableHead>Reason</TableHead>
+          <TableHead>Reporter</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead className="text-right">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {reports.map((report) => (
+          <TableRow key={report.id}>
+            <TableCell>
+              <Badge variant="outline">
+                {report.post_id ? "Post" : "Comment"}
+              </Badge>
+            </TableCell>
+            <TableCell className="max-w-[200px] truncate" title={report.reason}>
+              {report.reason}
+            </TableCell>
+            <TableCell>{report.reporter_pseudonym || "Anonymous"}</TableCell>
+            <TableCell>{formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}</TableCell>
+            <TableCell className="text-right">
+              <Button variant="ghost" size="sm" onClick={() => handleViewReport(report)}>
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 };
 

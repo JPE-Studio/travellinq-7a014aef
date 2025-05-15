@@ -29,7 +29,7 @@ const PostContent: React.FC<PostContentProps> = ({ post, translatedText, detecte
             <div key={index} className="w-full rounded-md overflow-hidden">
               <AspectRatio ratio={1 / 1} className="bg-muted">
                 <img 
-                  src={image} 
+                  src={image.imageUrl} 
                   alt={`Post by ${post.author.pseudonym}`} 
                   className="w-full h-full object-cover" 
                 />

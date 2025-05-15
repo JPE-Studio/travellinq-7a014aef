@@ -55,6 +55,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, isLast = false }) => {
   const handleDeleteClick = () => {
     setDeleteDialogOpen(true);
   };
+
+  // Convert number vote to up/down direction
+  const handleVoteWrapper = (voteType: number) => {
+    const direction = voteType === 1 ? 'up' : 'down';
+    handleVote(direction);
+  };
   
   const handleConfirmDelete = async () => {
     try {
@@ -109,7 +115,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, isLast = false }) => {
             votes={votes}
             commentCount={post.commentCount}
             userVote={userVote}
-            handleVote={handleVote}
+            handleVote={handleVoteWrapper}
             loading={loading}
             translatedText={translatedText}
             isTranslating={isTranslating}

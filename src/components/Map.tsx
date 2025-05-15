@@ -134,24 +134,22 @@ const Map: React.FC<MapProps> = ({
     bounds.extend([currentLocation.lng, currentLocation.lat]);
 
     // Add markers for posts with valid location data
-    const validPosts = posts.filter(post => post.location && !isNaN(post.location.lat) && !isNaN(post.location.lng));
+    const validPosts = posts.filter(post => post.locationLat && post.locationLng && !isNaN(post.locationLat) && !isNaN(post.locationLng));
     validPosts.forEach(post => {
-      if (post.location) {
-        // Determine marker color based on category
-        let color = '#2E5E4E'; // Default forest green
-        if (post.category === 'campsite') color = '#3A7D44';
-        if (post.category === 'service') color = '#D5A021';
-        if (post.category === 'question') color = '#61A8FF';
+      // Determine marker color based on category
+      let color = '#2E5E4E'; // Default forest green
+      if (post.category === 'campsite') color = '#3A7D44';
+      if (post.category === 'service') color = '#D5A021';
+      if (post.category === 'question') color = '#61A8FF';
 
-        // Add marker for this post without popup
-        const marker = new mapboxgl.Marker({
-          color
-        }).setLngLat([post.location.lng, post.location.lat]).addTo(map.current);
-        markersRef.current.push(marker);
+      // Add marker for this post without popup
+      const marker = new mapboxgl.Marker({
+        color
+      }).setLngLat([post.locationLng, post.locationLat]).addTo(map.current);
+      markersRef.current.push(marker);
 
-        // Add to bounds
-        bounds.extend([post.location.lng, post.location.lat]);
-      }
+      // Add to bounds
+      bounds.extend([post.locationLng, post.locationLat]);
     });
 
     // Fit map to bounds if we have posts to show and bounds haven't been set

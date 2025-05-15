@@ -19,6 +19,7 @@ interface CommentProps {
   isReply?: boolean;
   voteOnComment: (commentId: string, voteType: number) => Promise<void>;
   userVote: Record<string, number>;
+  depth?: number; // Make depth optional
 }
 
 const Comment: React.FC<CommentProps> = ({
@@ -26,7 +27,8 @@ const Comment: React.FC<CommentProps> = ({
   postId,
   isReply = false,
   voteOnComment,
-  userVote
+  userVote,
+  depth = 0 // Default to 0
 }) => {
   const { user } = useAuth();
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -125,7 +127,6 @@ const Comment: React.FC<CommentProps> = ({
                   <CommentReplyForm
                     postId={postId}
                     parentCommentId={comment.id}
-                    onReplySubmitted={() => setShowReplyForm(false)}
                   />
                 )}
                 
@@ -142,6 +143,7 @@ const Comment: React.FC<CommentProps> = ({
                         isReply={true}
                         voteOnComment={voteOnComment}
                         userVote={userVote}
+                        depth={depth + 1}
                       />
                     ))}
                   </div>

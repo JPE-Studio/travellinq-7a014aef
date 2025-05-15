@@ -39,6 +39,12 @@ const PostContent: React.FC<PostContentProps> = ({
   const { user } = useAuth();
   const isAuthor = user?.id === post.author.id;
   
+  // Convert direction to vote type
+  const handleVoteWrapper = (direction: 'up' | 'down') => {
+    const voteType = direction === 'up' ? 1 : -1;
+    handleVote(direction);
+  };
+  
   return (
     <div className="w-full py-4">
       <div className="px-4">
@@ -55,16 +61,14 @@ const PostContent: React.FC<PostContentProps> = ({
             <UserProfileLink user={post.author} showAvatar={false} className="font-semibold hover:underline" />
             <div className="flex items-center text-xs text-muted-foreground">
               <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
-              {post.location && (
+              {post.locationLat && post.locationLng && (
                 <>
                   <span className="mx-1">•</span>
                   <MapPin size={12} className="mr-1" />
                   <span>
                     {post.distance !== undefined ? 
                       `${post.distance.toFixed(1)} miles away` : 
-                      (typeof post.location === 'string' ? 
-                        post.location : 
-                        `${post.location.lat.toFixed(4)}, ${post.location.lng.toFixed(4)}`)
+                      `${post.locationLat.toFixed(4)}, ${post.locationLng.toFixed(4)}`
                     }
                   </span>
                 </>
@@ -85,7 +89,7 @@ const PostContent: React.FC<PostContentProps> = ({
             {post.images.map((image, index) => (
               <img 
                 key={index} 
-                src={image} 
+                src={image.imageUrl} 
                 alt={`Post by ${post.author.pseudonym}`}
                 className="w-full rounded-md aspect-square object-cover"
               />
@@ -99,7 +103,7 @@ const PostContent: React.FC<PostContentProps> = ({
           votes={votes}
           commentCount={post.commentCount}
           userVote={userVote}
-          handleVote={handleVote}
+          handleVote={handleVoteWrapper}
           loading={loading}
           translatedText={translatedText}
           isTranslating={isTranslating}

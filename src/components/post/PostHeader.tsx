@@ -42,7 +42,7 @@ const PostHeader: React.FC<PostHeaderProps> = ({
           <div className="font-medium hover:underline">{post.author.pseudonym}</div>
           <div className="flex flex-wrap items-center text-xs text-muted-foreground">
             <span>{formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
-            {post.location && (
+            {post.locationLat && post.locationLng && (
               <>
                 <span className="mx-1">•</span>
                 <MapPin size={12} className="mr-1" />

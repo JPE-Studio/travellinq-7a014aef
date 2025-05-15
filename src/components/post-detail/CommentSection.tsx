@@ -70,6 +70,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({
           comment={comment} 
           postId={postId}
           depth={depth}
+          voteOnComment={() => Promise.resolve()} // Add empty function to fix missing prop
+          userVote={{}}
         />
         {comment.children.map((childComment: any) => 
           renderCommentWithReplies(childComment, depth + 1)

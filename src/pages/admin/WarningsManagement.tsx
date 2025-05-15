@@ -1,306 +1,197 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  X, 
-  Search, 
-  CalendarIcon,
-  FileWarning 
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-import { Input } from "@/components/ui/input";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { toast } from "@/components/ui/use-toast";
-import AdminDashboardLayout from "@/components/admin/DashboardLayout";
-import { getAllActiveWarnings, removeWarning } from "@/services/moderationService";
-import { UserWarning } from "@/types/roles";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import { AlertTriangle, Clock, Loader2, Trash2 } from "lucide-react";
+import DashboardLayout from '@/components/admin/DashboardLayout';
+import { getUserWarnings, removeUserWarning } from '@/services/moderationService';
+import { formatDistanceToNow } from 'date-fns';
 
-const WarningsManagement: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState<string>('all');
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const navigate = useNavigate();
+const WarningsManagement = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [warningToRemove, setWarningToRemove] = useState<string | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
   
-  const { 
-    data: warnings = [], 
-    isLoading, 
-    error,
-    refetch
+  const {
+    data: warnings = [],
+    isLoading,
+    error
   } = useQuery({
-    queryKey: ['warnings'],
-    queryFn: getAllActiveWarnings
+    queryKey: ['admin', 'warnings'],
+    queryFn: getUserWarnings
   });
   
-  const handleRemoveWarning = async (warningId: string) => {
+  const handleRemoveWarning = async () => {
+    if (!warningToRemove) return;
+    
     try {
-      const success = await removeWarning(warningId);
-      if (success) {
-        toast({
-          title: "Warning removed",
-          description: "The warning has been successfully removed.",
-        });
-        refetch();
-      } else {
-        toast({
-          title: "Action failed",
-          description: "Failed to remove the warning.",
-          variant: "destructive"
-        });
-      }
+      setIsRemoving(true);
+      await removeUserWarning(warningToRemove);
+      
+      toast({
+        title: "Warning Removed",
+        description: "The user warning has been successfully removed."
+      });
+      
+      // Refresh warnings list
+      queryClient.invalidateQueries({ queryKey: ['admin', 'warnings'] });
     } catch (error) {
       console.error("Error removing warning:", error);
       toast({
-        title: "Action failed",
-        description: "Failed to remove the warning.",
+        title: "Error",
+        description: "Failed to remove the warning. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsRemoving(false);
+      setWarningToRemove(null);
     }
   };
   
-  const handleViewPost = (postId?: string) => {
-    if (postId) {
-      navigate(`/post/${postId}`);
-    }
-  };
-  
-  const handleViewUser = (userId: string) => {
-    navigate(`/user/${userId}`);
-  };
-  
-  // Filter warnings
-  const filteredWarnings = warnings.filter(warning => {
-    const matchesSearch = 
-      warning.user?.pseudonym?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      warning.reason.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSeverity = 
-      filterSeverity === 'all' || warning.severity === filterSeverity;
-    
-    const matchesDate = 
-      !date || new Date(warning.created_at).toDateString() === date.toDateString();
-    
-    return matchesSearch && matchesSeverity && matchesDate;
-  });
-  
+  // Get severity badge color
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'minor':
-        return <span className="bg-yellow-100 text-yellow-800 rounded-full px-2 py-0.5 text-xs">Minor</span>;
+        return <Badge variant="outline">Minor</Badge>;
       case 'moderate':
-        return <span className="bg-orange-100 text-orange-800 rounded-full px-2 py-0.5 text-xs">Moderate</span>;
+        return <Badge variant="warning">Moderate</Badge>;
       case 'severe':
-        return <span className="bg-red-100 text-red-800 rounded-full px-2 py-0.5 text-xs">Severe</span>;
+        return <Badge variant="destructive">Severe</Badge>;
       default:
-        return <span className="bg-gray-100 text-gray-800 rounded-full px-2 py-0.5 text-xs">{severity}</span>;
+        return <Badge>{severity}</Badge>;
     }
   };
-
+  
+  // Format expiry date if present
+  const formatExpiry = (expiryDate: string | null) => {
+    if (!expiryDate) return "Never";
+    return formatDistanceToNow(new Date(expiryDate), { addSuffix: true });
+  };
+  
   return (
-    <AdminDashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">User Warnings</h2>
-            <p className="text-muted-foreground">
-              Manage warnings issued to users for content violations.
-            </p>
-          </div>
-        </div>
+    <DashboardLayout title="User Warnings">
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">User Warnings Management</h1>
         
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search warnings..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <Card className="p-4">
+          <h2 className="font-semibold mb-4">Active User Warnings</h2>
           
-          <Select
-            value={filterSeverity}
-            onValueChange={setFilterSeverity}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Filter by severity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Severities</SelectItem>
-              <SelectItem value="minor">Minor</SelectItem>
-              <SelectItem value="moderate">Moderate</SelectItem>
-              <SelectItem value="severe">Severe</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className="w-[180px] justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Filter by date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(date) => {
-                  setDate(date);
-                }}
-                initialFocus
-              />
-              {date && (
-                <div className="p-2 border-t border-border">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setDate(undefined)}
-                  >
-                    Clear date filter
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
-        </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center items-center p-8">
-            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
-          </div>
-        ) : error ? (
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive flex items-center">
-                <AlertTriangle className="mr-2 h-5 w-5" />
-                Error Loading Warnings
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Could not load user warnings. Please try again later.</p>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={() => refetch()}>Try Again</Button>
-            </CardFooter>
-          </Card>
-        ) : filteredWarnings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <FileWarning className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg">No Warnings Found</h3>
-            <p className="text-muted-foreground">
-              {searchTerm || filterSeverity !== 'all' || date 
-                ? "No warnings match your filters. Try adjusting your search criteria."
-                : "There are no active warnings in the system."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {filteredWarnings.map((warning) => (
-              <Card key={warning.id} className="overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle 
-                          className="text-lg hover:underline cursor-pointer"
-                          onClick={() => handleViewUser(warning.user_id)}
-                        >
-                          {warning.user?.pseudonym || "Unknown User"}
-                        </CardTitle>
-                        {getSeverityBadge(warning.severity)}
-                      </div>
-                      <CardDescription>
-                        Warned on {new Date(warning.created_at).toLocaleDateString()} by {warning.moderator?.pseudonym || "Unknown Moderator"}
-                      </CardDescription>
-                    </div>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <span className="sr-only">Actions</span>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleRemoveWarning(warning.id)}>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Remove warning
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleViewUser(warning.user_id)}>
-                          View user profile
-                        </DropdownMenuItem>
-                        {warning.related_post_id && (
-                          <DropdownMenuItem onClick={() => handleViewPost(warning.related_post_id)}>
-                            View related post
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm bg-muted p-3 rounded-md">{warning.reason}</p>
-                  <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
-                    {warning.expires_at && (
-                      <span>Expires: {new Date(warning.expires_at).toLocaleDateString()}</span>
-                    )}
-                    {warning.related_post_id && (
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center py-8 text-destructive">
+              <AlertTriangle className="h-8 w-8 mb-2" />
+              <p>Failed to load warnings. Please try again.</p>
+            </div>
+          ) : warnings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No active warnings found.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableCaption>List of active user warnings.</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {warnings.map((warning) => (
+                  <TableRow key={warning.id}>
+                    <TableCell>{warning.user_pseudonym}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={warning.reason}>
+                      {warning.reason}
+                    </TableCell>
+                    <TableCell>{getSeverityBadge(warning.severity)}</TableCell>
+                    <TableCell>{formatDistanceToNow(new Date(warning.created_at), { addSuffix: true })}</TableCell>
+                    <TableCell>
+                      {warning.expires_at ? (
+                        <div className="flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>{formatExpiry(warning.expires_at)}</span>
+                        </div>
+                      ) : (
+                        <span>Never</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
                       <Button 
                         variant="ghost" 
-                        size="sm" 
-                        className="text-xs h-6 px-2"
-                        onClick={() => handleViewPost(warning.related_post_id)}
+                        size="sm"
+                        onClick={() => setWarningToRemove(warning.id)}
                       >
-                        View Related Post
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
       </div>
-    </AdminDashboardLayout>
+      
+      {/* Confirmation dialog for removing warning */}
+      <AlertDialog 
+        open={!!warningToRemove} 
+        onOpenChange={(open) => !open && setWarningToRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Warning</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this user warning? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleRemoveWarning} 
+              disabled={isRemoving}
+            >
+              {isRemoving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                "Remove Warning"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </DashboardLayout>
   );
 };
 

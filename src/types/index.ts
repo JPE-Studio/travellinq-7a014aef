@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   pseudonym: string;
@@ -54,4 +55,16 @@ export interface PostImage {
   id: string;
   imageUrl: string;
   orderIndex: number;
+}
+
+// Add the missing BuddyConnection type
+export interface BuddyConnection {
+  id: string;
+  userId: string;
+  buddyId: string;
+  status: string;
+  createdAt: Date;
+  notifyAt20km: boolean;
+  notifyAt50km: boolean;
+  notifyAt100km: boolean;
 }
