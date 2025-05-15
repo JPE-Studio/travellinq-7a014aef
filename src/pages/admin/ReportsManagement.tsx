@@ -1,354 +1,359 @@
 
-import React, { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, MoreVertical, ExternalLink } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, CheckCircle, X, AlertTriangle, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import DashboardLayout from '@/components/admin/DashboardLayout';
-import { fetchPostReports, updatePostReport, blockUser } from '@/services/adminService';
-import { PostReport } from '@/types/roles';
-import { useMediaQuery } from '@/hooks/use-mobile';
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdminDashboardLayout from "@/components/admin/DashboardLayout";
+import { fetchPostReports, updatePostReport } from "@/services/adminService";
+import { hidePost, warnUser } from "@/services/moderationService";
+import { ModerationDialog } from '@/components/moderation/ModerationDialog';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const ReportsManagement: React.FC = () => {
-  const [reports, setReports] = useState<PostReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedReport, setSelectedReport] = useState<PostReport | null>(null);
-  const [notes, setNotes] = useState<string>('');
-  const [action, setAction] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('pending');
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [statusFilter, setStatusFilter] = useState<string>('pending');
+  const [isHideDialogOpen, setIsHideDialogOpen] = useState(false);
+  const [isWarnDialogOpen, setIsWarnDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const navigate = useNavigate();
+  const { isAtLeastRole } = useUserRole();
+  
+  const isModerator = isAtLeastRole('moderator');
+  
+  const { 
+    data: reports = [], 
+    isLoading, 
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['reports', statusFilter],
+    queryFn: () => fetchPostReports(statusFilter),
+  });
 
-  const loadReports = async (status: string = '') => {
+  const handleResolvingReport = async (
+    reportId: string, 
+    status: 'resolved' | 'rejected',
+    resolution_notes?: string,
+    resolution_action?: string
+  ) => {
     try {
-      setLoading(true);
-      setError(null);
-      console.log("Loading reports with status:", status || "all");
-      const data = await fetchPostReports(status);
-      console.log("Reports loaded:", data);
-      setReports(data);
-    } catch (err: any) {
-      console.error("Error loading reports:", err);
-      setError(err.message || "Failed to load reports");
+      const success = await updatePostReport(reportId, status, resolution_notes, resolution_action);
+      
+      if (success) {
+        toast({
+          title: `Report ${status === 'resolved' ? 'resolved' : 'rejected'}`,
+          description: `The report has been marked as ${status}.`,
+        });
+        
+        refetch();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update the report status.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error(`Error ${status} report:`, error);
       toast({
-        variant: "destructive",
-        title: "Error loading reports",
-        description: err.message || "There was a problem loading the reports. Please try again.",
+        title: "Error",
+        description: "Failed to update the report status.",
+        variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    console.log("Active tab changed to:", activeTab);
-    loadReports(activeTab !== 'all' ? activeTab : '');
-  }, [activeTab]);
-
-  const handleViewReport = (report: PostReport) => {
-    setSelectedReport(report);
-    setNotes(report.resolution_notes || '');
-    setAction(report.resolution_action || '');
-    setDialogOpen(true);
-  };
-
-  const handleResolveReport = async (reportId: string, status: 'resolved' | 'rejected') => {
+  
+  const handleHidePost = async (reason: string) => {
     try {
-      setSubmitting(true);
-      await updatePostReport(reportId, status, notes, action);
-      toast({
-        title: "Report updated",
-        description: `The report has been ${status}.`,
-      });
-      setDialogOpen(false);
-      loadReports(activeTab !== 'all' ? activeTab : '');
-    } catch (err: any) {
-      console.error("Error updating report:", err);
-      toast({
-        title: "Update failed",
-        description: err.message || "Failed to update report",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleBlockUser = async (userId: string) => {
-    try {
-      setSubmitting(true);
-      await blockUser(userId, true);
-      toast({
-        title: "User blocked",
-        description: "The user has been blocked.",
-      });
-      // Update action for record keeping
-      setAction(prev => `${prev}; User blocked`);
-    } catch (err: any) {
-      console.error("Error blocking user:", err);
+      if (!selectedReport || !selectedReport.post) return;
+      
+      const success = await hidePost(selectedReport.post.id, reason);
+      
+      if (success) {
+        toast({
+          title: "Post hidden",
+          description: "The post has been hidden from regular users.",
+        });
+        
+        // Resolve the report
+        await handleResolvingReport(
+          selectedReport.id, 
+          'resolved', 
+          `Post hidden: ${reason}`,
+          'hide_post'
+        );
+      } else {
+        toast({
+          title: "Action failed",
+          description: "Failed to hide the post.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error hiding post:", error);
       toast({
         title: "Action failed",
-        description: err.message || "Failed to block user",
-        variant: "destructive",
+        description: "Failed to hide the post.",
+        variant: "destructive"
       });
-    } finally {
-      setSubmitting(false);
     }
+    
+    setIsHideDialogOpen(false);
+    setSelectedReport(null);
   };
-
-  const handleRetry = () => {
-    loadReports(activeTab !== 'all' ? activeTab : '');
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Pending</Badge>;
-      case 'resolved':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Resolved</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  
+  const handleWarnUser = async (reason: string, severity: 'minor' | 'moderate' | 'severe') => {
+    try {
+      if (!selectedReport || !selectedReport.post) return;
+      
+      const success = await warnUser(
+        selectedReport.post.author_id,
+        reason,
+        severity,
+        selectedReport.post.id
+      );
+      
+      if (success) {
+        toast({
+          title: "Warning issued",
+          description: "The user has been warned for this post.",
+        });
+        
+        // Resolve the report
+        await handleResolvingReport(
+          selectedReport.id, 
+          'resolved', 
+          `User warned: ${reason} (${severity})`,
+          'warn_user'
+        );
+      } else {
+        toast({
+          title: "Action failed",
+          description: "Failed to warn the user.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error warning user:", error);
+      toast({
+        title: "Action failed",
+        description: "Failed to warn the user.",
+        variant: "destructive"
+      });
     }
+    
+    setIsWarnDialogOpen(false);
+    setSelectedReport(null);
+  };
+  
+  const handleRejectReport = async (reportId: string) => {
+    await handleResolvingReport(reportId, 'rejected', 'No action needed', 'none');
   };
 
   return (
-    <DashboardLayout title="Reports Management">
-      <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="resolved">Resolved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab} className="mt-0">
-          {loading ? (
-            <div className="flex justify-center items-center p-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <AdminDashboardLayout>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Content Reports</h2>
+          <p className="text-muted-foreground">Review and manage reported content.</p>
+        </div>
+      </div>
+      
+      <Tabs defaultValue="posts" className="w-full">
+        <div className="flex justify-between items-center mb-4">
+          <TabsList>
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="comments" disabled>Comments</TabsTrigger>
+          </TabsList>
+          
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="all">All Reports</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <TabsContent value="posts">
+          {isLoading ? (
+            <div className="flex justify-center my-8">
+              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
             </div>
           ) : error ? (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                <p className="mb-2">{error}</p>
-                <Button onClick={handleRetry} size="sm" variant="outline">
+            <div className="bg-destructive/10 text-destructive p-4 rounded-md flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 mt-0.5" />
+              <div>
+                <h3 className="font-semibold">Error Loading Reports</h3>
+                <p>Failed to load reports. Please try again.</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => refetch()} 
+                  className="mt-2"
+                >
                   Retry
                 </Button>
-              </AlertDescription>
-            </Alert>
-          ) : reports.length === 0 ? (
-            <div className="text-center p-12 text-muted-foreground">
-              <p>No reports found with status: {activeTab === 'all' ? 'any' : activeTab}</p>
+              </div>
             </div>
-          ) : isMobile ? (
-            // Card layout for mobile
+          ) : reports.length === 0 ? (
+            <div className="text-center p-8 border rounded-md bg-muted/30">
+              <CheckCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+              <h3 className="font-semibold text-lg">No Reports Found</h3>
+              <p className="text-muted-foreground">
+                {statusFilter === 'pending' 
+                  ? "There are no pending reports to review."
+                  : statusFilter === 'all' 
+                    ? "No reports have been submitted yet."
+                    : `No reports with status '${statusFilter}' found.`}
+              </p>
+            </div>
+          ) : (
             <div className="space-y-4">
-              {reports.map((report) => (
-                <Card key={report.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(report.created_at).toLocaleDateString()}
-                        </div>
-                        <CardTitle className="text-lg mt-1">
-                          {report.reporter?.pseudonym || 'Anonymous'}
-                        </CardTitle>
+              {reports.map(report => (
+                <Card key={report.id} className="p-4">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={report.status === 'pending' ? 'outline' : (report.status === 'resolved' ? 'default' : 'secondary')}>
+                          {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Reported {new Date(report.created_at).toLocaleDateString()}
+                        </span>
                       </div>
-                      <div>{getStatusBadge(report.status)}</div>
+                      
+                      <h3 className="font-semibold text-lg cursor-pointer hover:underline" 
+                        onClick={() => report.post && navigate(`/post/${report.post.id}`)}
+                      >
+                        {report.post ? report.post.text?.substring(0, 100) + (report.post.text?.length > 100 ? '...' : '') : 'Post not found'}
+                      </h3>
+                      
+                      <div className="bg-muted p-3 rounded-md mt-2">
+                        <p className="text-sm font-medium">Report Reason:</p>
+                        <p className="text-sm">{report.reason}</p>
+                      </div>
+                      
+                      {report.resolution_notes && (
+                        <div className="bg-primary/10 p-3 rounded-md mt-2">
+                          <p className="text-sm font-medium">Resolution:</p>
+                          <p className="text-sm">{report.resolution_notes}</p>
+                        </div>
+                      )}
                     </div>
-                  </CardHeader>
-                  <Separator />
-                  <CardContent className="pt-4">
-                    <p className="text-sm truncate font-medium">Reason:</p>
-                    <p className="text-sm mb-4">{report.reason}</p>
-                  </CardContent>
-                  <CardFooter className="flex justify-end pt-0">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewReport(report)}
-                      className="flex items-center"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      View Details
-                    </Button>
-                  </CardFooter>
+                    
+                    <div className="flex flex-col gap-2">
+                      {report.status === 'pending' && isModerator && (
+                        <>
+                          <Button 
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              setSelectedReport(report);
+                              setIsHideDialogOpen(true);
+                            }}
+                          >
+                            <AlertTriangle className="mr-2 h-4 w-4" />
+                            Hide Post
+                          </Button>
+                          
+                          <Button 
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              setSelectedReport(report);
+                              setIsWarnDialogOpen(true);
+                            }}
+                          >
+                            <AlertTriangle className="mr-2 h-4 w-4" />
+                            Warn User
+                          </Button>
+                          
+                          <Button 
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => handleRejectReport(report.id)}
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Reject Report
+                          </Button>
+                        </>
+                      )}
+                      
+                      <Button 
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => report.post && navigate(`/post/${report.post.id}`)}
+                      >
+                        View Post
+                      </Button>
+                      
+                      {report.reporter && (
+                        <Button 
+                          variant="ghost"
+                          className="w-full"
+                          onClick={() => navigate(`/user/${report.reporter.id}`)}
+                        >
+                          View Reporter
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </Card>
               ))}
             </div>
-          ) : (
-            // Table layout for desktop
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Reporter</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell>{new Date(report.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>{report.reporter?.pseudonym || 'Anonymous'}</TableCell>
-                      <TableCell className="max-w-xs truncate" title={report.reason}>
-                        {report.reason}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(report.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewReport(report)}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
           )}
         </TabsContent>
+        
+        <TabsContent value="comments">
+          <div className="text-center p-8 border rounded-md bg-muted/30">
+            <h3 className="font-semibold text-lg">Coming Soon</h3>
+            <p className="text-muted-foreground">Comment reporting is not implemented yet.</p>
+          </div>
+        </TabsContent>
       </Tabs>
-
-      {selectedReport && (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Report Details</DialogTitle>
-              <DialogDescription>
-                Review and take action on this report.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium mb-1">Report Date:</h4>
-                <p>{new Date(selectedReport.created_at).toLocaleString()}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-1">Reported By:</h4>
-                <p>{selectedReport.reporter?.pseudonym || 'Anonymous'}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-1">Status:</h4>
-                <p>{getStatusBadge(selectedReport.status)}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-1">Reason for Report:</h4>
-                <p className="border rounded-md p-2 bg-muted">{selectedReport.reason}</p>
-              </div>
-              
-              {selectedReport.post && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Reported Content:</h4>
-                  <div className="border rounded-md p-2 bg-muted">
-                    <p className="mb-1 font-medium">Post by: {selectedReport.post.author_id}</p>
-                    <p>{selectedReport.post.text}</p>
-                  </div>
-                </div>
-              )}
-              
-              <div>
-                <h4 className="text-sm font-medium mb-1">Moderation Notes:</h4>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add your notes here..."
-                  className="min-h-[100px]"
-                />
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-1">Action Taken:</h4>
-                <Textarea
-                  value={action}
-                  onChange={(e) => setAction(e.target.value)}
-                  placeholder="Describe actions taken..."
-                />
-              </div>
-              
-              <div className="flex justify-between pt-4">
-                <div>
-                  {selectedReport.post && (
-                    <Button
-                      variant="destructive"
-                      disabled={submitting}
-                      onClick={() => handleBlockUser(selectedReport.post.author_id)}
-                    >
-                      {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Block User
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="space-x-2">
-                  <Button
-                    variant="outline"
-                    disabled={submitting || selectedReport.status !== 'pending'}
-                    onClick={() => handleResolveReport(selectedReport.id, 'rejected')}
-                  >
-                    Dismiss
-                  </Button>
-                  <Button
-                    disabled={submitting || selectedReport.status !== 'pending'}
-                    onClick={() => handleResolveReport(selectedReport.id, 'resolved')}
-                  >
-                    Resolve
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </DashboardLayout>
+      
+      <ModerationDialog
+        type="hide"
+        contentType="post"
+        isOpen={isHideDialogOpen}
+        onOpenChange={setIsHideDialogOpen}
+        onAction={handleHidePost}
+      />
+      
+      <ModerationDialog
+        type="warn"
+        contentType="post"
+        isOpen={isWarnDialogOpen}
+        onOpenChange={setIsWarnDialogOpen}
+        onAction={handleWarnUser}
+      />
+    </AdminDashboardLayout>
   );
 };
 

@@ -3,49 +3,55 @@ export interface User {
   pseudonym: string;
   avatar?: string;
   bio?: string;
-  location?: string;
-  joinedAt: Date;
-  preferredLanguage?: string;
   website?: string;
+  location?: string;
   latitude?: number;
   longitude?: number;
-  autoTranslate?: boolean;
-  locationSharing?: boolean;
+  preferredLanguage?: string;
+  autoTranslate: boolean;
+  locationSharing: boolean;
+  ghostMode?: boolean;
+  isBlocked?: boolean;
+  feedRadius?: number;
+  joinedAt: Date;
 }
 
 export interface Post {
   id: string;
-  author: User;
   text: string;
-  images?: string[];
-  category: 'campsite' | 'service' | 'question' | 'general';
-  location: {
-    lat: number;
-    lng: number;
-  };
-  distance?: number; // in km
-  votes: number;
+  author: User;
   createdAt: Date;
+  updatedAt: Date;
+  votes: number;
+  locationLat: number;
+  locationLng: number;
+  distance?: number;
   commentCount: number;
+  images?: PostImage[];
+  category: string;
+  isHidden?: boolean;  // New field
+  hiddenReason?: string; // New field
+  hiddenBy?: string; // New field
+  hiddenAt?: string; // New field
 }
 
 export interface Comment {
   id: string;
-  author: User;
   text: string;
+  author: User;
+  createdAt: Date;
   postId: string;
   parentCommentId?: string;
   votes: number;
-  createdAt: Date;
+  replies?: Comment[];
+  isHidden?: boolean;  // New field
+  hiddenReason?: string; // New field
+  hiddenBy?: string; // New field
+  hiddenAt?: string; // New field
 }
 
-export interface BuddyConnection {
+export interface PostImage {
   id: string;
-  user_id: string;
-  buddy_id: string;
-  status: 'pending' | 'active' | 'rejected';
-  notify_at_100km: boolean;
-  notify_at_50km: boolean;
-  notify_at_20km: boolean;
-  created_at: string; // Changed from Date to string to match what Supabase returns
+  imageUrl: string;
+  orderIndex: number;
 }

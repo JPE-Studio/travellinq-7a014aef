@@ -1,4 +1,5 @@
 
+
 import { User } from './index';
 
 export type UserRole = 'user' | 'paid_user' | 'moderator' | 'admin' | 'superadmin';
@@ -51,6 +52,22 @@ export interface UserExport {
   joinedAt: string;
 }
 
+// New type for user warnings
+export interface UserWarning {
+  id: string;
+  user_id: string;
+  moderator_id: string;
+  reason: string;
+  severity: 'minor' | 'moderate' | 'severe';
+  related_post_id?: string;
+  related_comment_id?: string;
+  created_at: string;
+  expires_at?: string;
+  is_active: boolean;
+  user?: { pseudonym: string };
+  moderator?: { pseudonym: string };
+}
+
 // Add a new function to assign a superadmin role
 export const assignSuperadmin = async (userId: string): Promise<boolean> => {
   try {
@@ -68,3 +85,4 @@ export const assignSuperadmin = async (userId: string): Promise<boolean> => {
     return false;
   }
 };
+

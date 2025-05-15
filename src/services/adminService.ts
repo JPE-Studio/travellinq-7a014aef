@@ -73,12 +73,12 @@ export const fetchPostReports = async (status?: string): Promise<PostReport[]> =
             location: profile.location,
             latitude: profile.latitude,
             longitude: profile.longitude,
-            preferred_language: profile.preferred_language,
-            auto_translate: profile.auto_translate,
-            location_sharing: profile.location_sharing,
-            ghost_mode: profile.ghost_mode,
-            is_blocked: profile.is_blocked,
-            feed_radius: profile.feed_radius,
+            preferredLanguage: profile.preferred_language,
+            autoTranslate: profile.auto_translate,
+            locationSharing: profile.location_sharing,
+            ghostMode: profile.ghost_mode,
+            isBlocked: profile.is_blocked,
+            feedRadius: profile.feed_radius,
             joinedAt: new Date(profile.joined_at), // Convert string to Date object
           };
           acc[profile.id] = user;
@@ -327,7 +327,7 @@ export const exportTopContributors = async (limit: number = 50): Promise<UserExp
         votes: totalVotes,
         comments: userComments.length,
         location: profile.location,
-        joinedAt: new Date(profile.joined_at) // Convert string to Date object
+        joinedAt: profile.joined_at // Keep as string as expected by UserExport type
       };
     });
     

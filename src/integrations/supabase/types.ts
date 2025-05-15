@@ -46,7 +46,11 @@ export type Database = {
         Row: {
           author_id: string
           created_at: string
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
           id: string
+          is_hidden: boolean | null
           parent_comment_id: string | null
           post_id: string
           text: string
@@ -56,7 +60,11 @@ export type Database = {
         Insert: {
           author_id: string
           created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
           id?: string
+          is_hidden?: boolean | null
           parent_comment_id?: string | null
           post_id: string
           text: string
@@ -66,7 +74,11 @@ export type Database = {
         Update: {
           author_id?: string
           created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
           id?: string
+          is_hidden?: boolean | null
           parent_comment_id?: string | null
           post_id?: string
           text?: string
@@ -380,7 +392,11 @@ export type Database = {
           author_id: string
           category: Database["public"]["Enums"]["post_category"]
           created_at: string
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
           id: string
+          is_hidden: boolean | null
           location_lat: number
           location_lng: number
           text: string
@@ -391,7 +407,11 @@ export type Database = {
           author_id: string
           category?: Database["public"]["Enums"]["post_category"]
           created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
           id?: string
+          is_hidden?: boolean | null
           location_lat: number
           location_lng: number
           text: string
@@ -402,7 +422,11 @@ export type Database = {
           author_id?: string
           category?: Database["public"]["Enums"]["post_category"]
           created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
           id?: string
+          is_hidden?: boolean | null
           location_lat?: number
           location_lng?: number
           text?: string
@@ -556,6 +580,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_warnings: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          moderator_id: string
+          reason: string
+          related_comment_id: string | null
+          related_post_id: string | null
+          severity: Database["public"]["Enums"]["warning_severity"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          moderator_id: string
+          reason: string
+          related_comment_id?: string | null
+          related_post_id?: string | null
+          severity?: Database["public"]["Enums"]["warning_severity"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          moderator_id?: string
+          reason?: string
+          related_comment_id?: string | null
+          related_post_id?: string | null
+          severity?: Database["public"]["Enums"]["warning_severity"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_warnings_related_comment_id_fkey"
+            columns: ["related_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_warnings_related_post_id_fkey"
+            columns: ["related_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -612,6 +690,7 @@ export type Database = {
     Enums: {
       app_role: "user" | "paid_user" | "moderator" | "admin" | "superadmin"
       post_category: "campsite" | "service" | "question" | "general"
+      warning_severity: "minor" | "moderate" | "severe"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -729,6 +808,7 @@ export const Constants = {
     Enums: {
       app_role: ["user", "paid_user", "moderator", "admin", "superadmin"],
       post_category: ["campsite", "service", "question", "general"],
+      warning_severity: ["minor", "moderate", "severe"],
     },
   },
 } as const
