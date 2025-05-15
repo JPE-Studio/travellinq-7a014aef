@@ -3,6 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { UserWarning } from "@/types/roles";
 
+// Helper function to safely get pseudonym from profiles data
+const getSafePseudonym = (profileData: any, defaultValue: string): string => {
+  // Check if it's an error object (which would have error: true)
+  if (profileData && profileData.error === true) {
+    return defaultValue;
+  }
+  
+  // Check if it has pseudonym property
+  return profileData?.pseudonym || defaultValue;
+};
+
 // Hide a post
 export const hidePost = async (
   postId: string,
@@ -169,9 +180,10 @@ export const getUserWarnings = async (userId: string): Promise<UserWarning[]> =>
       throw error;
     }
     
-    // Handle moderator pseudonym access safely with fallback
+    // Process data to handle missing moderator pseudonym safely
     const warnings = data.map(warning => {
-      const moderatorPseudonym = warning.profiles?.pseudonym || 'Unknown Moderator';
+      // Use our helper function to safely get pseudonym
+      const moderatorPseudonym = getSafePseudonym(warning.profiles, 'Unknown Moderator');
       
       return {
         ...warning,
@@ -237,8 +249,9 @@ export const getAllActiveWarnings = async (): Promise<UserWarning[]> => {
     
     // Process the data to ensure we handle potentially missing values
     const warnings = data.map(warning => {
-      const userPseudonym = warning.user?.pseudonym || 'Unknown User';
-      const moderatorPseudonym = warning.moderator?.pseudonym || 'Unknown Moderator';
+      // Use our helper function to safely get pseudonyms
+      const userPseudonym = getSafePseudonym(warning.user, 'Unknown User');
+      const moderatorPseudonym = getSafePseudonym(warning.moderator, 'Unknown Moderator');
       
       // Create a properly formatted warning object
       const formattedWarning: UserWarning = {
@@ -310,8 +323,8 @@ export const getPostModerationHistory = async (postId: string): Promise<any[]> =
     const history = [];
     
     if (post && post.is_hidden) {
-      // Handle possibly null moderator safely
-      const moderatorPseudonym = post.moderator?.pseudonym || 'Unknown Moderator';
+      // Use helper function to safely get moderator pseudonym
+      const moderatorPseudonym = getSafePseudonym(post.moderator, 'Unknown Moderator');
       
       history.push({
         type: 'hide',
@@ -323,8 +336,8 @@ export const getPostModerationHistory = async (postId: string): Promise<any[]> =
     
     if (warnings) {
       warnings.forEach(warning => {
-        // Handle possibly null moderator safely
-        const moderatorPseudonym = warning.moderator?.pseudonym || 'Unknown Moderator';
+        // Use helper function to safely get moderator pseudonym
+        const moderatorPseudonym = getSafePseudonym(warning.moderator, 'Unknown Moderator');
         
         history.push({
           type: 'warning',
@@ -390,8 +403,8 @@ export const getCommentModerationHistory = async (commentId: string): Promise<an
     const history = [];
     
     if (comment && comment.is_hidden) {
-      // Handle possibly null moderator safely
-      const moderatorPseudonym = comment.moderator?.pseudonym || 'Unknown Moderator';
+      // Use helper function to safely get moderator pseudonym
+      const moderatorPseudonym = getSafePseudonym(comment.moderator, 'Unknown Moderator');
       
       history.push({
         type: 'hide',
@@ -403,8 +416,8 @@ export const getCommentModerationHistory = async (commentId: string): Promise<an
     
     if (warnings) {
       warnings.forEach(warning => {
-        // Handle possibly null moderator safely
-        const moderatorPseudonym = warning.moderator?.pseudonym || 'Unknown Moderator';
+        // Use helper function to safely get moderator pseudonym
+        const moderatorPseudonym = getSafePseudonym(warning.moderator, 'Unknown Moderator');
         
         history.push({
           type: 'warning',
@@ -449,15 +462,15 @@ export const getReports = async () => {
       return {
         ...report,
         reporter: {
-          pseudonym: report.reporter?.pseudonym || 'Anonymous'
+          pseudonym: getSafePseudonym(report.reporter, 'Anonymous')
         },
         resolver: report.resolver ? {
-          pseudonym: report.resolver?.pseudonym || 'Unknown Staff'
+          pseudonym: getSafePseudonym(report.resolver, 'Unknown Staff')
         } : null,
         post: report.post ? {
           ...report.post,
           profiles: {
-            pseudonym: report.post.profiles?.pseudonym || 'Unknown Author'
+            pseudonym: getSafePseudonym(report.post.profiles, 'Unknown Author')
           }
         } : null
       };
