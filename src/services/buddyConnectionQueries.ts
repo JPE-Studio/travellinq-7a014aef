@@ -95,3 +95,58 @@ export const getBuddyConnection = async (buddyId: string): Promise<BuddyConnecti
     return null;
   }
 };
+
+// Get all active buddy connections for the current user (new function)
+export const getActiveBuddyConnections = async (): Promise<BuddyConnection[]> => {
+  try {
+    const userId = await getCurrentUserId();
+    
+    if (!userId) {
+      console.log("No authenticated user session found");
+      return [];
+    }
+    
+    // Query for connections where the user is either the user_id or buddy_id
+    // and the status is 'active'
+    const { data, error } = await supabase
+      .from('buddy_connections')
+      .select("*")
+      .or(`user_id.eq.${userId},buddy_id.eq.${userId}`)
+      .eq("status", "active");
+    
+    if (error) {
+      console.error("Error fetching active buddy connections:", error);
+      throw error;
+    }
+    
+    console.log(`Found ${data?.length || 0} active buddy connections`);
+    
+    // Convert the data to BuddyConnection objects
+    return data ? data.map(adaptBuddyConnection) : [];
+  } catch (error) {
+    console.error("Exception in getActiveBuddyConnections:", error);
+    return [];
+  }
+};
+
+// Get buddy IDs from buddy connections
+export const getBuddyIds = async (): Promise<string[]> => {
+  try {
+    const connections = await getActiveBuddyConnections();
+    const userId = await getCurrentUserId();
+    
+    if (!userId) {
+      return [];
+    }
+    
+    // Extract the buddy IDs by finding the ID that isn't the current user's
+    const buddyIds = connections.map(connection => {
+      return connection.userId === userId ? connection.buddyId : connection.userId;
+    });
+    
+    return buddyIds;
+  } catch (error) {
+    console.error("Error getting buddy IDs:", error);
+    return [];
+  }
+};

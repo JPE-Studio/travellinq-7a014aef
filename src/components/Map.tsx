@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Post } from '@/types';
+import { Post, User } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -18,6 +18,7 @@ interface MapProps {
   onToggleExpand: () => void;
   fullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  buddies?: User[];  // New prop for buddies
 }
 
 const MAPBOX_TOKEN_KEY = 'mapbox_token';
@@ -29,7 +30,8 @@ const Map: React.FC<MapProps> = ({
   expanded,
   onToggleExpand,
   fullscreen = false,
-  onToggleFullscreen
+  onToggleFullscreen,
+  buddies = []  // Default to empty array
 }) => {
   const isMobile = useIsMobile();
 
@@ -151,16 +153,47 @@ const Map: React.FC<MapProps> = ({
       // Add to bounds
       bounds.extend([post.locationLng, post.locationLat]);
     });
+    
+    // Add markers for buddies with location data
+    buddies.forEach(buddy => {
+      if (buddy.latitude && buddy.longitude) {
+        // Use a distinctive color for buddy markers
+        const buddyMarker = new mapboxgl.Marker({
+          color: '#EC4899', // Pink color for buddies
+          scale: 0.9
+        })
+        .setLngLat([buddy.longitude, buddy.latitude])
+        .addTo(map.current);
+        
+        // Add popup with buddy name
+        const popup = new mapboxgl.Popup({ offset: 25, closeButton: false })
+          .setHTML(`
+            <div class="p-2">
+              <p class="font-semibold">${buddy.pseudonym}</p>
+              <p class="text-xs text-gray-600">Buddy</p>
+            </div>
+          `);
+          
+        buddyMarker.setPopup(popup);
+        markersRef.current.push(buddyMarker);
+        
+        // Add to bounds
+        bounds.extend([buddy.longitude, buddy.latitude]);
+      }
+    });
 
-    // Fit map to bounds if we have posts to show and bounds haven't been set
-    if (validPosts.length > 0 && !boundsSetRef.current && map.current) {
+    // Fit map to bounds if we have posts or buddies to show and bounds haven't been set
+    const hasValidMarkers = validPosts.length > 0 || 
+      (buddies && buddies.some(b => b.latitude && b.longitude));
+      
+    if (hasValidMarkers && !boundsSetRef.current && map.current) {
       map.current.fitBounds(bounds, {
         padding: 70,
         maxZoom: 15
       });
       boundsSetRef.current = true;
     }
-  }, [posts, mapLoaded, currentLocation]);
+  }, [posts, buddies, mapLoaded, currentLocation]);
 
   // Resize map when expanded state or fullscreen state changes
   useEffect(() => {
@@ -203,6 +236,28 @@ const Map: React.FC<MapProps> = ({
           </Button>
         )}
       </div>
+      
+      {/* Legend for marker types */}
+      {(posts.length > 0 || buddies?.length > 0) && (
+        <div className="absolute bottom-2 left-2 bg-card/80 backdrop-blur-sm rounded-md p-2 text-xs z-10">
+          <div className="flex items-center space-x-2 mb-1">
+            <div className="w-3 h-3 rounded-full bg-[#3FB1CE]"></div>
+            <span>Your location</span>
+          </div>
+          {posts.length > 0 && (
+            <div className="flex items-center space-x-2 mb-1">
+              <div className="w-3 h-3 rounded-full bg-[#2E5E4E]"></div>
+              <span>Posts</span>
+            </div>
+          )}
+          {buddies?.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-[#EC4899]"></div>
+              <span>Buddies</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

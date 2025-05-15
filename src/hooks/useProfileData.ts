@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchUserProfile } from '@/services/userService';
-import { getBuddyConnection } from '@/services/chatService';
+import { getBuddyConnection } from '@/services/buddyConnectionQueries';
 import { BuddyConnection, User } from '@/types';
 
 interface UserProfileData {

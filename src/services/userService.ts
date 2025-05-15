@@ -84,3 +84,33 @@ export const fetchOtherUsers = async (): Promise<User[]> => {
   
   return data.map(mapProfileToUser);
 };
+
+// Fetch location data for buddies (new function)
+export const fetchBuddiesLocationData = async (buddyIds: string[]): Promise<User[]> => {
+  if (!buddyIds.length) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", buddyIds)
+      .eq("location_sharing", true);
+    
+    if (error) {
+      console.error("Error fetching buddy location data:", error);
+      throw error;
+    }
+    
+    // Filter out buddies without location data
+    const buddiesWithLocation = data
+      .map(mapProfileToUser)
+      .filter(buddy => buddy.latitude && buddy.longitude);
+    
+    console.log(`Found ${buddiesWithLocation.length} buddies with location data`);
+    
+    return buddiesWithLocation;
+  } catch (error) {
+    console.error("Exception in fetchBuddiesLocationData:", error);
+    return [];
+  }
+};

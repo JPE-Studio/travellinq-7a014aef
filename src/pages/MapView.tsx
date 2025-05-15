@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Map from '@/components/Map';
-import { Link } from 'react-router-dom';
 import { ChevronLeft, AlertCircle, Locate } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPosts } from '@/services/postService';
@@ -9,6 +8,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import PageLayout from '@/components/PageLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getBuddyIds } from '@/services/buddyConnectionQueries';
+import { fetchBuddiesLocationData } from '@/services/userService';
+import { User } from '@/types';
 
 const MapView: React.FC = () => {
   const {
@@ -64,30 +66,61 @@ const MapView: React.FC = () => {
   // Query for posts - use staleTime to prevent frequent refetching
   const {
     data: posts = [],
-    isLoading,
-    error,
-    refetch
+    isLoading: isLoadingPosts,
+    error: postsError,
+    refetch: refetchPosts
   } = useQuery({
     queryKey: ['posts', currentLocation],
     queryFn: () => fetchPosts(currentLocation.lat, currentLocation.lng),
-    staleTime: 5 * 60 * 1000,
-    // 5 minutes before considering data stale
-    refetchOnWindowFocus: false,
-    // Don't refetch when window regains focus
+    staleTime: 5 * 60 * 1000, // 5 minutes before considering data stale
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
     refetchOnMount: false // Don't refetch when component remounts
+  });
+  
+  // Query for buddy IDs
+  const {
+    data: buddyIds = [],
+    isLoading: isLoadingBuddyIds,
+  } = useQuery({
+    queryKey: ['buddyIds'],
+    queryFn: getBuddyIds,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+  
+  // Query for buddy location data
+  const {
+    data: buddies = [],
+    isLoading: isLoadingBuddies,
+    error: buddiesError
+  } = useQuery({
+    queryKey: ['buddyLocations', buddyIds],
+    queryFn: () => fetchBuddiesLocationData(buddyIds),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    enabled: buddyIds.length > 0, // Only run this query if we have buddy IDs
   });
 
   // Handle error separately with useEffect
   useEffect(() => {
-    if (error) {
+    if (postsError) {
       toast({
         title: "Error loading map data",
         description: "Failed to load posts for the map view.",
         variant: "destructive"
       });
-      console.error(error);
+      console.error(postsError);
     }
-  }, [error, toast]);
+    
+    if (buddiesError) {
+      toast({
+        title: "Error loading buddy data",
+        description: "Failed to load buddy location data.",
+        variant: "destructive"
+      });
+      console.error(buddiesError);
+    }
+  }, [postsError, buddiesError, toast]);
 
   const handleToggleExpand = () => {
     setExpanded(!expanded);
@@ -112,7 +145,8 @@ const MapView: React.FC = () => {
             expanded={expanded} 
             onToggleExpand={handleToggleExpand} 
             fullscreen={fullscreen} 
-            onToggleFullscreen={handleToggleFullscreen} 
+            onToggleFullscreen={handleToggleFullscreen}
+            buddies={buddies}
           />
         </div>
         {/* Always show bottom navigation in fullscreen mode */}
@@ -123,12 +157,21 @@ const MapView: React.FC = () => {
     );
   }
 
+  // Show loading state while fetching data
+  const isLoading = isLoadingPosts || isLoadingBuddyIds || isLoadingBuddies;
+  const error = postsError || buddiesError;
+
   return (
     <PageLayout>
       <div className="p-4 flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold">Explore Locations</h1>
         </div>
+        {buddies.length > 0 && (
+          <div className="text-sm text-muted-foreground">
+            {buddies.length} {buddies.length === 1 ? 'buddy' : 'buddies'} on map
+          </div>
+        )}
       </div>
       
       {isLoading ? (
@@ -142,7 +185,7 @@ const MapView: React.FC = () => {
             <p className="font-semibold mb-1">Error loading map data</p>
             <p className="text-sm">Please try again later</p>
           </div>
-          <Button onClick={() => refetch()} variant="outline">
+          <Button onClick={() => refetchPosts()} variant="outline">
             Retry
           </Button>
         </div>
@@ -155,7 +198,8 @@ const MapView: React.FC = () => {
             expanded={expanded} 
             onToggleExpand={handleToggleExpand} 
             fullscreen={fullscreen} 
-            onToggleFullscreen={handleToggleFullscreen} 
+            onToggleFullscreen={handleToggleFullscreen}
+            buddies={buddies}
           />
         </div>
       )}
